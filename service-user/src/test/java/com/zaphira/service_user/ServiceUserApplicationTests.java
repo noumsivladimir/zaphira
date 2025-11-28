@@ -1,4 +1,4 @@
-package com.zaphira.zaphira;
+package com.zaphira.service_user;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
