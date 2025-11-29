@@ -27,8 +27,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
@@ -36,19 +36,14 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf.disable())
-            .httpBasic(httpBasic -> httpBasic.disable()) // Désactive Basic Auth
+            .httpBasic(basic -> basic.disable())     // ← Renommé pour éviter la collision
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                        "/api/auth/**",
-                        "/register",
-                        "/login",
-                        "/refresh",
-                        "/logout",
-                        "/me"
-                ).permitAll() // Permet register/login sans JWT
+                .requestMatchers("/api/auth/**", "/api/auth/refresh").permitAll()
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
             .userDetailsService(customUserDetailsService)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

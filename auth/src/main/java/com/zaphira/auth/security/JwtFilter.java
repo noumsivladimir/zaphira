@@ -10,8 +10,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.util.Set;
-
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -19,25 +17,27 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
 
-    private static final Set<String> ROOT_AUTH_ENDPOINTS = Set.of(
-            "/register",
-            "/login",
-            "/refresh",
-            "/logout",
-            "/me"
-    );
-
-    // ✅ Skip filtering for auth endpoints
+    /**
+     * Tous les endpoints auth sont publics et ne doivent pas passer dans le filtre.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        System.out.println("⛔ Skip Filter for: " + path);
-        return path.startsWith("/api/auth") || ROOT_AUTH_ENDPOINTS.contains(path);
+
+        return path.startsWith("/api/auth")
+            || path.equals("/login")
+            || path.equals("/register")
+            || path.equals("/refresh");
     }
 
+
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws java.io.IOException, jakarta.servlet.ServletException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws java.io.IOException, jakarta.servlet.ServletException {
 
         String authHeader = request.getHeader("Authorization");
         String path = request.getServletPath();
@@ -52,7 +52,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 var userDetails = userDetailsService.loadUserByUsername(email);
 
                 if (jwtUtil.validateToken(token)) {
-
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -69,7 +68,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } else {
-            System.out.println("⚠️ No JWT token found for path: " + path);
+            System.out.println("⚠️ No JWT Token for path: " + path);
         }
 
         filterChain.doFilter(request, response);

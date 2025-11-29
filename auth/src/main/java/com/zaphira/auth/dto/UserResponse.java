@@ -11,5 +11,5 @@ public class UserResponse {
     private String email;
     private String role;
     private Long walletId;
+    private String phoneNumber; // <-- ajout
 }
-
