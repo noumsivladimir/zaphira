@@ -19,51 +19,67 @@ public class UserService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // ✅ Register using RegisterRequest DTO (idempotent)
+    /**
+     * Enregistre un utilisateur.
+     * - Évite les doublons
+     * - Met à jour le nom si besoin
+     * - Crée un wallet si utilisateur nouveau
+     */
     public User registerUser(RegisterRequest request) {
 
         return userRepository.findByEmail(request.getEmail())
                 .map(existing -> {
-                    // Optionally refresh full name if it changed
-                    if (request.getFullName() != null && !request.getFullName().isBlank()
+                    if (request.getFullName() != null
+                            && !request.getFullName().isBlank()
                             && !request.getFullName().equals(existing.getFullName())) {
+
                         existing.setFullName(request.getFullName());
                         userRepository.save(existing);
                     }
                     return existing;
                 })
-                .orElseGet(() -> {
-                    // Hash password
-                    String hashedPassword = passwordEncoder.encode(request.getPassword());
-
-                    // Create user
-                    User newUser = User.builder()
-                            .email(request.getEmail())
-                            .fullName(request.getFullName())
-                            .password(hashedPassword)
-                            .role(Role.USER)
-                            .build();
-
-                    User savedUser = userRepository.save(newUser);
-
-                    // Create wallet for new user
-                    Wallet wallet = new Wallet();
-                    wallet.setUser(savedUser);
-                    wallet.setBalance(0.0);
-                    walletRepository.save(wallet);
-
-                    return savedUser;
-                });
+                .orElseGet(() -> createNewUserWithWallet(request));
     }
 
-    // ✅ Authenticate user
+    /**
+     * Authentifie un utilisateur.
+     */
     public User authenticate(String email, String rawPassword) {
         return userRepository.findByEmail(email)
                 .filter(user -> passwordEncoder.matches(rawPassword, user.getPassword()))
                 .orElse(null);
     }
 
+    /**
+     * Récupère un compte via email.
+     */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    /**
+     * Méthode centralisée pour création user + wallet.
+     */
+    private User createNewUserWithWallet(RegisterRequest request) {
+
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
+        User newUser = User.builder()
+                .email(request.getEmail())
+                .fullName(request.getFullName())
+                .password(hashedPassword)
+                .role(Role.USER)
+                .build();
+
+        User savedUser = userRepository.save(newUser);
+
+        Wallet wallet = Wallet.builder()
+                .user(savedUser)
+                .balance(0.0)
+                .build();
+
+        walletRepository.save(wallet);
+
+        return savedUser;
     }
 }

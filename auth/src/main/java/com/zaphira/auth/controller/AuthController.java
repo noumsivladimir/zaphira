@@ -21,24 +21,27 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     // ✅ Register User
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        @PostMapping("/register")
+        public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 
-        var user = userService.registerUser(request);
+            var user = userService.registerUser(request);
 
-        var accessToken = jwtUtil.generateAccessToken(user.getEmail());
-
-        var refreshToken = refreshTokenService.createToken(user.getId());
+            var accessToken = jwtUtil.generateAccessToken(user.getEmail());
+            var refreshToken = refreshTokenService.createToken(user.getId());
 
         var userResponse = new UserResponse(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
-                user.getRole().name()
+                user.getRole().name(),
+                user.getWallet().getId()        // <-- AJOUT
         );
 
-        return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken.getToken(), userResponse));
+        return ResponseEntity.ok(
+                new AuthResponse(accessToken, refreshToken.getToken(), userResponse)
+        );
     }
+
 
     // ✅ Login User
     @PostMapping("/login")
