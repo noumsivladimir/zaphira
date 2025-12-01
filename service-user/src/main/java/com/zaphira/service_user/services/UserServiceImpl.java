@@ -71,6 +71,8 @@ public class UserServiceImpl implements UserService {
                 .preferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "fr")
                 .build();
 
+
+
         RegularUser savedUser = regularUserRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getUserId());
 

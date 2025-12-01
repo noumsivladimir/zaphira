@@ -9,8 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +21,6 @@ import java.util.Set;
         @Index(name = "idx_email", columnList = "email"),
         @Index(name = "idx_phone_Number", columnList = "phone_number"),
         @Index(name = "idx_walletId", columnList = "walletId"),
-        @Index(name = "idx_userId", columnList = "user_id"),
         @Index(name = "idx_user_type", columnList = "user_type"),
         @Index(name = "idx_account_status", columnList = "account_status")
 })
@@ -67,29 +65,29 @@ public abstract class User {
     @Column(nullable = false, length = 100)
     private String country;
 
-    @Column(nullable = false, length = 100)
+    @Column
     private String neighborhood;
 
-    @Column(nullable = false, length = 100)
+    @Column
     private String city;
 
-    @Column(nullable = false, length = 100)
+    @Column
     private String region;
 
 
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 30, name = "account_status")
     private AccountStatus accountStatus = AccountStatus.PENDING_VERIFICATION;
 
-    @Column(nullable = false)
-    private Boolean emailVerified = Boolean.FALSE;
+    @Column
+    private boolean emailVerified = false;
 
     @Column(nullable = false)
-    private Boolean phoneVerified = Boolean.TRUE;
+    private boolean phoneVerified = true;
 
     @Column(nullable = false)
-    private Boolean twoFactorEnabled = Boolean.FALSE;
+    private boolean twoFactorEnabled = false;
 
     @Column(length = 100)
     private String twoFactorSecret;
@@ -101,16 +99,16 @@ public abstract class User {
     private String lastLoginIp;
 
     @Column(nullable = false)
-    private Integer failedLoginAttempts = 0;
+    private int failedLoginAttempts = 0;
 
     @Column
     private LocalDateTime accountLockedUntil;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime registrationDate;
 
-    @LastModifiedDate
+    @CreationTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
@@ -145,5 +143,17 @@ public abstract class User {
 
     public boolean hasPermission(PermissionType permission) {
         return getPermissions().contains(permission);
+    }
+
+    public boolean getEmailVerified() {
+        return true;
+    }
+
+    public boolean getPhoneVerified() {
+        return true;
+    }
+
+    public Boolean getTwoFactorEnabled() {
+        return true;
     }
 }

@@ -34,16 +34,16 @@ public class RegularUser extends User {
     private String preferredCurrency = "FCFA";
 
     @Column(nullable = false)
-    private Boolean notificationsEnabled = true;
+    private boolean notificationsEnabled = true;
 
     @Column(nullable = false)
-    private Boolean smsNotificationsEnabled = false;
+    private boolean smsNotificationsEnabled = false;
 
     @Column(nullable = false)
-    private Boolean emailNotificationsEnabled = false;
+    private boolean emailNotificationsEnabled = false;
 
     @Column(nullable = false)
-    private Boolean marketingEmailsEnabled = false;
+    private boolean marketingEmailsEnabled = false;
 
 //    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 //    private KYC kyc;
@@ -81,6 +81,11 @@ public class RegularUser extends User {
 
     public Boolean isKycVerified() {
         return Boolean.TRUE;
+    }
+
+    public boolean getNotificationsEnabled() {
+
+        return true;
     }
 
 //    public boolean isKycVerified() {

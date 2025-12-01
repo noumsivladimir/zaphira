@@ -26,29 +26,29 @@ public class AdminUser extends User {
     private String employeeId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = true, length = 20)
     private AdminLevel adminLevel = AdminLevel.STANDARD;
 
     @Column
     private LocalDateTime lastAdminActionAt;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canApproveTransactions = false;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canManageUsers = true;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canAccessReports = true;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canManageRoles = false;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canManageKYC = true;
 
-    @Column(nullable = false)
-    private Boolean canViewAuditLogs = false;
+    @Column(nullable = true)
+    private boolean canViewAuditLogs = false;
 
     @Column
     private Long supervisorId;

@@ -22,7 +22,7 @@ import java.util.Set;
 @SuperBuilder
 public class MerchantUser extends User {
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = true, length = 200)
     private String businessName;
 
     @Column(unique = true, length = 50)
@@ -32,13 +32,13 @@ public class MerchantUser extends User {
     @Column(length = 500)
     private String businessAddress;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean isVerifiedMerchant = false;
 
     @Column
     private LocalDateTime merchantVerifiedAt;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String verifiedBy;
 
     @Column(precision = 5, scale = 2)
@@ -50,7 +50,7 @@ public class MerchantUser extends User {
     @Column
     private Integer totalTransactions = 0;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Boolean canAcceptPayments = false;
 
     @Override

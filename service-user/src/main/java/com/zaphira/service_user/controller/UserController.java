@@ -25,6 +25,15 @@ public class UserController {
     private final UserService userService;
 //    private final AuthService authService;
 
+
+    @PostMapping("/register")
+    @Operation(summary = "Register new user", description = "Register a new user account")
+    public ResponseEntity<ApiResponse<UserResponse>> registerUser(
+            @Valid @RequestBody com.zaphira.service_user.dto.request.UserRegistrationRequest request) {
+        UserResponse user = userService.registerUser(request);
+        return ResponseEntity.ok(ApiResponse.success(user, "User registered successfully"));
+
+    }
     @GetMapping("/profile")
     @Operation(summary = "Get current user profile", description = "Get authenticated user's profile")
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(
