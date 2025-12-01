@@ -64,8 +64,8 @@ public class WalletService {
         Transaction tx = new Transaction();
         tx.setAmount(amount);
         tx.setDescription(description);
-        tx.setType(type);
-        tx.setUser(userRepo.findById(userId).orElseThrow());
+        //tx.setType(type);
+        //tx.setUser(userRepo.findById(userId).orElseThrow());
         transactionRepo.save(tx);
     }
 
@@ -76,3 +76,4 @@ public class WalletService {
         logRepo.save(log);
     }
 }
+ 
