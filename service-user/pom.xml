@@ -81,8 +81,6 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
-=======
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -106,7 +104,7 @@
 			<artifactId>postgresql</artifactId>
 		</dependency>
 
->>>>>>> origin/feature/user-service
+
 	</dependencies>
 
 	<build>

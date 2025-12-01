@@ -1,6 +1,8 @@
 package com.zaphira.transaction.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaphira.common.dto.WalletDTO;
+import com.zaphira.transaction.integration.wallet.FeignWalletClient;
 import com.zaphira.transaction.model.Transaction;
 import com.zaphira.transaction.model.enums.TransactionChannel;
 import com.zaphira.transaction.model.enums.TransactionStatus;
@@ -13,10 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.hamcrest.Matchers.is;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,11 +46,34 @@ class TransactionControllerTest {
     @Autowired
     private AuthorizationRequestRepository authorizationRequestRepository;
 
+    @MockBean
+    private FeignWalletClient feignWalletClient;
+
     @BeforeEach
     void setup() {
         authorizationRequestRepository.deleteAll();
         stateHistoryRepository.deleteAll();
         transactionRepository.deleteAll();
+
+        // Mock FeignWalletClient pour retourner des WalletDTO
+        WalletDTO wallet1 = WalletDTO.builder()
+                .walletNumber("W1")
+                .balance(BigDecimal.valueOf(5000.0))
+                .currency("XOF")
+                .active(true)
+                .build();
+
+        WalletDTO wallet2 = WalletDTO.builder()
+                .walletNumber("W2")
+                .balance(BigDecimal.valueOf(3000.0))
+                .currency("XOF")
+                .active(true)
+                .build();
+
+        given(feignWalletClient.getWalletByNumber("W1"))
+                .willReturn(wallet1);
+        given(feignWalletClient.getWalletByNumber("W2"))
+                .willReturn(wallet2);
     }
 
     @Test
@@ -76,7 +105,7 @@ class TransactionControllerTest {
         Transaction tx = Transaction.builder()
                 .senderWalletNumber("W1")
                 .receiverWalletNumber("W2")
-                .amount(java.math.BigDecimal.valueOf(50.0))
+                .amount(BigDecimal.valueOf(50.0))
                 .currency("XOF")
                 .type(TransactionType.P2P_TRANSFER)
                 .status(TransactionStatus.INITIATED)
@@ -94,7 +123,7 @@ class TransactionControllerTest {
         Transaction tx = Transaction.builder()
                 .senderWalletNumber("W1")
                 .receiverWalletNumber("W2")
-                .amount(java.math.BigDecimal.valueOf(50.0))
+                .amount(BigDecimal.valueOf(50.0))
                 .currency("XOF")
                 .type(TransactionType.P2P_TRANSFER)
                 .status(TransactionStatus.INITIATED)
@@ -120,7 +149,7 @@ class TransactionControllerTest {
         Transaction tx = Transaction.builder()
                 .senderWalletNumber("W1")
                 .receiverWalletNumber("W2")
-                .amount(java.math.BigDecimal.valueOf(50.0))
+                .amount(BigDecimal.valueOf(50.0))
                 .currency("XOF")
                 .type(TransactionType.P2P_TRANSFER)
                 .status(TransactionStatus.PENDING)
@@ -189,6 +218,3 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.status", is("COMPLETED")));
     }
 }
-
-
-

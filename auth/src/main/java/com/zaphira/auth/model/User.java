@@ -32,11 +32,11 @@ public class User {
     private String password;
 
     @Column(nullable = false, unique = true)
-    private String phoneNumber;   // <-- ajouté ici
+    private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
-    private Wallet wallet;
+    // Ajout du walletId pour stocker l'ID du wallet créé via wallet-service
+    private Long walletId;
 }

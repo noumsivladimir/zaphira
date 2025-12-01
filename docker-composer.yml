@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  service-registry:
+    image: zaphira/service-registry:latest
+    ports:
+      - "8761:8761"
+
+  config-server:
+    image: zaphira/config-server:latest
+    ports:
+      - "8888:8888"
+
+  api-gateway:
+    image: zaphira/api-gateway:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-registry
+      - config-server
+
+  auth-service:
+    image: zaphira/auth-service:latest
+    ports:
+      - "8081:8081"
+    depends_on:
+      - service-registry
+      - config-server
+
+  wallet-service:
+    image: zaphira/wallet-service:latest
+    ports:
+      - "8082:8082"
+    depends_on:
+      - service-registry
+      - config-server
+
+  transaction-service:
+    image: zaphira/transaction-service:latest
+    ports:
+      - "8083:8083"
+    depends_on:
+      - service-registry
+      - config-server
+      - wallet-service
+      - auth-service
+
+  notification-service:
+    image: zaphira/notification-service:latest
+    ports:
+      - "8084:8084"
+    depends_on:
+      - service-registry
+      - config-server

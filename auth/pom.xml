@@ -7,11 +7,11 @@
 
     <parent>
         <groupId>com.zaphira</groupId>
-        <artifactId>zaphira</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <artifactId>zaphira-platform</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>auth</artifactId>
+    <artifactId>auth-service</artifactId>
     <name>auth-service</name>
     <description>Authentication microservice for Zaphira</description>
 
@@ -72,6 +72,30 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <!-- Common Library -->
+        <dependency>
+            <groupId>com.zaphira</groupId>
+            <artifactId>common-library</artifactId>
+        </dependency>
+
+        <!-- Eureka Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Feign Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <!-- Kafka (pour approche asynchrone) -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
         </dependency>
 
     </dependencies>

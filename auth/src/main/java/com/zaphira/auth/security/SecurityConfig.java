@@ -36,20 +36,30 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf.disable())
-            .httpBasic(httpBasic -> httpBasic.disable()) // Désactive Basic Auth
+            .cors(cors -> cors.disable())
+            .httpBasic(httpBasic -> httpBasic.disable())
             .authorizeHttpRequests(auth -> auth
+                // Routes publiques accessibles sans JWT
                 .requestMatchers(
                         "/api/auth/**",
+                        "/api/auth/register",
+                        "/api/auth/login",
+                        "/api/auth/refresh",
+                        "/api/auth/logout",
+                        "/api/auth/me",
                         "/register",
                         "/login",
                         "/refresh",
                         "/logout",
-                        "/me"
-                ).permitAll() // Permet register/login sans JWT
+                        "/me",
+                        "/error"
+                ).permitAll()
+                // Toutes les autres requêtes nécessitent authentification
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .userDetailsService(customUserDetailsService)
+            // JWT filter placé avant le UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

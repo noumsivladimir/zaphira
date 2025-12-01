@@ -15,6 +15,9 @@ public class ActivityLog {
 
     private LocalDateTime timestamp = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
     @ManyToOne
     private User user;
 }
