@@ -56,6 +56,9 @@ class TransactionServiceTest {
     private WalletClient walletClient;
 
     @Mock
+    private com.zaphira.transaction.integration.wallet.FeignWalletClient feignWalletClient;
+
+    @Mock
     private TransactionLimitService limitService;
 
     @Mock
@@ -85,8 +88,13 @@ class TransactionServiceTest {
                 complianceService,
                 limitProperties,
                 feeProperties,
-                walletClient
+            walletClient,
+            feignWalletClient
         );
+        // set an authenticated principal in the SecurityContext for tests
+        var principal = new com.zaphira.transaction.security.AuthenticatedUser(1L, "tester@example.com");
+        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(principal, null, java.util.Collections.emptyList());
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(stateHistoryRepository.save(any(TransactionStateHistory.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -115,6 +123,20 @@ class TransactionServiceTest {
                         .feeCurrency("XOF")
                         .feeType("TEST")
                         .build());
+
+        // Mock wallet lookup to return wallet owned by authenticated user (id=1)
+        com.zaphira.common.dto.WalletDTO sender = com.zaphira.common.dto.WalletDTO.builder()
+            .id(10L)
+            .walletNumber("W1")
+            .userId(1L)
+            .build();
+        com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
+            .id(11L)
+            .walletNumber("W2")
+            .userId(2L)
+            .build();
+        when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
+        when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
 
         Transaction saved = transactionService.createTransaction(request);
 
@@ -151,6 +173,20 @@ class TransactionServiceTest {
                         .feeType("TEST")
                         .build());
 
+        // Mock wallets
+        com.zaphira.common.dto.WalletDTO sender = com.zaphira.common.dto.WalletDTO.builder()
+            .id(10L)
+            .walletNumber("W1")
+            .userId(1L)
+            .build();
+        com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
+            .id(11L)
+            .walletNumber("W2")
+            .userId(2L)
+            .build();
+        when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
+        when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
+
         Transaction saved = transactionService.createTransaction(request);
 
         assertThat(saved.getStatus()).isEqualTo(TransactionStatus.PENDING);
@@ -172,6 +208,20 @@ class TransactionServiceTest {
                 .build();
         when(transactionRepository.findById(2L)).thenReturn(Optional.of(tx));
 
+        // Setup wallets for the existing transaction
+        com.zaphira.common.dto.WalletDTO sender = com.zaphira.common.dto.WalletDTO.builder()
+            .id(10L)
+            .walletNumber("W1")
+            .userId(1L)
+            .build();
+        com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
+            .id(11L)
+            .walletNumber("W2")
+            .userId(2L)
+            .build();
+        when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
+        when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
+
         AuthorizationValidationRequest request = new AuthorizationValidationRequest();
         request.setMethod(AuthorizationMethod.OTP);
         request.setCode("123456");
@@ -190,6 +240,43 @@ class TransactionServiceTest {
 
         assertThrows(TransactionNotFoundException.class, () -> transactionService.getTransaction(1L));
     }
+
+        @Test
+        void createTransaction_whenSenderNotOwned_shouldThrow() {
+        TransactionRequest request = new TransactionRequest();
+        request.setSenderWalletNumber("W1");
+        request.setReceiverWalletNumber("W2");
+        request.setAmount(BigDecimal.valueOf(100));
+        request.setCurrency("XOF");
+        request.setType(TransactionType.P2P_TRANSFER);
+        request.setChannel(TransactionChannel.MOBILE);
+        request.setDescription("Test");
+        request.setProcessInstantly(true);
+        request.setRequestedBy("tester");
+
+        when(limitService.evaluateAuthorizationNeed(request))
+            .thenReturn(LimitEvaluationResult.builder()
+                .authorizationRequired(false)
+                .reason("below threshold")
+                .build());
+        when(feeService.calculateFee(request))
+            .thenReturn(FeeCalculationResult.builder()
+                .feeAmount(BigDecimal.valueOf(1))
+                .feeCurrency("XOF")
+                .feeType("TEST")
+                .build());
+
+        // Mock sender wallet owned by another user
+        com.zaphira.common.dto.WalletDTO sender = com.zaphira.common.dto.WalletDTO.builder()
+            .id(10L)
+            .walletNumber("W1")
+            .userId(999L)
+            .build();
+        when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
+
+        assertThrows(com.zaphira.transaction.service.exception.WalletOperationException.class,
+            () -> transactionService.createTransaction(request));
+        }
 
     @Test
     void updateTransactionStatus_shouldChangeState() {

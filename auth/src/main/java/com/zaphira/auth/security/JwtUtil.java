@@ -18,14 +18,23 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    // ✅ Generate Access Token
+    // ✅ Generate Access Token (keeps existing signature for compatibility)
     public String generateAccessToken(String email) {
-        return Jwts.builder()
+        return generateAccessToken(null, email);
+    }
+
+    // ✅ Generate Access Token with userId claim
+    public String generateAccessToken(Long userId, String email) {
+        var builder = Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessExpiration()))
-                .signWith(getSigningKey())
-                .compact();
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessExpiration()));
+
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
     // ✅ Generate Refresh Token

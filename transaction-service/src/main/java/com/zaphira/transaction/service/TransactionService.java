@@ -7,6 +7,8 @@ import com.zaphira.transaction.dto.AuthorizationValidationRequest;
 import com.zaphira.transaction.dto.TransactionRequest;
 import com.zaphira.transaction.dto.UpdateStatusRequest;
 import com.zaphira.transaction.integration.wallet.WalletClient;
+import com.zaphira.transaction.integration.wallet.FeignWalletClient;
+import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.transaction.integration.wallet.WalletTransferRequest;
 import com.zaphira.transaction.model.AuthorizationRequest;
 import com.zaphira.transaction.model.Transaction;
@@ -29,16 +31,21 @@ import java.util.List;
 @Service
 public class TransactionService {
 
-    private final TransactionRepository repository;
-    private final TransactionStateHistoryRepository stateHistoryRepository;
-    private final TransactionValidationService validationService;
-    private final TransactionLimitService limitService;
-    private final FeeService feeService;
-    private final TransactionAuthorizationService authorizationService;
-    private final ComplianceService complianceService;
-    private final LimitProperties limitProperties;
-    private final FeeProperties feeProperties;
-    private final WalletClient walletClient;
+    private TransactionRepository repository;
+    private TransactionStateHistoryRepository stateHistoryRepository;
+    private TransactionValidationService validationService;
+    private TransactionLimitService limitService;
+    private FeeService feeService;
+    private TransactionAuthorizationService authorizationService;
+    private ComplianceService complianceService;
+    private LimitProperties limitProperties;
+    private FeeProperties feeProperties;
+    private WalletClient walletClient;
+    private FeignWalletClient feignWalletClient;
+
+    // No-args constructor for Spring
+    public TransactionService() {
+    }
 
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
@@ -49,7 +56,8 @@ public class TransactionService {
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
-                              WalletClient walletClient) {
+                              WalletClient walletClient,
+                              FeignWalletClient feignWalletClient) {
         this.repository = repository;
         this.stateHistoryRepository = stateHistoryRepository;
         this.validationService = validationService;
@@ -60,6 +68,22 @@ public class TransactionService {
         this.limitProperties = limitProperties;
         this.feeProperties = feeProperties;
         this.walletClient = walletClient;
+        this.feignWalletClient = feignWalletClient;
+    }
+
+    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient
+    public TransactionService(TransactionRepository repository,
+                              TransactionStateHistoryRepository stateHistoryRepository,
+                              TransactionValidationService validationService,
+                              TransactionLimitService limitService,
+                              FeeService feeService,
+                              TransactionAuthorizationService authorizationService,
+                              ComplianceService complianceService,
+                              LimitProperties limitProperties,
+                              FeeProperties feeProperties,
+                              WalletClient walletClient) {
+        this(repository, stateHistoryRepository, validationService, limitService, feeService,
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null);
     }
 
     @Transactional
@@ -69,10 +93,50 @@ public class TransactionService {
         LimitEvaluationResult evaluation = limitService.evaluateAuthorizationNeed(request);
         FeeCalculationResult fee = feeService.calculateFee(request);
 
+        // Resolve authenticated user id and email from SecurityContext principal (set by JwtAuthenticationFilter)
+        String actorEmail = request.getRequestedBy();
+        Long authenticatedUserId = null;
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            var principal = auth.getPrincipal();
+            if (principal instanceof com.zaphira.transaction.security.AuthenticatedUser) {
+                com.zaphira.transaction.security.AuthenticatedUser au = (com.zaphira.transaction.security.AuthenticatedUser) principal;
+                authenticatedUserId = au.getId();
+                if (au.getEmail() != null) actorEmail = au.getEmail();
+            } else if (auth.getName() != null) {
+                actorEmail = auth.getName();
+            }
+        }
+
+        if (authenticatedUserId == null) {
+            throw new com.zaphira.transaction.service.exception.WalletOperationException("Authenticated user id not present in token. Ensure JWT contains 'userId' claim.");
+        }
+
+        // Validate sender wallet ownership
+        WalletDTO sender = null;
+        try {
+            sender = feignWalletClient.getWalletByNumber(request.getSenderWalletNumber());
+        } catch (Exception e) {
+            throw new com.zaphira.transaction.service.exception.WalletOperationException("Unable to fetch sender wallet: " + request.getSenderWalletNumber(), e);
+        }
+
+        if (sender == null || sender.getUserId() == null || !sender.getUserId().equals(authenticatedUserId)) {
+            throw new com.zaphira.transaction.service.exception.WalletOperationException("User does not own the sender wallet");
+        }
+
+        WalletDTO receiver = null;
+        try {
+            receiver = feignWalletClient.getWalletByNumber(request.getReceiverWalletNumber());
+        } catch (Exception e) {
+            throw new com.zaphira.transaction.service.exception.WalletOperationException("Unable to fetch receiver wallet: " + request.getReceiverWalletNumber(), e);
+        }
+
         Transaction transaction = Transaction.builder()
-                .senderWalletNumber(request.getSenderWalletNumber())
-                .receiverWalletNumber(request.getReceiverWalletNumber())
-                .amount(request.getAmount())
+            .senderWalletNumber(request.getSenderWalletNumber())
+            .senderWalletId(sender.getId())
+            .receiverWalletNumber(request.getReceiverWalletNumber())
+            .receiverWalletId(receiver != null ? receiver.getId() : null)
+            .amount(request.getAmount())
                 .currency(request.getCurrency())
                 .type(request.getType())
                 .status(TransactionStatus.INITIATED)
@@ -83,8 +147,8 @@ public class TransactionService {
                 .feeType(fee.getFeeType())
                 .authorizationRequired(evaluation.isAuthorizationRequired())
                 .authorizationMethod(evaluation.isAuthorizationRequired() ? evaluation.getMethod() : AuthorizationMethod.NONE)
-                .initiatedBy(request.getRequestedBy())
-                .lastUpdatedBy(request.getRequestedBy())
+                .initiatedBy(actorEmail)
+                .lastUpdatedBy(actorEmail)
                 .build();
 
         // Compliance evaluation (may mark transaction UNDER_REVIEW)

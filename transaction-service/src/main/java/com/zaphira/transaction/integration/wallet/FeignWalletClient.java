@@ -15,6 +15,9 @@ public interface FeignWalletClient {
     @GetMapping("/api/wallets/{walletNumber}")
     WalletDTO getWalletByNumber(@PathVariable String walletNumber);
 
+    @GetMapping("/api/wallets/user/{userId}")
+    WalletDTO getWalletByUserId(@PathVariable Long userId);
+
     @PostMapping("/api/wallets/transfer")
     void executeTransfer(@RequestBody WalletTransferRequest request);
 }

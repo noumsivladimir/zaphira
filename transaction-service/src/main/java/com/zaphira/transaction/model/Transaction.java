@@ -38,6 +38,12 @@ public class Transaction {
     @Column(nullable = false)
     private String receiverWalletNumber;
 
+    @Column(name = "sender_wallet_id")
+    private Long senderWalletId;
+
+    @Column(name = "receiver_wallet_id")
+    private Long receiverWalletId;
+
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 

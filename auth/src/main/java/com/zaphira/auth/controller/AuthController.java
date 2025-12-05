@@ -38,7 +38,7 @@ public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         var user = userService.registerUser(request);
 
         // Générer les tokens
-        var accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        var accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
         var refreshToken = refreshTokenService.createToken(user.getId());
 
         // Récupérer le wallet via l'ID si disponible
@@ -87,7 +87,7 @@ public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
 
-        var accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        var accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
         var refreshToken = refreshTokenService.createToken(user.getId());
 
         var userResponse = new UserResponse(
@@ -112,7 +112,7 @@ public ResponseEntity<?> refresh(@RequestParam String refreshToken) {
     }
 
     var user = tokenEntity.get().getUser();
-    String newAccessToken = jwtUtil.generateAccessToken(user.getEmail());
+    String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
 
     return ResponseEntity.ok(new AuthResponse(newAccessToken, refreshToken, null));
 }

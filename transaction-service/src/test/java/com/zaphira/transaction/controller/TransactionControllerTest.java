@@ -17,12 +17,18 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import com.zaphira.transaction.security.AuthenticatedUser;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,8 +61,17 @@ class TransactionControllerTest {
         stateHistoryRepository.deleteAll();
         transactionRepository.deleteAll();
 
-        // Mock FeignWalletClient pour retourner des WalletDTO
+        // Set up authenticated SecurityContext with a valid principal
+        AuthenticatedUser principal = new AuthenticatedUser(1L, "test@example.com");
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.emptyList()
+        );
+        SecurityContextHolder.getContext().setAuthentication(token);
+
+        // Mock FeignWalletClient para retourner des WalletDTO
         WalletDTO wallet1 = WalletDTO.builder()
+                .id(1L)
+                .userId(1L)
                 .walletNumber("W1")
                 .balance(BigDecimal.valueOf(5000.0))
                 .currency("XOF")
@@ -64,6 +79,8 @@ class TransactionControllerTest {
                 .build();
 
         WalletDTO wallet2 = WalletDTO.builder()
+                .id(2L)
+                .userId(2L)
                 .walletNumber("W2")
                 .balance(BigDecimal.valueOf(3000.0))
                 .currency("XOF")
@@ -74,6 +91,14 @@ class TransactionControllerTest {
                 .willReturn(wallet1);
         given(feignWalletClient.getWalletByNumber("W2"))
                 .willReturn(wallet2);
+    }
+
+    private RequestPostProcessor authenticated() {
+        AuthenticatedUser principal = new AuthenticatedUser(1L, "test@example.com");
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                principal, null, Collections.emptyList()
+        );
+        return authentication(token);
     }
 
     @Test
@@ -94,7 +119,8 @@ class TransactionControllerTest {
 
         mockMvc.perform(post("/api/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
+                        .content(payload)
+                        .with(authenticated()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.senderWalletNumber", is("W1")))
                 .andExpect(jsonPath("$.status", is("COMPLETED")));
@@ -113,7 +139,8 @@ class TransactionControllerTest {
                 .build();
         Transaction saved = transactionRepository.save(tx);
 
-        mockMvc.perform(get("/api/transactions/{id}", saved.getId()))
+        mockMvc.perform(get("/api/transactions/{id}", saved.getId())
+                        .with(authenticated()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.amount", is(50.0)));
     }
@@ -139,7 +166,8 @@ class TransactionControllerTest {
                                   "changedBy":"integration-test",
                                   "reason":"test update"
                                 }
-                                """))
+                                """)
+                        .with(authenticated()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("PENDING")));
     }
@@ -165,7 +193,8 @@ class TransactionControllerTest {
                                   "changedBy":"integration-test",
                                   "reason":"cancel test"
                                 }
-                                """))
+                                """)
+                        .with(authenticated()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CANCELLED")));
     }
@@ -188,7 +217,8 @@ class TransactionControllerTest {
 
         String createResponse = mockMvc.perform(post("/api/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
+                        .content(payload)
+                        .with(authenticated()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status", is("PENDING")))
                 .andReturn()
@@ -197,7 +227,8 @@ class TransactionControllerTest {
 
         long id = objectMapper.readTree(createResponse).get("id").asLong();
 
-        String authBody = mockMvc.perform(get("/api/transactions/{id}/authorization", id))
+        String authBody = mockMvc.perform(get("/api/transactions/{id}/authorization", id)
+                        .with(authenticated()))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -207,6 +238,7 @@ class TransactionControllerTest {
 
         mockMvc.perform(post("/api/transactions/{id}/authorize", id)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .with(authenticated())
                         .content("""
                                 {
                                   "method":"OTP",
