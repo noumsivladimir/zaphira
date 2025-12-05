@@ -2,9 +2,11 @@ package com.zaphira.auth.service;
 
 import com.zaphira.auth.client.WalletServiceClient;
 import com.zaphira.auth.dto.RegisterRequest;
-import com.zaphira.auth.model.Role;
-import com.zaphira.auth.model.User;
 import com.zaphira.common.dto.WalletDTO;
+import com.zaphira.common.model.entities.RegularUser;
+import com.zaphira.common.model.entities.User;
+import com.zaphira.common.model.enums.AccountStatus;
+import com.zaphira.common.model.enums.RoleType;
 import com.zaphira.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,79 +25,73 @@ public class UserService {
 
     /**
      * Inscription d'un utilisateur et création de son wallet.
-     * Si l'utilisateur existe déjà, tente de créer ou récupérer le wallet.
-     * @param request données d'inscription
-     * @return User complet avec walletId si disponible
      */
-    public User registerUser(RegisterRequest request) {
-        return userRepository.findByEmail(request.getEmail())
-                .map(existing -> {
-                    if (request.getFullName() != null
-                            && !request.getFullName().isBlank()
-                            && !request.getFullName().equals(existing.getFullName())) {
-                        existing.setFullName(request.getFullName());
+  public User registerUser(RegisterRequest request) {
+    return userRepository.findByPhoneNumber(request.getPhoneNumber())
+            .map(existing -> {
+                // Mise à jour du nom si besoin
+                if (request.getFullName() != null && !request.getFullName().isBlank()
+                        && !request.getFullName().equals(existing.getFullName())) {
+                    String[] names = request.getFullName().trim().split("\\s+", 2);
+                    existing.setFirstName(names[0]);
+                    existing.setLastName(names.length > 1 ? names[1] : "");
+                    userRepository.save(existing);
+                }
+                // Création du wallet si absent
+                if (existing.getWalletId() == null) {
+                    WalletDTO wallet = createWalletForUser(existing.getUserId());
+                    if (wallet != null) {
+                        existing.setWalletId(String.valueOf(wallet.getId())); // <-- conversion en String
                         userRepository.save(existing);
                     }
-                    // Créer le wallet si absent
-                    if (existing.getWalletId() == null) {
-                        WalletDTO wallet = createWalletForUser(existing.getId());
-                        if (wallet != null) {
-                            existing.setWalletId(wallet.getId());
-                            userRepository.save(existing);
-                        }
-                    }
-                    return existing;
-                })
-                .orElseGet(() -> createNewUserWithWallet(request));
-    }
+                }
+                return existing;
+            })
+            .orElseGet(() -> createNewUserWithWallet(request));
+}
+
 
     /**
-     * Authentifie un utilisateur.
+     * Authentifie un utilisateur via phoneNumber + PIN.
      */
-    public User authenticate(String email, String rawPassword) {
-        return userRepository.findByEmail(email)
-                .filter(user -> passwordEncoder.matches(rawPassword, user.getPassword()))
+    public User authenticate(String phoneNumber, String pin) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .filter(user -> passwordEncoder.matches(pin, user.getPin()))
                 .orElse(null);
-    }
-
-    /**
-     * Récupère un compte via email.
-     */
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
     }
 
     /**
      * Crée un nouvel utilisateur et son wallet.
      */
     private User createNewUserWithWallet(RegisterRequest request) {
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        String hashedPin = passwordEncoder.encode(request.getPin());
 
-        String phoneNumber = request.getPhoneNumber();
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            phoneNumber = "+237" + String.valueOf(Math.abs(request.getEmail().hashCode()))
-                    .substring(0, Math.min(9, String.valueOf(Math.abs(request.getEmail().hashCode())).length()));
-        }
+        // Séparation fullName en firstName et lastName
+        String[] names = request.getFullName() != null ? request.getFullName().trim().split("\\s+", 2) : new String[]{"", ""};
+        String firstName = names.length > 0 ? names[0] : "";
+        String lastName = names.length > 1 ? names[1] : "";
 
-        User newUser = User.builder()
-                .email(request.getEmail())
-                .fullName(request.getFullName())
-                .password(hashedPassword)
-                .phoneNumber(phoneNumber)
-                .role(Role.USER)
+        // Création de l'utilisateur concret : RegularUser
+        RegularUser newUser = RegularUser.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(request.getPhoneNumber())
+                .pin(hashedPin)
+                .accountStatus(AccountStatus.PENDING_VERIFICATION)
                 .build();
 
-        User savedUser = userRepository.save(newUser);
-        log.info("User created successfully: {}", savedUser.getId());
+        // Sauvegarde dans la base
+        RegularUser savedUser = userRepository.save(newUser);
+        log.info("User created successfully: {}", savedUser.getUserId());
 
         // Création du wallet via wallet-service
-        WalletDTO wallet = createWalletForUser(savedUser.getId());
+        WalletDTO wallet = createWalletForUser(savedUser.getUserId());
         if (wallet != null) {
-            savedUser.setWalletId(wallet.getId());
+            savedUser.setWalletId(String.valueOf(wallet.getId()));
             userRepository.save(savedUser);
             log.info("User updated with walletId: {}", wallet.getId());
         } else {
-            log.warn("Wallet creation failed for user {}", savedUser.getId());
+            log.warn("Wallet creation failed for user {}", savedUser.getUserId());
         }
 
         return savedUser;

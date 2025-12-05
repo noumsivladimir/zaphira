@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+import com.zaphira.common.model.entities.User;
+
 @Entity
 @Data
 public class ActivityLog {

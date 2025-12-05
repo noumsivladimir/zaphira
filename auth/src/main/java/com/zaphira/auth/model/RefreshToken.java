@@ -1,11 +1,13 @@
 package com.zaphira.auth.model;
 
+import com.zaphira.common.model.entities.User; // <-- utiliser la classe commune
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -20,12 +22,12 @@ public class RefreshToken {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User user; // <-- type commun
 
     @Column(nullable = false)
     private Instant expiryDate;
 
     @Builder.Default
     @Column(nullable = false)
-    private boolean revoked = false; // ✅ valeur par défaut maintenue même avec @Builder
+    private boolean revoked = false;
 }

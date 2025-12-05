@@ -2,25 +2,22 @@ package com.zaphira.auth.service;
 
 import com.zaphira.auth.dto.RegisterRequest;
 import com.zaphira.auth.event.UserEventPublisher;
-import com.zaphira.auth.model.Role;
-import com.zaphira.auth.model.User;
 import com.zaphira.auth.repository.UserRepository;
 import com.zaphira.common.event.UserRegisteredEvent;
+import com.zaphira.common.model.entities.RegularUser;
+import com.zaphira.common.model.entities.User;
+import com.zaphira.common.model.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/**
- * Version asynchrone de UserService utilisant Kafka pour créer le wallet.
- * Utilise UserEventPublisher pour publier un événement au lieu d'appeler directement wallet-service.
- */
 @Slf4j
 @Service("userServiceAsync")
 @RequiredArgsConstructor
 public class UserServiceAsync {
 
-    private final UserRepository userRepository;
+    private final UserRepository userRepository; // Gère com.zaphira.common.model.entities.User
     private final UserEventPublisher eventPublisher;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -29,12 +26,14 @@ public class UserServiceAsync {
      * Enregistre un utilisateur et publie un événement pour créer le wallet de manière asynchrone.
      */
     public User registerUser(RegisterRequest request) {
-        return userRepository.findByEmail(request.getEmail())
+        return userRepository.findByPhoneNumber(request.getPhoneNumber())
                 .map(existing -> {
                     if (request.getFullName() != null
                             && !request.getFullName().isBlank()
                             && !request.getFullName().equals(existing.getFullName())) {
-                        existing.setFullName(request.getFullName());
+                        String[] names = request.getFullName().trim().split("\\s+", 2);
+                        existing.setFirstName(names[0]);
+                        existing.setLastName(names.length > 1 ? names[1] : "");
                         userRepository.save(existing);
                     }
                     return existing;
@@ -43,61 +42,64 @@ public class UserServiceAsync {
     }
 
     /**
-     * Authentifie un utilisateur.
+     * Authentifie un utilisateur via phoneNumber + PIN.
      */
-    public User authenticate(String email, String rawPassword) {
-        return userRepository.findByEmail(email)
-                .filter(user -> passwordEncoder.matches(rawPassword, user.getPassword()))
+    public User authenticate(String phoneNumber, String rawPin) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .filter(user -> passwordEncoder.matches(rawPin, user.getPin()))
                 .orElse(null);
     }
 
     /**
-     * Récupère un compte via email.
+     * Récupère un utilisateur via phoneNumber.
      */
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+    public User findByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber).orElse(null);
     }
 
     /**
-     * Crée un nouvel utilisateur et publie un événement pour créer le wallet de manière asynchrone.
+     * Crée un nouvel utilisateur concret et publie un événement Kafka pour création asynchrone du wallet.
      */
     private User createNewUserWithAsyncWallet(RegisterRequest request) {
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        String hashedPin = passwordEncoder.encode(request.getPin());
 
-        // Generate default phoneNumber if not provided
         String phoneNumber = request.getPhoneNumber();
         if (phoneNumber == null || phoneNumber.isBlank()) {
             phoneNumber = "+237" + String.valueOf(Math.abs(request.getEmail().hashCode()))
                     .substring(0, Math.min(9, String.valueOf(Math.abs(request.getEmail().hashCode())).length()));
         }
 
-        User newUser = User.builder()
-                .email(request.getEmail())
-                .fullName(request.getFullName())
-                .password(hashedPassword)
-                .phoneNumber(phoneNumber)
-                .role(Role.USER)
-                .build();
+        String[] names = request.getFullName() != null ? request.getFullName().trim().split("\\s+", 2) : new String[]{"", ""};
+        String firstName = names.length > 0 ? names[0] : "";
+        String lastName = names.length > 1 ? names[1] : "";
+
+        // Création d'un utilisateur concret (RegularUser)
+        RegularUser newUser = new RegularUser();
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setPin(hashedPin);
+        newUser.setPhoneNumber(phoneNumber);
+        newUser.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
+        newUser.setEmail(request.getEmail());
+        newUser.setWalletId("WALLET-" + System.currentTimeMillis());
 
         User savedUser = userRepository.save(newUser);
 
-        // Publish event to Kafka for async wallet creation
+        // Publication de l'événement Kafka
         try {
             UserRegisteredEvent event = UserRegisteredEvent.builder()
-                    .userId(savedUser.getId())
-                    .email(savedUser.getEmail())
-                    .fullName(savedUser.getFullName())
+                    .userId(savedUser.getUserId())
                     .phoneNumber(savedUser.getPhoneNumber())
+                    .firstName(savedUser.getFirstName())
+                    .lastName(savedUser.getLastName())
                     .build();
 
             eventPublisher.publishUserRegistered(event);
-            log.info("User {} registered, event published for wallet creation", savedUser.getId());
+            log.info("User {} registered, event published for wallet creation", savedUser.getUserId());
         } catch (Exception e) {
-            log.error("Failed to publish UserRegisteredEvent for user {}", savedUser.getId(), e);
-            // User is already created, wallet will be created later via retry mechanism
+            log.error("Failed to publish UserRegisteredEvent for user {}", savedUser.getUserId(), e);
         }
 
         return savedUser;
     }
 }
-

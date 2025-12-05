@@ -15,6 +15,6 @@ public class ActivityLogController {
 
     @GetMapping("/{userId}")
     public List<ActivityLog> getLogs(@PathVariable Long userId) {
-        return repo.findByUserIdOrderByTimestampDesc(userId);
+        return repo.findByUserUserIdOrderByTimestampDesc(userId);
     }
 }

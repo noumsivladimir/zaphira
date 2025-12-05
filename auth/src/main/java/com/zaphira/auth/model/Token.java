@@ -1,5 +1,7 @@
 package com.zaphira.auth.model;
 
+import com.zaphira.common.model.entities.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 

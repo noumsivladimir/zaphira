@@ -21,9 +21,7 @@ public class RefreshTokenService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
-    // ----------------------------------------------------------
     // 🎯 1. Create refresh token in DB
-    // ----------------------------------------------------------
     public RefreshToken createToken(Long userId) {
         String token = UUID.randomUUID().toString();
 
@@ -37,9 +35,7 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
-    // ----------------------------------------------------------
     // 🎯 2. Validate refresh token
-    // ----------------------------------------------------------
     public boolean validate(String token) {
         return refreshTokenRepository.findByToken(token)
                 .filter(t -> !t.isRevoked())
@@ -47,47 +43,37 @@ public class RefreshTokenService {
                 .isPresent();
     }
 
-    // ----------------------------------------------------------
-    // 🎯 3. 🔍 findByToken() → utilisé pour le /refresh
-    // ----------------------------------------------------------
+    // 🎯 3. findByToken() → utilisé pour le /refresh
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
     }
 
-    // ----------------------------------------------------------
     // 🎯 4. getUserId(token) → renvoie l'ID du user lié au refresh token
-    // ----------------------------------------------------------
     public Long getUserId(String token) {
         return refreshTokenRepository.findByToken(token)
-                .map(rt -> rt.getUser().getId())
+                .map(rt -> rt.getUser().getUserId()) // <-- ici
                 .orElse(null);
     }
 
-    // ----------------------------------------------------------
     // 🎯 5. getEmail(token) → renvoie l’email du user lié au refresh token
-    // ----------------------------------------------------------
     public String getEmail(String token) {
         return refreshTokenRepository.findByToken(token)
                 .map(rt -> rt.getUser().getEmail())
                 .orElse(null);
     }
 
-    // ----------------------------------------------------------
     // 🎯 6. Revoke (logout)
-    // ----------------------------------------------------------
     public void revokeTokenByAccessToken(String accessToken) {
         String email = jwtUtil.extractEmail(accessToken);
 
         var user = userRepository.findByEmail(email).orElse(null);
 
         if (user != null) {
-            refreshTokenRepository.revokeTokensByUserId(user.getId());
+            refreshTokenRepository.revokeTokensByUserId(user.getUserId()); // <-- ici
         }
     }
 
-    // ----------------------------------------------------------
     // 🎯 7. Cleanup expired tokens
-    // ----------------------------------------------------------
     public void removeExpiredTokens() {
         refreshTokenRepository.deleteExpiredTokens(Instant.now());
     }

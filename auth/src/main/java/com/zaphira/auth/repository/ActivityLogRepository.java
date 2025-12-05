@@ -6,5 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
-    List<ActivityLog> findByUserIdOrderByTimestampDesc(Long userId);
+
+    // Corrigé : Spring Data va suivre la relation ActivityLog.user.userId
+    List<ActivityLog> findByUserUserIdOrderByTimestampDesc(Long userId);
 }
