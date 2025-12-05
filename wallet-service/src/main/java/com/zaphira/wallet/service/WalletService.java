@@ -3,7 +3,7 @@ package com.zaphira.wallet.service;
 import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.common.exception.ResourceNotFoundException;
 import com.zaphira.wallet.client.TransactionServiceClient;
-import com.zaphira.wallet.model.Wallet;
+import com.zaphira.common.model.entities.Wallet;
 import com.zaphira.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

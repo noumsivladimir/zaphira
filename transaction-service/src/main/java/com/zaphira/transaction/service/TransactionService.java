@@ -1,6 +1,7 @@
 package com.zaphira.transaction.service;
 
 import com.zaphira.transaction.config.FeeProperties;
+import com.zaphira.common.model.entities.Wallet;
 import com.zaphira.transaction.config.LimitProperties;
 import com.zaphira.transaction.dto.AuthorizationInfoResponse;
 import com.zaphira.transaction.dto.AuthorizationValidationRequest;
@@ -131,11 +132,10 @@ public class TransactionService {
             throw new com.zaphira.transaction.service.exception.WalletOperationException("Unable to fetch receiver wallet: " + request.getReceiverWalletNumber(), e);
         }
 
+        // Create transaction with Wallet JPA relationships instead of ID columns
         Transaction transaction = Transaction.builder()
             .senderWalletNumber(request.getSenderWalletNumber())
-            .senderWalletId(sender.getId())
             .receiverWalletNumber(request.getReceiverWalletNumber())
-            .receiverWalletId(receiver != null ? receiver.getId() : null)
             .amount(request.getAmount())
                 .currency(request.getCurrency())
                 .type(request.getType())
@@ -150,6 +150,12 @@ public class TransactionService {
                 .initiatedBy(actorEmail)
                 .lastUpdatedBy(actorEmail)
                 .build();
+    // Set Wallet JPA relationships using fetched wallet DTOs
+    // Note: This requires converting WalletDTO to Wallet entity or mapping wallet references
+    // For now, the relationships are set through the wallet lookups above
+    // In production, you would map WalletDTO properties to Wallet entity
+    transaction.setSenderWallet(mapWalletDtoToWallet(sender));
+    transaction.setReceiverWallet(mapWalletDtoToWallet(receiver));
 
         // Compliance evaluation (may mark transaction UNDER_REVIEW)
         complianceService.evaluateOnCreation(request, transaction);
@@ -274,4 +280,25 @@ public class TransactionService {
                 .build();
         stateHistoryRepository.save(history);
     }
+
+    /**
+     * Helper method to convert WalletDTO to Wallet entity for JPA relationships
+     * Maps wallet service response DTO to transaction service Wallet entity
+     * @param walletDto WalletDTO from wallet-service Feign response
+     * @return Wallet entity populated with DTO values
+     */
+    private Wallet mapWalletDtoToWallet(WalletDTO walletDto) {
+        if (walletDto == null) {
+            return null;
+        }
+        return Wallet.builder()
+                .id(walletDto.getId())
+                .walletNumber(walletDto.getWalletNumber())
+                .balance(walletDto.getBalance())
+                .currency(walletDto.getCurrency())
+                .active(walletDto.getActive())
+                .userId(walletDto.getUserId())
+                .build();
+    }
+
 }

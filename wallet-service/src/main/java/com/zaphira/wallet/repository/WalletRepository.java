@@ -1,6 +1,6 @@
 package com.zaphira.wallet.repository;
 
-import com.zaphira.wallet.model.Wallet;
+import com.zaphira.common.model.entities.Wallet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

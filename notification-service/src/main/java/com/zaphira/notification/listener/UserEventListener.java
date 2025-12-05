@@ -1,7 +1,7 @@
 package com.zaphira.notification.listener;
 
 import com.zaphira.common.event.UserRegisteredEvent;
-import com.zaphira.notification.service.EmailService;
+//import com.zaphira.notification.service.EmailService;
 import com.zaphira.notification.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,30 +12,28 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class UserEventListener {
-    
-    private final EmailService emailService;
+
+    //private final EmailService emailService;
     private final SmsService smsService;
 
     @KafkaListener(topics = "user-registered", groupId = "notification-service")
     public void handleUserRegistered(UserRegisteredEvent event) {
-        log.info("Received user registered event: {}", event.getEmail());
-        
+        // Générer le nom complet
+        String fullName = event.getFirstName() + " " + event.getLastName();
+
+        log.info("Received user registered event for phone number: {}", event.getPhoneNumber());
+
         try {
-            // Send welcome email
-            String subject = "Welcome to Zaphira!";
-            String body = String.format(
-                "Hello %s,\n\nWelcome to Zaphira! Your account has been successfully created.\n\nThank you for joining us!",
-                event.getFullName()
-            );
-            emailService.sendEmail(event.getEmail(), subject, body);
-            
-            // Send welcome SMS
-            smsService.sendSms(event.getPhoneNumber(), "Welcome to Zaphira! Your account has been created.");
-            
-            log.info("Welcome notification sent to: {}", event.getEmail());
+            // Si vous voulez toujours envoyer un email et que l'adresse existe
+            if (event.getPhoneNumber() != null) {
+                // Exemple : on envoie le SMS
+                smsService.sendSms(event.getPhoneNumber(),
+                        "Hello " + fullName + "! Welcome to Zaphira! Your account has been created.");
+
+                log.info("Welcome SMS sent to: {}", event.getPhoneNumber());
+            }
         } catch (Exception e) {
-            log.error("Failed to send welcome notification to: {}", event.getEmail(), e);
+            log.error("Failed to send welcome notification to: {}", event.getPhoneNumber(), e);
         }
     }
 }
-

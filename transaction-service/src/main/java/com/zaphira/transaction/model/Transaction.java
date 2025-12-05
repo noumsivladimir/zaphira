@@ -5,6 +5,7 @@ import com.zaphira.transaction.model.enums.ComplianceStatus;
 import com.zaphira.transaction.model.enums.TransactionChannel;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.model.enums.TransactionType;
+import com.zaphira.common.model.entities.Wallet;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,11 +39,17 @@ public class Transaction {
     @Column(nullable = false)
     private String receiverWalletNumber;
 
-    @Column(name = "sender_wallet_id")
-    private Long senderWalletId;
+    // RELATIONSHIP: JPA @ManyToOne relationship to sender Wallet entity
+    // Allows accessing sender wallet details and associated user via senderWallet.getUserId()
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_wallet_id", nullable = false)
+    private Wallet senderWallet;
 
-    @Column(name = "receiver_wallet_id")
-    private Long receiverWalletId;
+    // RELATIONSHIP: JPA @ManyToOne relationship to receiver Wallet entity
+    // Allows accessing receiver wallet details and associated user via receiverWallet.getUserId()
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_wallet_id", nullable = false)
+    private Wallet receiverWallet;
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;

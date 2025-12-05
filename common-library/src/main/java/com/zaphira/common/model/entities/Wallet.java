@@ -1,4 +1,4 @@
-package com.zaphira.wallet.model;
+package com.zaphira.common.model.entities;
 
 import jakarta.persistence.*;
 import lombok.*;

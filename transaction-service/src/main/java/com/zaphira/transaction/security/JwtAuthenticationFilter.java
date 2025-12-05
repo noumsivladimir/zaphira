@@ -26,6 +26,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws java.io.IOException, jakarta.servlet.ServletException {
 
         String authHeader = request.getHeader("Authorization");
+        // If a SecurityContext authentication is already present (e.g., tests using MockMvc request post-processor), honor it
+        var existingAuth = SecurityContextHolder.getContext().getAuthentication();
+        if (existingAuth != null && existingAuth.getPrincipal() instanceof AuthenticatedUser) {
+            AuthenticatedUser au = (AuthenticatedUser) existingAuth.getPrincipal();
+            request.setAttribute("userId", au.getId());
+            request.setAttribute("userEmail", au.getEmail());
+            log.info("SecurityContext pre-populated for request {} userId={}", request.getRequestURI(), au.getId());
+            filterChain.doFilter(request, response);
+            return;
+        }
+        boolean isTransactionPath = request.getRequestURI() != null && request.getRequestURI().startsWith("/api/transactions");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -33,9 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = jwtUtil.extractEmail(token);
                 Long userId = jwtUtil.extractUserId(token);
 
-                // Require userId claim to be present in the token. No Feign fallback.
+                // Require userId claim to be present in the token.
                 if (userId == null) {
-                    log.warn("JWT does not contain 'userId' claim — skipping authentication");
+                    log.warn("JWT missing 'userId' claim for request {}", request.getRequestURI());
+                    if (isTransactionPath) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token missing userId claim");
+                        return;
+                    }
                 } else {
                     AuthenticatedUser principal = new AuthenticatedUser(userId, email);
 
@@ -46,9 +61,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     request.setAttribute("userId", userId);
                     request.setAttribute("userEmail", email);
+                    log.info("Authenticated request to {} for userId={} email={}", request.getRequestURI(), userId, email);
                 }
             } else {
-                log.debug("Invalid JWT token");
+                log.warn("Invalid JWT token for request {}", request.getRequestURI());
+                if (isTransactionPath) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                    return;
+                }
+            }
+        } else {
+            // No Authorization header present
+            if (isTransactionPath) {
+                log.warn("Missing Authorization header for protected path {}", request.getRequestURI());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing Authorization header");
+                return;
             }
         }
 
