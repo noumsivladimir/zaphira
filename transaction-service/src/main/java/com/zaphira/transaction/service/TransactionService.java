@@ -50,6 +50,7 @@ public class TransactionService {
     public TransactionService() {
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
@@ -149,6 +150,9 @@ public class TransactionService {
             receiver = feignWalletClient.getWalletByNumber(request.getReceiverWalletNumber());
         } catch (Exception e) {
             throw new com.zaphira.transaction.service.exception.WalletOperationException("Unable to fetch receiver wallet: " + request.getReceiverWalletNumber(), e);
+        }
+        if (receiver == null) {
+            throw new com.zaphira.transaction.service.exception.WalletOperationException("Receiver wallet not found: " + request.getReceiverWalletNumber());
         }
 
         // Create transaction with Wallet JPA relationships instead of ID columns

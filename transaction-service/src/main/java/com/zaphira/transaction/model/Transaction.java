@@ -42,13 +42,13 @@ public class Transaction {
     // RELATIONSHIP: JPA @ManyToOne relationship to sender Wallet entity
     // Allows accessing sender wallet details and associated user via senderWallet.getUserId()
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_wallet_id", nullable = false)
+    @JoinColumn(name = "sender_wallet_id", nullable = true, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Wallet senderWallet;
 
     // RELATIONSHIP: JPA @ManyToOne relationship to receiver Wallet entity
     // Allows accessing receiver wallet details and associated user via receiverWallet.getUserId()
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_wallet_id", nullable = false)
+    @JoinColumn(name = "receiver_wallet_id", nullable = true, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Wallet receiverWallet;
 
     @Column(nullable = false, precision = 19, scale = 4)
