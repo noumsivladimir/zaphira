@@ -49,6 +49,7 @@ public class UserSession {
     private LocalDateTime logoutTime;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isActive = Boolean.TRUE;
 
     @Column(length = 50)

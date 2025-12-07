@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -28,21 +29,27 @@ public class RegularUser extends User {
     private String profilePicture;
 
     @Column(length = 10)
+    @Builder.Default
     private String preferredLanguage = "fr";
 
     @Column(length = 10)
+    @Builder.Default
     private String preferredCurrency = "FCFA";
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean notificationsEnabled = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean smsNotificationsEnabled = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean emailNotificationsEnabled = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean marketingEmailsEnabled = false;
 
 //    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

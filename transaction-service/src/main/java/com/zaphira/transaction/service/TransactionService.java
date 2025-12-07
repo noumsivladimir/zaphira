@@ -24,6 +24,8 @@ import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
 import com.zaphira.transaction.service.limit.LimitEvaluationResult;
 import com.zaphira.transaction.service.limit.TransactionLimitService;
+import com.zaphira.common.event.TransactionCreatedEvent;
+import com.zaphira.transaction.event.TransactionEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +42,9 @@ public class TransactionService {
     private TransactionAuthorizationService authorizationService;
     private ComplianceService complianceService;
     private LimitProperties limitProperties;
-    private FeeProperties feeProperties;
     private WalletClient walletClient;
     private FeignWalletClient feignWalletClient;
+    private TransactionEventPublisher transactionEventPublisher;
 
     // No-args constructor for Spring
     public TransactionService() {
@@ -58,7 +60,8 @@ public class TransactionService {
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient,
-                              FeignWalletClient feignWalletClient) {
+                              FeignWalletClient feignWalletClient,
+                              TransactionEventPublisher transactionEventPublisher) {
         this.repository = repository;
         this.stateHistoryRepository = stateHistoryRepository;
         this.validationService = validationService;
@@ -67,12 +70,28 @@ public class TransactionService {
         this.authorizationService = authorizationService;
         this.complianceService = complianceService;
         this.limitProperties = limitProperties;
-        this.feeProperties = feeProperties;
         this.walletClient = walletClient;
         this.feignWalletClient = feignWalletClient;
+        this.transactionEventPublisher = transactionEventPublisher;
     }
 
-    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient
+    // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher
+    public TransactionService(TransactionRepository repository,
+                              TransactionStateHistoryRepository stateHistoryRepository,
+                              TransactionValidationService validationService,
+                              TransactionLimitService limitService,
+                              FeeService feeService,
+                              TransactionAuthorizationService authorizationService,
+                              ComplianceService complianceService,
+                              LimitProperties limitProperties,
+                              FeeProperties feeProperties,
+                              WalletClient walletClient,
+                              FeignWalletClient feignWalletClient) {
+        this(repository, stateHistoryRepository, validationService, limitService, feeService,
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null);
+    }
+
+    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient or EventPublisher
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
@@ -84,7 +103,7 @@ public class TransactionService {
                               FeeProperties feeProperties,
                               WalletClient walletClient) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null);
     }
 
     @Transactional
@@ -163,6 +182,9 @@ public class TransactionService {
         transaction.applyStatus(TransactionStatus.INITIATED);
         Transaction saved = repository.save(transaction);
         recordState(saved, TransactionStatus.INITIATED, request.getRequestedBy(), "Transaction created");
+
+        // Publish TransactionCreatedEvent to Kafka
+        publishTransactionEvent(saved);
 
         if (evaluation.isAuthorizationRequired()) {
             saved.applyStatus(TransactionStatus.PENDING);
@@ -299,6 +321,35 @@ public class TransactionService {
                 .active(walletDto.getActive())
                 .userId(walletDto.getUserId())
                 .build();
+    }
+
+    /**
+     * Helper method to publish TransactionCreatedEvent to Kafka
+     * @param transaction The created transaction
+     */
+    private void publishTransactionEvent(Transaction transaction) {
+        if (transactionEventPublisher == null) {
+            return; // Event publisher not available (e.g., in tests without Kafka)
+        }
+
+        try {
+            TransactionCreatedEvent event = TransactionCreatedEvent.builder()
+                    .transactionId(transaction.getId())
+                    .reference(transaction.getReference())
+                    .senderWalletNumber(transaction.getSenderWalletNumber())
+                    .receiverWalletNumber(transaction.getReceiverWalletNumber())
+                    .amount(transaction.getAmount())
+                    .currency(transaction.getCurrency())
+                    .status(transaction.getStatus().name())
+                    .createdAt(transaction.getCreatedAt())
+                    .build();
+            transactionEventPublisher.publishTransactionCreated(event);
+        } catch (Exception e) {
+            // Log but don't fail the transaction creation if event publishing fails
+            org.slf4j.LoggerFactory.getLogger(TransactionService.class)
+                    .warn("Failed to publish TransactionCreatedEvent for transaction {}: {}",
+                            transaction.getId(), e.getMessage());
+        }
     }
 
 }

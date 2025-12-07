@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -80,15 +81,19 @@ public abstract class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
+    @Builder.Default
     private AccountStatus accountStatus = AccountStatus.PENDING_VERIFICATION;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean emailVerified = Boolean.FALSE;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean phoneVerified = Boolean.TRUE;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean twoFactorEnabled = Boolean.FALSE;
 
     @Column(length = 100)
@@ -101,6 +106,7 @@ public abstract class User {
     private String lastLoginIp;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer failedLoginAttempts = 0;
 
     @Column

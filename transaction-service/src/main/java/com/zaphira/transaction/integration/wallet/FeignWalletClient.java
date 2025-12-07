@@ -1,8 +1,8 @@
 package com.zaphira.transaction.integration.wallet;
 
 import com.zaphira.common.dto.WalletDTO;
-import com.zaphira.transaction.integration.wallet.dto.WalletDetailsResponse;
-import com.zaphira.transaction.integration.wallet.WalletTransferRequest;
+//import com.zaphira.transaction.integration.wallet.dto.WalletDetailsResponse;
+//import com.zaphira.transaction.integration.wallet.WalletTransferRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

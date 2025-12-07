@@ -1,8 +1,8 @@
 package com.zaphira.notification.listener;
 
 import com.zaphira.common.event.TransactionCreatedEvent;
-import com.zaphira.notification.service.EmailService;
-import com.zaphira.notification.service.SmsService;
+//import com.zaphira.notification.service.EmailService;
+//import com.zaphira.notification.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TransactionEventListener {
     
-    private final EmailService emailService;
-    private final SmsService smsService;
+    //private final EmailService emailService;
+    //private final SmsService smsService;
 
     @KafkaListener(topics = "transaction-created", groupId = "notification-service")
     public void handleTransactionCreated(TransactionCreatedEvent event) {

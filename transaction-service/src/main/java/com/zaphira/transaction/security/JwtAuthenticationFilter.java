@@ -1,6 +1,6 @@
 package com.zaphira.transaction.security;
 
-import com.zaphira.transaction.integration.user.FeignUserClient;
+//import com.zaphira.transaction.integration.user.FeignUserClient;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;

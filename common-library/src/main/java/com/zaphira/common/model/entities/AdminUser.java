@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -27,27 +28,34 @@ public class AdminUser extends User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private AdminLevel adminLevel = AdminLevel.STANDARD;
 
     @Column
     private LocalDateTime lastAdminActionAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canApproveTransactions = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canManageUsers = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canAccessReports = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canManageRoles = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canManageKYC = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canViewAuditLogs = false;
 
     @Column

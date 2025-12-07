@@ -2,7 +2,7 @@ package com.zaphira.wallet.service;
 
 import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.common.exception.ResourceNotFoundException;
-import com.zaphira.wallet.client.TransactionServiceClient;
+//import com.zaphira.wallet.client.TransactionServiceClient;
 import com.zaphira.common.model.entities.Wallet;
 import com.zaphira.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class WalletService {
 
     private final WalletRepository walletRepository;
-    private final TransactionServiceClient transactionServiceClient;
+    //private final TransactionServiceClient transactionServiceClient;
    public WalletDTO createWallet(Long userId, String currency) {
     // Générer walletNumber unique à 8 chiffres basé sur l'ID utilisateur
     // Exemple : (userId * 1234567) % 100_000_000 pour rester sur 8 chiffres
