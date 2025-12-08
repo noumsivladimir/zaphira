@@ -16,7 +16,11 @@ public class UserEventListener {
     //private final EmailService emailService;
     private final SmsService smsService;
 
-    @KafkaListener(topics = "user-registered", groupId = "notification-service")
+    @KafkaListener(
+            topics = "user-registered",
+            groupId = "notification-service",
+            containerFactory = "userKafkaListenerContainerFactory"
+    )
     public void handleUserRegistered(UserRegisteredEvent event) {
         // Générer le nom complet
         String fullName = event.getFirstName() + " " + event.getLastName();

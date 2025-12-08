@@ -16,7 +16,11 @@ public class TransactionEventListener {
     //private final EmailService emailService;
     //private final SmsService smsService;
 
-    @KafkaListener(topics = "transaction-created", groupId = "notification-service")
+    @KafkaListener(
+            topics = "transaction-created",
+            groupId = "notification-service",
+            containerFactory = "transactionKafkaListenerContainerFactory"
+    )
     public void handleTransactionCreated(TransactionCreatedEvent event) {
         log.info("Received transaction event: {}", event.getReference());
         
