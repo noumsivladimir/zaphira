@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: zaphira-postgres
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zaphira-network
+
+  eureka-server:
+    build:
+      context: ../service-registry
+      dockerfile: Dockerfile
+    container_name: zaphira-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - zaphira-network
+
+  config-server:
+    build:
+      context: ../config-server
+      dockerfile: Dockerfile
+    container_name: zaphira-config
+    ports:
+      - "8888:8888"
+    depends_on:
+      - eureka-server
+    networks:
+      - zaphira-network
+
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    container_name: zaphira-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - zaphira-network
+
+  auth-service:
+    build:
+      context: ../auth
+      dockerfile: Dockerfile
+    container_name: zaphira-auth
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - eureka-server
+      - config-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - zaphira-network
+
+  wallet-service:
+    build:
+      context: ../wallet-service
+      dockerfile: Dockerfile
+    container_name: zaphira-wallet
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - eureka-server
+      - config-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - zaphira-network
+
+  transaction-service:
+    build:
+      context: ../transaction-service
+      dockerfile: Dockerfile
+    container_name: zaphira-transaction
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - eureka-server
+      - config-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - zaphira-network
+
+  notification-service:
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+    container_name: zaphira-notification
+    ports:
+      - "8084:8084"
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - zaphira-network
+
+volumes:
+  postgres_data:
+
+networks:
+  zaphira-network:
+    driver: bridge
+
