@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: wallet-service
+  datasource:
+    url: jdbc:postgresql://192.168.0.122:5432/wallet_db
+    username: postgres
+    password: 1234
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  kafka:
+    bootstrap-servers: 192.168.0.122:9092
+    consumer:
+      group-id: wallet-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+      enable-auto-commit: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Ajouter cette section
+kafka:
+  topics:
+    user-created: user-created-topic
+    wallet-created: wallet-created-topic
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

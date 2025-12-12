@@ -1,0 +1,70 @@
+package com.zaphira.common.model.enums;
+
+public enum PermissionType {
+    // User Profile Permissions
+    VIEW_OWN_PROFILE,
+    UPDATE_OWN_PROFILE,
+    DELETE_OWN_ACCOUNT,
+
+    // Wallet Permissions
+    VIEW_OWN_WALLET,
+    CREATE_WALLET,
+    TOPUP_WALLET,
+
+    // Transaction Permissions
+    CREATE_TRANSACTION,
+    VIEW_OWN_TRANSACTIONS,
+    //CANCEL_OWN_TRANSACTION,
+
+    // KYC Permissions
+    UPLOAD_KYC_DOCUMENTS,
+    VIEW_OWN_KYC_STATUS,
+
+    // Admin User Management Permissions
+    VIEW_ALL_USERS,
+    VIEW_USER_DETAILS,
+    CREATE_USER,
+    UPDATE_USER,
+    DELETE_USER,
+    SUSPEND_USER,
+    FREEZE_USER,
+    UNFREEZE_USER,
+    ACTIVATE_USER,
+
+    // Admin Transaction Permissions
+    VIEW_ALL_TRANSACTIONS,
+    VIEW_TRANSACTION_DETAILS,
+    APPROVE_TRANSACTION,
+    REJECT_TRANSACTION,
+    REFUND_TRANSACTION,
+
+    // Admin KYC Permissions
+    MANAGE_KYC,
+    APPROVE_KYC,
+    REJECT_KYC,
+    VIEW_ALL_KYC,
+
+    // Admin System Permissions
+    MANAGE_ADMINS,
+    MANAGE_ROLES,
+    MANAGE_PERMISSIONS,
+    VIEW_AUDIT_LOGS,
+    GENERATE_REPORTS,
+    VIEW_ANALYTICS,
+    MANAGE_SYSTEM_CONFIG,
+
+    // Merchant Permissions
+    ACCEPT_PAYMENTS,
+    DEPOSIT_FUNDS,
+    WITHDRAW_FUNDS,
+    VIEW_MERCHANT_DASHBOARD,
+    MANAGE_MERCHANT_SETTINGS,
+    VIEW_MERCHANT_TRANSACTIONS,
+    REQUEST_SETTLEMENT,
+
+    // Support Permissions
+    VIEW_SUPPORT_TICKETS,
+    RESOLVE_SUPPORT_TICKETS,
+    VIEW_USER_INFO_FOR_SUPPORT,
+    ASSIST_USERS
+}
