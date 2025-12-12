@@ -84,7 +84,7 @@ public class WalletService {
                 .id(wallet.getId())
                 .walletNumber(wallet.getWalletNumber())
                 .balance(wallet.getBalance())
-                .currency(wallet.getCurrency())
+                //.currency(wallet.getCurrency())
                 .active(wallet.getActive())
                 .userId(wallet.getUserId())
                 .build();
