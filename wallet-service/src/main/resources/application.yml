@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8083
 
 spring:
   application:
@@ -22,6 +22,15 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
       enable-auto-commit: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Ajouter cette section
+kafka:
+  topics:
+    user-created: user-created-topic
+    wallet-created: wallet-created-topic
 
 eureka:
   client:

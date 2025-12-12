@@ -49,7 +49,7 @@ public class UserEventListener {
             } catch (Exception e) {
                 // Wallet n'existe pas, on le crée
                 log.info("Creating wallet for user {} with currency XOF", event.getUserId());
-                walletService.createWallet(event.getUserId(), "XOF");
+                walletService.createWallet(event.getUserId());
                 log.info("Wallet created successfully for user {}", event.getUserId());
             }
             

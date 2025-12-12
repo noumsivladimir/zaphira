@@ -28,7 +28,7 @@ public class WalletController {
             @RequestParam Long userId,
             @RequestParam(defaultValue = "XOF") String currency) {
         try {
-            WalletDTO wallet = walletService.createWallet(userId, currency);
+            WalletDTO wallet = walletService.createWallet(userId);
             log.info("✅ Wallet created for user {}: {}", userId, wallet.getWalletNumber());
             return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
         } catch (Exception e) {

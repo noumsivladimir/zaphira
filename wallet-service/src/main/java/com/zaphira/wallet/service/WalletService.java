@@ -17,16 +17,17 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     //private final TransactionServiceClient transactionServiceClient;
-   public WalletDTO createWallet(Long userId, String currency) {
+   public WalletDTO createWallet(Long userId) {
     // Générer walletNumber unique à 8 chiffres basé sur l'ID utilisateur
     // Exemple : (userId * 1234567) % 100_000_000 pour rester sur 8 chiffres
+
+
     String walletNumber = String.format("%08d", (userId * 1234567) % 100_000_000);
 
     // Créer le wallet avec walletNumber déjà défini
     Wallet wallet = Wallet.builder()
             .userId(userId)
             .balance(BigDecimal.ZERO)
-            .currency(currency)
             .active(true)
             .walletNumber(walletNumber)
             .build();
