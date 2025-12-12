@@ -46,7 +46,7 @@ public class UserRegistrationRequest {
     @Size(max = 100)
     private String country;
 
-    private Boolean emailVerified = Boolean.FALSE;
+//    private Boolean emailVerified = Boolean.FALSE;
 
     @Size(max = 500)
     private String address;

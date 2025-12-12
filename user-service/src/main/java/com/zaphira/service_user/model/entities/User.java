@@ -6,6 +6,7 @@ import com.zaphira.service_user.model.enums.RoleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -38,18 +39,14 @@ public abstract class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-//    private Wallet walletId;
-
     @Column(unique = true)
     private String walletId;
-
 
     @Column(nullable = true, unique = true, length = 100)
     private String email;
 
     @Column(nullable = false, unique = true, length = 20)
     private String phoneNumber;
-
 
     @Column(nullable = false, length = 255)
     private String pin;
@@ -60,7 +57,7 @@ public abstract class User {
     @Column(nullable = false, length = 100)
     private String lastName;
 
-    @Column (nullable = false)
+    @Column(nullable = false)
     @Past
     private LocalDate dateOfBirth;
 
@@ -76,19 +73,21 @@ public abstract class User {
     @Column(nullable = true, length = 100)
     private String region;
 
-
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
+    @Builder.Default  // ← AJOUTER
     private AccountStatus accountStatus = AccountStatus.PENDING_VERIFICATION;
 
     @Column(nullable = false)
+    @Builder.Default  // ← AJOUTER
     private Boolean emailVerified = Boolean.FALSE;
 
     @Column(nullable = false)
-    private Boolean phoneVerified = Boolean.TRUE;
+    @Builder.Default  // ← AJOUTER
+    private Boolean phoneVerified = Boolean.FALSE;
 
     @Column(nullable = false)
+    @Builder.Default  // ← AJOUTER
     private Boolean twoFactorEnabled = Boolean.FALSE;
 
     @Column(length = 100)
@@ -100,15 +99,14 @@ public abstract class User {
     @Column(length = 50)
     private String lastLoginIp;
 
-//    @Column(nullable = false)
     @Column
+    @Builder.Default  // ← AJOUTER
     private Integer failedLoginAttempts = 0;
 
     @Column
     private LocalDateTime accountLockedUntil;
 
     @CreatedDate
-//    @Column(nullable = false, updatable = false)
     @Column
     private LocalDateTime registrationDate;
 

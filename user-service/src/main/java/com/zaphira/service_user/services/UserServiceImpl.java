@@ -1,8 +1,8 @@
 package com.zaphira.service_user.services;
 
 import com.zaphira.common.event.UserCreatedEvent;
-import com.zaphira.service_user.dto.event.UserEventPublisher;
 import com.zaphira.common.event.WalletCreatedEvent;
+import com.zaphira.service_user.dto.event.UserEventPublisher;
 import com.zaphira.service_user.dto.request.UpdateProfileRequest;
 import com.zaphira.service_user.dto.request.UserRegistrationRequest;
 import com.zaphira.service_user.dto.response.UserResponse;
@@ -73,6 +73,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(request.getLastName())
                 .dateOfBirth(request.getDateOfBirth())
                 .country(request.getCountry())
+                .emailVerified(false)
                // .neighborhood(request.getneighborhood())
 //                .city(request.getCity())
 //                .state(request.getState())
