@@ -21,6 +21,8 @@ import com.zaphira.service_user.repository.AdminUserRepository;
 import com.zaphira.service_user.repository.MerchantUserRepository;
 import com.zaphira.service_user.repository.RegularUserRepository;
 import com.zaphira.service_user.repository.UserRepository;
+import com.zaphira.service_user.util.IpUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -51,6 +53,8 @@ public class UserServiceImpl implements UserService {
     private final AdminUserRepository adminUserRepository;
     private final MerchantUserRepository merchantUserRepository;
     private final WalletResponseListener walletResponseListener;
+    private final PinService pinService;
+    private final IpUtils ipUtils;
 
     //    private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
@@ -64,19 +68,24 @@ public class UserServiceImpl implements UserService {
 
         validateUserDoesNotExist(request.getPhoneNumber(), request.getEmail());
 
+        HttpServletRequest httpServletRequest = null;
+
         RegularUser user = RegularUser.builder()
-              //  .email(request.getEmail())
+                .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
               //  .walletId(request.getWalletId())
-                .pin (request.getPin())
+                .pin(pinService.hashPin(request.getPin()))
+                .accountLockedUntil(LocalDateTime.now().plusYears(10))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .dateOfBirth(request.getDateOfBirth())
                 .country(request.getCountry())
                 .emailVerified(false)
-               // .neighborhood(request.getneighborhood())
-//                .city(request.getCity())
-//                .state(request.getState())
+                .registrationDate(LocalDateTime.now())
+                .neighborhood(request.getNeighborhood())
+                .city(request.getCity())
+             //   .lastLoginIp(ipUtils.getClientIp(httpServletRequest))
+                .region(request.getRegion())
                 .accountStatus(AccountStatus.ACTIVE)
                 .preferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "fr")
                 .build();

@@ -5,7 +5,7 @@ package com.zaphira.service_user.model.enums;
 public enum RoleType  {
 
 
-    USER("Regular User", "Standard user with basic wallet operations"),
+    REGULAR_USER("Regular User", "Standard user with basic wallet operations"),
     ADMIN("Administrator", "System administrator with elevated privileges"),
     MERCHANT("Merchant", "Business user who can accept payments"),
     AGENT("Agent", "Business user who can deposit and withdraw funds"),

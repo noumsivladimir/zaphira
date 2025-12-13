@@ -35,9 +35,14 @@ import java.util.Set;
 @SuperBuilder
 public abstract class User {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
+
+    @Column(length = 10)
+    @Builder.Default
+    private String preferredCurrency = "FCFA";
 
     @Column(unique = true)
     private String walletId;
@@ -84,7 +89,7 @@ public abstract class User {
 
     @Column(nullable = false)
     @Builder.Default  // ← AJOUTER
-    private Boolean phoneVerified = Boolean.FALSE;
+    private Boolean phoneVerified = Boolean.TRUE;
 
     @Column(nullable = false)
     @Builder.Default  // ← AJOUTER
@@ -108,7 +113,7 @@ public abstract class User {
 
     @CreatedDate
     @Column
-    private LocalDateTime registrationDate;
+    private LocalDateTime registrationDate ;
 
     @LastModifiedDate
     @Column(nullable = false)
@@ -122,6 +127,10 @@ public abstract class User {
     public boolean isAccountLocked() {
         return accountLockedUntil != null && accountLockedUntil.isAfter(LocalDateTime.now());
     }
+
+
+
+
 
     public boolean isAccountActive() {
         return accountStatus == AccountStatus.ACTIVE && !isAccountLocked();

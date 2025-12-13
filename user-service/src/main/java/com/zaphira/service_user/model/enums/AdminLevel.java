@@ -1,7 +1,7 @@
 package com.zaphira.service_user.model.enums;
 
 public enum AdminLevel {
-    STANDARD,
-    SENIOR,
-    SUPER_ADMIN
+    STANDARD, //frontdesk people
+    SENIOR, // Chef d'agence
+    SUPER_ADMIN //
 }

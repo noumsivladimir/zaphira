@@ -24,9 +24,11 @@ public class UserResponse {
     private LocalDate dateOfBirth;
     private String country;
     private String city;
-    private String state;
-    private String zipCode;
-    private String address;
+
+    private String region;
+    private String neighborhood;
+    private String preferredCurrency;
+    private String registrationDate;
     private AccountStatus accountStatus;
     private RoleType roleType;
     private LocalDateTime createdAt;

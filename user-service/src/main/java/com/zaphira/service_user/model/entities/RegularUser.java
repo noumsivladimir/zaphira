@@ -6,6 +6,7 @@ import com.zaphira.service_user.model.enums.RoleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -28,10 +29,10 @@ public class RegularUser extends User {
     private String profilePicture;
 
     @Column(length = 10)
+    @Builder.Default
     private String preferredLanguage = "fr";
 
-    @Column(length = 10)
-    private String preferredCurrency = "FCFA";
+
 
     @Column(nullable = false)
     private boolean notificationsEnabled ;
@@ -40,12 +41,15 @@ public class RegularUser extends User {
     private boolean emailVerified = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean smsNotificationsEnabled = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean emailNotificationsEnabled = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean marketingEmailsEnabled = false;
 
 //    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -63,7 +67,7 @@ public class RegularUser extends User {
 
     @Override
     public RoleType getRoleType() {
-        return RoleType.USER;
+        return RoleType.REGULAR_USER;
     }
 
 
