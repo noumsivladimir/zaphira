@@ -23,6 +23,10 @@ public class UserResponse {
     private String lastName;
     private LocalDate dateOfBirth;
     private String country;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String address;
     private AccountStatus accountStatus;
     private RoleType roleType;
     private LocalDateTime createdAt;

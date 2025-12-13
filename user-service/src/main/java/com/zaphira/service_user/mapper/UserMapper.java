@@ -26,6 +26,7 @@ public class UserMapper {
                 .lastName(user.getLastName())
                 .dateOfBirth(user.getDateOfBirth())
                 .country(user.getCountry())
+                .city(user.getCity())
                 .accountStatus(user.getAccountStatus())
                 .roleType(user.getRoleType())
               //  .createdAt(user.getCreatedAt())
