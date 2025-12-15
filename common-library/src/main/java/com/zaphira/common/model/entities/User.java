@@ -6,10 +6,10 @@ import com.zaphira.common.model.enums.RoleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.Builder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -43,6 +43,8 @@ public abstract class User {
 
     @Column(unique = true)
     private String walletId;
+
+
 
 
     @Column(nullable = true, unique = true, length = 100)

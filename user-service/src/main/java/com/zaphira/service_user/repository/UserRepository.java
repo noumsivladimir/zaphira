@@ -2,11 +2,11 @@ package com.zaphira.service_user.repository;
 
 import com.zaphira.service_user.model.entities.User;
 import com.zaphira.service_user.model.enums.AccountStatus;
-import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -21,6 +21,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByWalletId(String walletId);
 
     Optional<User> findByPhoneNumber(String phoneNumber);
+
+    @Query("SELECT u.userId FROM User u WHERE u.walletId = :walletId")
+    Long findUserIdByWalletId(String walletId);
 
     boolean existsByEmail(String email);
 
@@ -53,4 +56,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) FROM User u WHERE u.registrationDate >= :startDate AND u.registrationDate <= :endDate")
     Long countNewUsersBetween(@Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate);
+
+
+
+
 }

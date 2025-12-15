@@ -1,26 +1,34 @@
 package com.zaphira.service_user.mapper;
 
+import com.zaphira.service_user.dto.response.ChangePinResponse;
 import com.zaphira.service_user.dto.response.UserResponse;
+import com.zaphira.service_user.dto.response.UserSecurityQuestionResponse;
 import com.zaphira.service_user.model.entities.AdminUser;
 import com.zaphira.service_user.model.entities.MerchantUser;
 import com.zaphira.service_user.model.entities.RegularUser;
 import com.zaphira.service_user.model.entities.User;
+import lombok.Builder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Builder
 public class UserMapper {
+
 
     public UserResponse toResponse(User user) {
         if (user == null) {
             return null;
         }
 
+
         UserResponse.UserResponseBuilder builder = UserResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
+                .walletId(user.getWalletId())
+
                 .phoneNumber(user.getPhoneNumber())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
@@ -35,6 +43,11 @@ public class UserMapper {
                 .roleType(user.getRoleType())
               //  .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt());
+
+
+
+
+
 
         // Map role-specific fields
         if (user instanceof RegularUser) {
@@ -56,7 +69,34 @@ public class UserMapper {
                     .isVerifiedMerchant(merchantUser.getIsVerifiedMerchant());
         }
 
+//        List<SecurityQuestionResponse> securityQuestion = securityAnswers.stream()
+//                .map(sa -> SecurityQuestion.builder()
+//                        .id(sa.getId())
+//                        .questionId(sa.getQuestion().getId())
+//                        .question(sa.getQuestion().getQuestion())
+//                        .category(sa.getQuestion().getCategory().name())
+//                        .createdAt(sa.getCreatedAt())
+//                        .build())
+//                .toList();
+
         return builder.build();
+    }
+
+    public UserResponse userToResponse(User user, List <UserSecurityQuestionResponse> securityQuestionResponses) {
+
+        UserResponse userResponse = toResponse(user);
+        userResponse.setSecurityQuestions(securityQuestionResponses);
+        return userResponse;
+    }
+
+
+
+    public ChangePinResponse toChangePinResponse( boolean success, String message) {
+
+        return ChangePinResponse.builder()
+                .success(success)
+                .message(message)
+                .build();
     }
 
     public List<UserResponse> toResponseList(List<User> users) {
@@ -68,4 +108,6 @@ public class UserMapper {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
+
+
 }

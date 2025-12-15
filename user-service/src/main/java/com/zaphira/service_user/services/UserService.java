@@ -1,13 +1,14 @@
 package com.zaphira.service_user.services;
 
-import com.zaphira.service_user.dto.request.UpdateProfileRequest;
-import com.zaphira.service_user.dto.request.UserRegistrationRequest;
-import com.zaphira.service_user.dto.response.UserResponse;
+import com.zaphira.service_user.dto.request.*;
+import com.zaphira.service_user.dto.response.*;
 import com.zaphira.service_user.model.entities.User;
 import com.zaphira.service_user.model.enums.AccountStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface UserService {
 
@@ -16,17 +17,31 @@ public interface UserService {
     UserResponse registerAdmin(UserRegistrationRequest request);
     UserResponse registerMerchant(UserRegistrationRequest request);
 
-    // User Retrieval
-    UserResponse getUserById(Long userId);
-    UserResponse getUserByEmail(String email);
-    UserResponse getUserByWalletId(String walletId);
-    User findUserEntityById(Long userId);
-    User findUserEntityByEmail(String email);
 
+
+    // User Retrieval
+    UserResponse getUserByEmail(String email);
+    UserResponse getUserById(Long userId);
+    UserResponse getUserByWalletId(String walletId);
+    User findUserEntityByEmail(String email);
+    User findUserEntityByWalletId(String walletId);
+    Long findUserIdByWalletId(String walletId);
+    User findUserEntityById(Long userId);
+
+    List<UserSecurityQuestionResponse> findSecurityQuestionByWalletId(String walletId);
     // User Update
     UserResponse updateUserProfile(Long userId, UpdateProfileRequest request);
     UserResponse updateUserStatus(Long userId, AccountStatus status);
     String uploadProfilePicture(Long userId, MultipartFile file);
+    ChangePinResponse changePin(String walletId, ChangePinRequest changePinRequest);
+
+
+    //Pin edition
+    InitiatePinResetResponse initiateReset(InitiatePinResetRequest request);
+    VerifyOtpResponse verifyOtp(VerifyOtpRequest request);
+    VerifySecurityQuestionsResponse verifySecurityQuestions(VerifySecurityQuestionsRequest request);
+    ResetPinResponse resetPin(ResetPinRequest request);
+
 
     // User Deletion
     void deleteUser(Long userId);
@@ -53,7 +68,7 @@ public interface UserService {
     boolean isUsernameExists(String username);
 
     // Statistics
-    Long getTotalUsers();
+    long getTotalUsers();
     Long getActiveUsers();
     Long getSuspendedUsers();
     Long getNewUsersToday();

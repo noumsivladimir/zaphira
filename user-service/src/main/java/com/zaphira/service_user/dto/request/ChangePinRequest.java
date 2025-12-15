@@ -14,6 +14,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ChangePinRequest {
+
+    @NotBlank(message = "Wallet number is required")
+    @Size (min = 6, message = "Wallet number must be 6 digits")
+    private String walletNumber;
+
+
     @NotBlank(message = "Current pin is required")
     private String oldPin;
 
