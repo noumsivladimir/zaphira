@@ -38,7 +38,6 @@ public class RegularUser extends User {
     private boolean notificationsEnabled ;
 
     @Column(nullable = false)
-    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(nullable = false)

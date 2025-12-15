@@ -41,13 +41,11 @@ public class KYCSubmissionRequest {
     @NotBlank(message = "Document front image is required")
     private String documentFrontImage;
 
-    @SuppressWarnings("unused")
     private String documentBackImage;
 
     @NotBlank(message = "Selfie image is required")
     private String selfieImage;
 
-    @SuppressWarnings("unused")
     private String proofOfAddressDocument;
 
     @Size(max = 1000)

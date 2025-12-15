@@ -3,25 +3,19 @@ package com.zaphira.service_user.services;
 import com.zaphira.common.event.UserCreatedEvent;
 import com.zaphira.common.event.WalletCreatedEvent;
 import com.zaphira.service_user.dto.event.UserEventPublisher;
-import com.zaphira.service_user.dto.request.UpdateProfileRequest;
-import com.zaphira.service_user.dto.request.UserRegistrationRequest;
-import com.zaphira.service_user.dto.response.UserResponse;
+import com.zaphira.service_user.dto.request.*;
+import com.zaphira.service_user.dto.response.*;
 import com.zaphira.service_user.exception.UserAlreadyExistsException;
 import com.zaphira.service_user.exception.UserNotFoundException;
 import com.zaphira.service_user.kafka.UserEventProducer;
 import com.zaphira.service_user.kafka.WalletResponseListener;
 import com.zaphira.service_user.mapper.UserMapper;
-import com.zaphira.service_user.model.entities.AdminUser;
-import com.zaphira.service_user.model.entities.MerchantUser;
-import com.zaphira.service_user.model.entities.RegularUser;
-import com.zaphira.service_user.model.entities.User;
+import com.zaphira.service_user.model.entities.*;
 import com.zaphira.service_user.model.enums.AccountStatus;
 import com.zaphira.service_user.model.enums.AdminLevel;
-import com.zaphira.service_user.repository.AdminUserRepository;
-import com.zaphira.service_user.repository.MerchantUserRepository;
-import com.zaphira.service_user.repository.RegularUserRepository;
-import com.zaphira.service_user.repository.UserRepository;
+import com.zaphira.service_user.repository.*;
 import com.zaphira.service_user.util.IpUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,16 +44,18 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserEventProducer userEventProducer;
     private final RegularUserRepository regularUserRepository;
+    private final UserSecurityAnswerRepository userSecurityAnswerRepository;
     private final AdminUserRepository adminUserRepository;
     private final MerchantUserRepository merchantUserRepository;
     private final WalletResponseListener walletResponseListener;
     private final PinService pinService;
-    @SuppressWarnings("unused")
     private final IpUtils ipUtils;
+    private final OtpService otpService;
+
+
+    //    private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-    @SuppressWarnings("unused")
-    private final UserEventPublisher eventPublisher;
-    private final com.zaphira.service_user.repository.TransactionProcessedLogRepository transactionProcessedLogRepository;
+   private final UserEventPublisher eventPublisher;
 
     private static final String UPLOAD_DIR = "uploads/profiles/";
 
@@ -67,6 +64,8 @@ public class UserServiceImpl implements UserService {
         log.info("Registering new regular user with phone number: {}", request.getPhoneNumber());
 
         validateUserDoesNotExist(request.getPhoneNumber(), request.getEmail());
+
+        HttpServletRequest httpServletRequest = null;
 
         RegularUser user = RegularUser.builder()
                 .email(request.getEmail())
@@ -214,10 +213,33 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(user);
     }
 
+
+
+
     @Override
+    @Transactional(readOnly = true)
     public UserResponse getUserByWalletId(String walletId) {
-        return null;
+
+        //getting user informations
+        log.debug("Fetching user by Wallet Number: {}", walletId);
+        User user = findUserEntityByWalletId(walletId);
+        List <UserSecurityQuestionResponse > userSecurityQuestionResponses = findSecurityQuestionByWalletId(walletId);
+        List <UserSecurityQuestionResponse > answers ;
+//        answers.stream()
+//                .map( userSecurityAnswers -> UserSecurityQuestionResponse.builder()
+//                        .walletId(user.getWalletId())
+//                        .question()
+//
+//        );
+
+        return userMapper.userToResponse(user, userSecurityQuestionResponses);
     }
+
+
+//    @Override
+//    public UserResponse getUserByWalletId(String walletId) {
+//        return null;
+//    }
 
 //    @Override
 //    @Transactional(readOnly = true)
@@ -234,6 +256,45 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findUserEntityByWalletId(String walletId) {
+        return userRepository.findByWalletId(walletId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with walletId: " + walletId));
+    }
+
+    @Override
+    public Long findUserIdByWalletId(String walletId) {
+        return userRepository.findUserIdByWalletId(walletId);
+    }
+
+    @Transactional
+    @Override
+    public List<UserSecurityQuestionResponse> findSecurityQuestionByWalletId(String walletId) {
+
+        Long userId = findUserIdByWalletId(walletId);
+        List <UserSecurityAnswer > answers = userSecurityAnswerRepository.findByUserQuestionId(userId);
+
+        return answers.stream()
+                .map(
+                        userSecurityAnswer -> UserSecurityQuestionResponse.builder()
+                                .walletId(walletId)
+                                .questionId(userSecurityAnswer.getId())
+                                .question(userSecurityAnswer.getQuestion().getQuestion())
+                                .createdAt(userSecurityAnswer.getCreatedAt())
+                                .build())
+                .toList();
+
+
+
+//        return securityQuestionRepository.findById(questionId)
+//                .orElseThrow(() -> new UserNotFoundException("Security question not found with ID: " + questionId));
+    }
+
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -339,6 +400,90 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public ChangePinResponse changePin(String walletId, ChangePinRequest changePinRequest) {
+        log.info("Changing PIN for wallet ID: {}", walletId);
+
+        User user = findUserEntityByWalletId(walletId);
+
+        // Vérifier si le compte est verrouillé
+        if (user.getAccountLockedUntil() != null && user.getAccountLockedUntil().isAfter(LocalDateTime.now())) {
+            return ChangePinResponse.builder()
+                    .success(false)
+                    .message("Compte verrouillé. Réessayez plus tard.")
+                    .build();
+        }
+
+        // Vérifier que les nouveaux PINs correspondent (utiliser .equals() !)
+        if (!changePinRequest.getNewPin().equals(changePinRequest.getNewPinConfirmation())) {
+            return ChangePinResponse.builder()
+                    .success(false)
+                    .message("Les nouveaux PINs ne correspondent pas")
+                    .build();
+        }
+
+        // Vérifier l'ancien PIN
+        if (!pinService.verifyPin(changePinRequest.getOldPin(), user.getPin())) {
+            user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+
+            if (user.getFailedLoginAttempts() >= 3) {
+                user.setAccountLockedUntil(LocalDateTime.now().plusYears(1));
+                userRepository.save(user);
+                return ChangePinResponse.builder()
+                        .success(false)
+                        .message("Trop de tentatives. Compte verrouillé.")
+                        .build();
+            }
+
+            userRepository.save(user);
+            int remaining = 3 - user.getFailedLoginAttempts();
+            return ChangePinResponse.builder()
+                    .success(false)
+                    .message("Ancien PIN incorrect. " + remaining + " tentative(s) restante(s).")
+                    .build();
+        }
+
+        // Vérifier que le nouveau PIN est différent de l'ancien
+        if (changePinRequest.getOldPin().equals(changePinRequest.getNewPin())) {
+            return ChangePinResponse.builder()
+                    .success(false)
+                    .message("Le nouveau PIN doit être différent de l'ancien")
+                    .build();
+        }
+
+        // Mettre à jour le PIN
+        user.setPin(pinService.hashPin(changePinRequest.getNewPin()));
+        user.setFailedLoginAttempts(0);
+        user.setAccountLockedUntil(null);
+        userRepository.save(user);
+
+        return ChangePinResponse.builder()
+                .success(true)
+                .message("PIN modifié avec succès")
+                .build();
+    }
+
+    @Override
+    public InitiatePinResetResponse initiateReset(InitiatePinResetRequest request) {
+        return null;
+    }
+
+    @Override
+    public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
+        return null;
+    }
+
+    @Override
+    public VerifySecurityQuestionsResponse verifySecurityQuestions(VerifySecurityQuestionsRequest request) {
+        return null;
+    }
+
+    @Override
+    public ResetPinResponse resetPin(ResetPinRequest request) {
+        return null;
+    }
+
+
+    @Override
     public UserResponse updateUserStatus(Long userId, AccountStatus status) {
         log.info("Updating status for user ID: {} to {}", userId, status);
 
@@ -361,7 +506,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void softDeleteUser(Long userId) {
-        log.info("Soft deleting user with ID: {}", userId);
+        log.info("Soft deleting user with Wallet ID: {}", userId);
 
         User user = findUserEntityById(userId);
         user.setAccountStatus(AccountStatus.CLOSED);
@@ -483,7 +628,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Long getTotalUsers() {
+    public long getTotalUsers() {
         return userRepository.count();
     }
 
@@ -531,114 +676,5 @@ public class UserServiceImpl implements UserService {
         if (phoneNumber != null && isPhoneExists(phoneNumber)) {
             throw new UserAlreadyExistsException("User with phone " + phoneNumber + " already exists");
         }
-    }
-
-    @Override
-    @Transactional
-    public void updateBalanceFromTransaction(com.zaphira.common.event.TransactionCompletedEvent event) {
-        try {
-            log.info("Processing balance update for user {} from transaction {}",
-                    event.getInitiatorUserId(), event.getTransactionId());
-
-            Long userId = event.getInitiatorUserId();
-            Long transactionId = event.getTransactionId();
-
-            // Vérifier l'idempotence: la transaction a-t-elle déjà été traitée?
-            if (isTransactionAlreadyProcessed(userId, transactionId)) {
-                log.warn("Transaction {} for user {} has already been processed. Skipping.", transactionId, userId);
-                return;
-            }
-
-            // NOTE: Le balance réel est stocké dans la table wallets (voir entité Wallet)
-            // Cette méthode met à jour le log pour tracking, mais le balance réel
-            // est géré par le wallet-service ou directement via la base de données.
-            //
-            // Dans une architecture complète, il faudrait appeler wallet-service
-            // via un client Feign pour mettre à jour le balance du wallet.
-            // Pour cette implémentation, nous enregistrons simplement le traitement.
-
-            // Calculer le débit total (montant + frais)
-            java.math.BigDecimal totalDebit = event.getAmount();
-            if (event.getFeeAmount() != null && event.getFeeAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                totalDebit = event.getAmount().add(event.getFeeAmount());
-            }
-
-            // Enregistrer le traitement de la transaction pour garantir l'idempotence
-            recordTransactionProcessed(userId, transactionId, event);
-
-            log.info("Balance update recorded successfully for user {} after transaction {}. " +
-                    "Amount to debit: {} {}",
-                    userId, transactionId, totalDebit, event.getCurrency());
-
-        } catch (UserNotFoundException e) {
-            log.error("Failed to process transaction: {}", e.getMessage());
-            recordTransactionFailed(event.getInitiatorUserId(), event.getTransactionId(), e.getMessage());
-            // Ne pas relancer l'exception pour que le message Kafka soit acknowledged
-            // Le traitement a échoué mais on enregistre l'erreur
-        } catch (Exception e) {
-            log.error("Unexpected error processing balance update for user {} from transaction {}: {}",
-                    event.getInitiatorUserId(), event.getTransactionId(), e.getMessage(), e);
-            recordTransactionFailed(event.getInitiatorUserId(), event.getTransactionId(), e.getMessage());
-            // Ne pas relancer l'exception pour éviter une boucle de retry infinie
-        }
-    }
-
-    /**
-     * Vérifie si une transaction a déjà été traitée pour un utilisateur.
-     * Utilisé pour garantir l'idempotence.
-     *
-     * @param userId L'ID de l'utilisateur
-     * @param transactionId L'ID de la transaction
-     * @return true si la transaction a déjà été traitée
-     */
-    private boolean isTransactionAlreadyProcessed(Long userId, Long transactionId) {
-        return transactionProcessedLogRepository.findByUserIdAndTransactionId(userId, transactionId).isPresent();
-    }
-
-    /**
-     * Enregistre qu'une transaction a été traitée avec succès.
-     *
-     * @param userId L'ID de l'utilisateur
-     * @param transactionId L'ID de la transaction
-     * @param event L'événement de transaction
-     */
-    private void recordTransactionProcessed(Long userId, Long transactionId, com.zaphira.common.event.TransactionCompletedEvent event) {
-        com.zaphira.service_user.model.entities.TransactionProcessedLog processedLog =
-                com.zaphira.service_user.model.entities.TransactionProcessedLog.builder()
-                .userId(userId)
-                .transactionId(transactionId)
-                .transactionReference(event.getReference())
-                .amount(event.getAmount())
-                .processingStatus("SUCCESS")
-                .processedAt(LocalDateTime.now())
-                .build();
-
-        transactionProcessedLogRepository.save(processedLog);
-        log.debug("Transaction processing recorded for user {} and transaction {}", userId, transactionId);
-    }
-
-    /**
-     * Enregistre qu'une transaction a échoué lors du traitement.
-     *
-     * @param userId L'ID de l'utilisateur
-     * @param transactionId L'ID de la transaction
-     * @param errorMessage Le message d'erreur
-     */
-    private void recordTransactionFailed(Long userId, Long transactionId, String errorMessage) {
-        try {
-            com.zaphira.service_user.model.entities.TransactionProcessedLog failedLog =
-                    com.zaphira.service_user.model.entities.TransactionProcessedLog.builder()
-                    .userId(userId)
-                    .transactionId(transactionId)
-                    .processingStatus("FAILED")
-                    .errorMessage(errorMessage)
-                    .processedAt(LocalDateTime.now())
-                    .build();
-
-            transactionProcessedLogRepository.save(failedLog);
-            log.debug("Transaction failure recorded for user {} and transaction {}: {}", userId, transactionId, errorMessage);
-        } catch (Exception e) {
-            log.warn("Failed to record transaction failure: {}", e.getMessage());
-        }
-    }
+    };
 }

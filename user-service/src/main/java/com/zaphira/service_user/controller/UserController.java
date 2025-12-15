@@ -1,9 +1,13 @@
 package com.zaphira.service_user.controller;
 
+import com.zaphira.service_user.dto.request.ChangePinRequest;
 import com.zaphira.service_user.dto.request.UpdateProfileRequest;
 import com.zaphira.service_user.dto.request.UserRegistrationRequest;
 import com.zaphira.service_user.dto.response.ApiResponse;
+import com.zaphira.service_user.dto.response.ChangePinResponse;
 import com.zaphira.service_user.dto.response.UserResponse;
+import com.zaphira.service_user.dto.response.UserSecurityQuestionResponse;
+import com.zaphira.service_user.model.entities.User;
 import com.zaphira.service_user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 
 @RestController
@@ -59,6 +65,15 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(user, "Profile updated successfully"));
     }
 
+    @PutMapping("/{walletId}/pin")
+    @Operation(summary = "Update PIN", description = "Update user PIN")
+    public ResponseEntity<ApiResponse<ChangePinResponse>> updatePin(@PathVariable  Integer walletId,
+                                                               @Valid @RequestBody ChangePinRequest request) {
+        ChangePinResponse user = userService.changePin(walletId.toString(), request);
+        return ResponseEntity.ok(ApiResponse.success(user, "PIN updated successfully"));
+    }
+
+
     @PostMapping("/profile/picture")
     @Operation(summary = "Upload profile picture", description = "Upload or update profile picture")
     public ResponseEntity<ApiResponse<String>> uploadProfilePicture(
@@ -70,21 +85,46 @@ public class UserController {
     }
 
     @DeleteMapping("/profile")
-    @Operation(summary = "Delete account", description = "Soft delete user account")
+    @Operation(summary = "Delete account with Wallet Id", description = "Soft delete user account")
     public ResponseEntity<ApiResponse<Void>> deleteAccount(
-            @RequestAttribute("userId") Long userId) {
+            @RequestAttribute("walletId") Integer walletId) {
 
-        userService.softDeleteUser(userId);
+
+        User user = userService.findUserEntityByWalletId(walletId.toString());
+        userService.softDeleteUser(user.getUserId());
         return ResponseEntity.ok(ApiResponse.success(null, "Account deleted successfully"));
     }
 
-    @GetMapping("/{userId}")
-    @Operation(summary = "Get user by ID", description = "Get user details by user ID")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
-            @PathVariable Long userId) {
+    @GetMapping("/{userIdOrWalletId}")
+    @Operation(summary = "Get user by ID or Wallet Id", description = "Get user details by user ID")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByIdOrWalletId(
+            @PathVariable Integer userIdOrWalletId) {
 
-        UserResponse user = userService.getUserById(userId);
+        if (userIdOrWalletId  >= 10_000_000 && userIdOrWalletId <= 99_999_999) {
+
+            UserResponse user = userService.getUserByWalletId(userIdOrWalletId.toString());
+            return ResponseEntity.ok(ApiResponse.success(user));
+
+        }
+
+        UserResponse user = userService.getUserById(userIdOrWalletId.longValue());
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+
+    @GetMapping("/question/{walletId}")
+    @Operation(summary = "list de question", description = "")
+    public ResponseEntity<ApiResponse<List<UserSecurityQuestionResponse>>> findSecurityQuestionByWalletId(
+            @PathVariable("walletId") String walletId) {
+
+
+
+        List<UserSecurityQuestionResponse> userSecurityAnswers = userService.findSecurityQuestionByWalletId(walletId);
+//        List<UserSecurityAnswer> findSecurityQuestionByUserId(Long userId)
+
+        return ResponseEntity.ok(ApiResponse.success(userSecurityAnswers));
+
+
     }
 
 //    @GetMapping("/sessions")
@@ -102,8 +142,8 @@ public class UserController {
 //    @Operation(summary = "Terminate session", description = "Logout from specific device/session")
 //    public ResponseEntity<ApiResponse<Void>> terminateSession(
 //            @RequestAttribute("userId") Long userId,
-//            @PathVariable Long sessionId) {
-//
+//            @PathVariable Integer sessionId) {
+//dd
 //        authService.terminateSession(userId, sessionId);
 //        return ResponseEntity.ok(ApiResponse.success(null, "Session terminated successfully"));
 //    }

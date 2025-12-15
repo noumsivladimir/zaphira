@@ -44,6 +44,12 @@ public abstract class User {
     @Builder.Default
     private String preferredCurrency = "FCFA";
 
+
+//
+//    @OneToMany(mappedBy = "id", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    private List<PredefinedSecurityQuestion> predefinedSecurityQuestions ;
+
+
     @Column(unique = true)
     private String walletId;
 
@@ -55,6 +61,9 @@ public abstract class User {
 
     @Column(nullable = false, length = 255)
     private String pin;
+
+    @Column(nullable = true, length = 255)
+    private LocalDateTime pinChangedAt;
 
     @Column(nullable = false, length = 100)
     private String firstName;

@@ -14,11 +14,13 @@ import java.util.Optional;
 @Repository
 public interface MerchantUserRepository extends JpaRepository<MerchantUser, Long> {
 
+
+
     Optional<MerchantUser> findByEmail(String email);
 
     Optional<MerchantUser> findByUserId(Long userId);
 
-   // Optional<MerchantUser> findByWalletId(Long WalletId);
+    Optional<MerchantUser> findByWalletId(String WalletId);
 
 
     Optional<MerchantUser> findByBusinessRegistrationNumber(String registrationNumber);
