@@ -26,6 +26,8 @@ import com.zaphira.transaction.service.limit.LimitEvaluationResult;
 import com.zaphira.transaction.service.limit.TransactionLimitService;
 import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.transaction.event.TransactionEventPublisher;
+import com.zaphira.transaction.service.kafka.ValidationOrchestrationService;
+import com.zaphira.transaction.config.ValidationFeatureProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,8 @@ public class TransactionService {
     private WalletClient walletClient;
     private FeignWalletClient feignWalletClient;
     private TransactionEventPublisher transactionEventPublisher;
+    private ValidationOrchestrationService validationOrchestrationService;
+    private ValidationFeatureProperties validationFeatureProperties;
 
     // No-args constructor for Spring
     public TransactionService() {
@@ -62,7 +66,9 @@ public class TransactionService {
                               FeeProperties feeProperties,
                               WalletClient walletClient,
                               FeignWalletClient feignWalletClient,
-                              TransactionEventPublisher transactionEventPublisher) {
+                              TransactionEventPublisher transactionEventPublisher,
+                              ValidationOrchestrationService validationOrchestrationService,
+                              ValidationFeatureProperties validationFeatureProperties) {
         this.repository = repository;
         this.stateHistoryRepository = stateHistoryRepository;
         this.validationService = validationService;
@@ -74,9 +80,11 @@ public class TransactionService {
         this.walletClient = walletClient;
         this.feignWalletClient = feignWalletClient;
         this.transactionEventPublisher = transactionEventPublisher;
+        this.validationOrchestrationService = validationOrchestrationService;
+        this.validationFeatureProperties = validationFeatureProperties;
     }
 
-    // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher
+    // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher or ValidationOrchestrationService
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
@@ -89,10 +97,10 @@ public class TransactionService {
                               WalletClient walletClient,
                               FeignWalletClient feignWalletClient) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null, null, null);
     }
 
-    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient or EventPublisher
+    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient, EventPublisher or ValidationOrchestrationService
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
@@ -104,7 +112,7 @@ public class TransactionService {
                               FeeProperties feeProperties,
                               WalletClient walletClient) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null, null, null);
     }
 
     @Transactional
@@ -195,6 +203,18 @@ public class TransactionService {
             repository.save(saved);
             recordState(saved, TransactionStatus.PENDING, request.getRequestedBy(), evaluation.getReason());
             authorizationService.createAuthorization(saved, evaluation.getMethod(), request.getRequestedBy());
+            
+            // Initiate async Kafka validation only if feature flag is enabled (fail-safe, doesn't block transaction creation)
+            if (shouldInitiateAsyncValidation()) {
+                try {
+                    validationOrchestrationService.initiateAsyncValidation(saved);
+                } catch (Exception e) {
+                    // Log but don't throw - async validation is supplementary
+                    org.slf4j.LoggerFactory.getLogger(TransactionService.class)
+                        .warn("Failed to initiate async validation for transaction: " + saved.getId(), e);
+                }
+            }
+            
             return saved;
         }
 
@@ -394,6 +414,41 @@ public class TransactionService {
                     .warn("Failed to publish TransactionCreatedEvent for transaction {}: {}",
                             transaction.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * Determines whether async Kafka validation should be initiated
+     * 
+     * Checks:
+     * 1. Feature flag is enabled (validation.feature.enabled=true)
+     * 2. Random traffic percentage match (supports canary rollout)
+     * 3. ValidationOrchestrationService is available
+     * 
+     * @return true if all conditions met, false otherwise
+     */
+    private boolean shouldInitiateAsyncValidation() {
+        // Feature flag not enabled - safe mode
+        if (validationFeatureProperties == null || !validationFeatureProperties.isEnabled()) {
+            return false;
+        }
+        
+        // ValidationOrchestrationService not injected (shouldn't happen, but failsafe)
+        if (validationOrchestrationService == null) {
+            return false;
+        }
+        
+        // Check traffic percentage for canary rollout (0-100)
+        int trafficPercentage = validationFeatureProperties.getTrafficPercentage();
+        if (trafficPercentage <= 0) {
+            return false;
+        }
+        if (trafficPercentage < 100) {
+            // Random decision based on traffic percentage
+            return (int) (Math.random() * 100) < trafficPercentage;
+        }
+        
+        // 100% traffic - always enable
+        return true;
     }
 
 }
