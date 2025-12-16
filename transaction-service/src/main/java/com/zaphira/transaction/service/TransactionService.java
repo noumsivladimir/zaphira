@@ -18,7 +18,7 @@ import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
-import com.zaphira.transaction.service.authorization.TransactionAuthorizationService;
+import com.zaphira.transaction.service.authorization.TransactionAuthorizationRequestService;
 import com.zaphira.transaction.service.compliance.ComplianceService;
 import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
@@ -41,7 +41,7 @@ public class TransactionService {
     private TransactionValidationService validationService;
     private TransactionLimitService limitService;
     private FeeService feeService;
-    private TransactionAuthorizationService authorizationService;
+    private TransactionAuthorizationRequestService authorizationService;
     private ComplianceService complianceService;
     private LimitProperties limitProperties;
     private WalletClient walletClient;
@@ -60,7 +60,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              TransactionAuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -90,7 +90,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              TransactionAuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -106,7 +106,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              TransactionAuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -316,6 +316,12 @@ public class TransactionService {
             }
             
             // Verify sufficient balance
+            if (senderWallet.getBalance() == null) {
+                throw new IllegalStateException(
+                    "Sender wallet balance is not available. Please try again."
+                );
+            }
+            
             if (senderWallet.getBalance().compareTo(totalAmount) < 0) {
                 throw new IllegalStateException(
                     String.format("Insufficient balance. Required: %s, Available: %s",

@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class TransactionAuthorizationService {
+public class TransactionAuthorizationRequestService {
 
     private final AuthorizationRequestRepository repository;
     private final LimitProperties limitProperties;
 
-    public TransactionAuthorizationService(AuthorizationRequestRepository repository,
+    public TransactionAuthorizationRequestService(AuthorizationRequestRepository repository,
                                            LimitProperties limitProperties) {
         this.repository = repository;
         this.limitProperties = limitProperties;

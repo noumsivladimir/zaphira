@@ -30,7 +30,9 @@ public enum TransactionType {
     SPLIT_BILL,
     REQUEST_MONEY,
     DONATION,
-    TIP
+    TIP,
+    REFUND,
+    REVERSAL
 }
 
 

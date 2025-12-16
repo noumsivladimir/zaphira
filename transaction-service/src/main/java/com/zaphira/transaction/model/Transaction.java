@@ -31,6 +31,9 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @Column(nullable = false, unique = true, updatable = false)
     private String reference;
 
@@ -71,6 +74,9 @@ public class Transaction {
     private String route;   // e.g. WALLET_INTERNAL, BANK_GATEWAY_X, CARD_NETWORK_Y
 
     @Enumerated(EnumType.STRING)
+    private com.zaphira.transaction.model.enums.PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionType type;
 
@@ -82,6 +88,10 @@ public class Transaction {
     private TransactionChannel channel;
 
     private String description;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer authorizationLevel = 0;
 
     @Enumerated(EnumType.STRING)
     private AuthorizationMethod authorizationMethod;
