@@ -5,7 +5,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 
-@Entity
+
 @Table(name = "wallets")
 @Getter
 @Setter

@@ -14,9 +14,11 @@ import java.math.BigDecimal;
 public class WalletDTO {
     private Long id;
     private String walletNumber;
-    private BigDecimal balance;
+  //  private BigDecimal balance;
    // private String currency;
     private Boolean active;
     private Long userId;
+    private String type;
+    private BigDecimal availableBalance;
 }
 
