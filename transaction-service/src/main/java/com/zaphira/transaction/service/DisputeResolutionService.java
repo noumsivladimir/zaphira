@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +59,7 @@ public class DisputeResolutionService {
     
     private final DisputeRepository disputeRepository;
     private final DisputeAuthorizationService authorizationService;
+    @Nullable
     private final KafkaTemplate<String, DisputeResolvedEvent> kafkaTemplate;
     
     private static final String DISPUTE_RESOLVED_TOPIC = "dispute-resolved";
@@ -423,6 +425,11 @@ public class DisputeResolutionService {
      * Publish DisputeResolvedEvent to Kafka.
      */
     private void publishDisputeResolvedEvent(Dispute dispute, AuthenticatedUser user, String internalNotes) {
+        if (kafkaTemplate == null) {
+            log.warn("[KAFKA_SKIP] KafkaTemplate not available, skipping event publish for dispute: {}", dispute.getReference());
+            return;
+        }
+        
         DisputeResolvedEvent event = DisputeResolvedEvent.builder()
             .disputeId(dispute.getId())
             .reference(dispute.getReference())

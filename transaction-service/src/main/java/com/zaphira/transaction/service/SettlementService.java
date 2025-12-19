@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,7 @@ public class SettlementService {
     private final ExchangeRateService exchangeRateService;
     private final MultiCurrencyFeeService feeService;
     private final TransactionService transactionService;
+    @Nullable
     private final KafkaTemplate<String, SettlementCompletedEvent> kafkaTemplate;
     
     private static final String SETTLEMENT_TOPIC = "settlement-completed";
@@ -333,8 +335,12 @@ public class SettlementService {
             .processedBy(user != null ? user.getEmail() : "SYSTEM")
             .build();
         
-        kafkaTemplate.send(SETTLEMENT_TOPIC, settlement.getTransactionId().toString(), event);
-        log.info("[KAFKA_PUBLISH] SettlementCompletedEvent sent for settlement: {}", settlement.getId());
+        if (kafkaTemplate != null) {
+            kafkaTemplate.send(SETTLEMENT_TOPIC, settlement.getTransactionId().toString(), event);
+            log.info("[KAFKA_PUBLISH] SettlementCompletedEvent sent for settlement: {}", settlement.getId());
+        } else {
+            log.warn("[KAFKA_SKIP] KafkaTemplate unavailable, skipping SettlementCompletedEvent publication for settlement: {}", settlement.getId());
+        }
     }
     
     // ============================================================

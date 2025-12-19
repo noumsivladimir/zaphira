@@ -129,13 +129,13 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(1L)
-            .balance(new BigDecimal("10000"))
+            .availableBalance(new BigDecimal("10000"))
             .build();
         com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
-            .balance(new BigDecimal("5000"))
+            .availableBalance(new BigDecimal("5000"))
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
         when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
@@ -180,13 +180,13 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(1L)
-            .balance(new BigDecimal("10000"))
+            .availableBalance(new BigDecimal("10000"))
             .build();
         com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
-            .balance(new BigDecimal("5000"))
+            .availableBalance(new BigDecimal("5000"))
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
         when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
@@ -222,7 +222,7 @@ class TransactionServiceTest {
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
-            .balance(new java.math.BigDecimal("10000"))
+            .availableBalance(new java.math.BigDecimal("10000"))
             .build();
         receiver.setBalance(new java.math.BigDecimal("5000"));
         
@@ -278,7 +278,7 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(999L)
-            .balance(new BigDecimal("10000"))
+            .availableBalance(new BigDecimal("10000"))
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
 

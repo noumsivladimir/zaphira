@@ -15,6 +15,7 @@ import com.zaphira.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class TransactionReversalService {
     private final TransactionRepository transactionRepository;
     private final TransactionAuditLogRepository auditLogRepository;
     private final TransactionAuthorizationService authorizationService;
+    @Nullable
     private final KafkaTemplate<String, TransactionReversedEvent> kafkaTemplate;
     private final WalletService walletService; // Service pour mettre à jour les wallets
     
@@ -300,8 +302,12 @@ public class TransactionReversalService {
                 .requestId(requestId)
                 .build();
             
-            kafkaTemplate.send(REVERSAL_TOPIC, originalTransaction.getId().toString(), event);
-            log.info("TransactionReversedEvent published for transaction {}", originalTransaction.getId());
+            if (kafkaTemplate != null) {
+                kafkaTemplate.send(REVERSAL_TOPIC, originalTransaction.getId().toString(), event);
+                log.info("TransactionReversedEvent published for transaction {}", originalTransaction.getId());
+            } else {
+                log.warn("[KAFKA_SKIP] KafkaTemplate not available, skipping event publish for transaction: {}", originalTransaction.getId());
+            }
             
         } catch (Exception e) {
             log.error("Error publishing TransactionReversedEvent: {}", e.getMessage(), e);

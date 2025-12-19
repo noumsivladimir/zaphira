@@ -73,18 +73,16 @@ class TransactionControllerTest {
                 .id(1L)
                 .userId(1L)
                 .walletNumber("W1")
-                .balance(BigDecimal.valueOf(5000.0))
+                .availableBalance(BigDecimal.valueOf(5000.0))
                 
-                .active(true)
                 .build();
 
         WalletDTO wallet2 = WalletDTO.builder()
                 .id(2L)
                 .userId(2L)
                 .walletNumber("W2")
-                .balance(BigDecimal.valueOf(3000.0))
+                .availableBalance(BigDecimal.valueOf(3000.0))
                 
-                .active(true)
                 .build();
 
         given(feignWalletClient.getWalletByNumber("W1"))

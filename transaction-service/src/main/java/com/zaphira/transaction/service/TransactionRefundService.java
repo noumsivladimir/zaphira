@@ -16,6 +16,7 @@ import com.zaphira.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class TransactionRefundService {
     private final TransactionRepository transactionRepository;
     private final TransactionAuditLogRepository auditLogRepository;
     private final TransactionAuthorizationService authorizationService;
+    @Nullable
     private final KafkaTemplate<String, TransactionRefundedEvent> kafkaTemplate;
     private final WalletService walletService; // Service pour mettre à jour les wallets
     
@@ -347,8 +349,12 @@ public class TransactionRefundService {
                 .requestId(requestId)
                 .build();
             
-            kafkaTemplate.send(REFUND_TOPIC, originalTransaction.getId().toString(), event);
-            log.info("TransactionRefundedEvent published for transaction {}", originalTransaction.getId());
+            if (kafkaTemplate != null) {
+                kafkaTemplate.send(REFUND_TOPIC, originalTransaction.getId().toString(), event);
+                log.info("TransactionRefundedEvent published for transaction {}", originalTransaction.getId());
+            } else {
+                log.warn("[KAFKA_SKIP] KafkaTemplate unavailable, skipping TransactionRefundedEvent publication for transaction {}", originalTransaction.getId());
+            }
             
         } catch (Exception e) {
             log.error("Error publishing TransactionRefundedEvent: {}", e.getMessage(), e);
