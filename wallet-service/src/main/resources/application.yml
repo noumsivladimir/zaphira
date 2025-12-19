@@ -1,5 +1,9 @@
 server:
+<<<<<<< HEAD
   port: 8086
+=======
+  port: 8083
+>>>>>>> origin/services/wallet
 
 spring:
   application:
@@ -10,7 +14,11 @@ spring:
     password: 1234
   jpa:
     hibernate:
+<<<<<<< HEAD
       ddl-auto: validate
+=======
+      ddl-auto: update
+>>>>>>> origin/services/wallet
     show-sql: true
   kafka:
     bootstrap-servers: 192.168.0.122:9092

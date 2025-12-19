@@ -14,7 +14,11 @@ import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.model.enums.TransactionType;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
+<<<<<<< HEAD
 import com.zaphira.transaction.service.authorization.TransactionAuthorizationRequestService;
+=======
+import com.zaphira.transaction.service.authorization.TransactionAuthorizationService;
+>>>>>>> origin/services/wallet
 import com.zaphira.transaction.service.compliance.ComplianceService;
 import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
@@ -62,7 +66,11 @@ class TransactionServiceTest {
     private TransactionLimitService limitService;
 
     @Mock
+<<<<<<< HEAD
     private TransactionAuthorizationRequestService authorizationService;
+=======
+    private TransactionAuthorizationService authorizationService;
+>>>>>>> origin/services/wallet
 
     private TransactionService transactionService;
     private LimitProperties limitProperties;
@@ -129,13 +137,19 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(1L)
+<<<<<<< HEAD
             .availableBalance(new BigDecimal("10000"))
+=======
+>>>>>>> origin/services/wallet
             .build();
         com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
+<<<<<<< HEAD
             .availableBalance(new BigDecimal("5000"))
+=======
+>>>>>>> origin/services/wallet
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
         when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
@@ -180,13 +194,19 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(1L)
+<<<<<<< HEAD
             .availableBalance(new BigDecimal("10000"))
+=======
+>>>>>>> origin/services/wallet
             .build();
         com.zaphira.common.dto.WalletDTO receiver = com.zaphira.common.dto.WalletDTO.builder()
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
+<<<<<<< HEAD
             .availableBalance(new BigDecimal("5000"))
+=======
+>>>>>>> origin/services/wallet
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
         when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
@@ -222,10 +242,14 @@ class TransactionServiceTest {
             .id(11L)
             .walletNumber("W2")
             .userId(2L)
+<<<<<<< HEAD
             .availableBalance(new java.math.BigDecimal("10000"))
             .build();
         receiver.setBalance(new java.math.BigDecimal("5000"));
         
+=======
+            .build();
+>>>>>>> origin/services/wallet
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
         when(feignWalletClient.getWalletByNumber("W2")).thenReturn(receiver);
 
@@ -278,7 +302,10 @@ class TransactionServiceTest {
             .id(10L)
             .walletNumber("W1")
             .userId(999L)
+<<<<<<< HEAD
             .availableBalance(new BigDecimal("10000"))
+=======
+>>>>>>> origin/services/wallet
             .build();
         when(feignWalletClient.getWalletByNumber("W1")).thenReturn(sender);
 

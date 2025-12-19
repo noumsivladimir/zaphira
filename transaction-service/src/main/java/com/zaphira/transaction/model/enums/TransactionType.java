@@ -30,9 +30,13 @@ public enum TransactionType {
     SPLIT_BILL,
     REQUEST_MONEY,
     DONATION,
+<<<<<<< HEAD
     TIP,
     REFUND,
     REVERSAL
+=======
+    TIP
+>>>>>>> origin/services/wallet
 }
 
 

@@ -35,14 +35,16 @@ public class RegularUser extends User {
 
 
     @Column(nullable = false)
-    private boolean notificationsEnabled ;
+    @Builder.Default
+    private boolean notificationsEnabled = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean smsNotificationsEnabled = false;
+    private Boolean smsNotificationsEnabled = true;
 
     @Column(nullable = false)
     @Builder.Default
@@ -73,7 +75,7 @@ public class RegularUser extends User {
 
 
 
-    @Override
+//    @Override
     public Set<PermissionType> getPermissions() {
         return Set.of(
                 PermissionType.VIEW_OWN_PROFILE,

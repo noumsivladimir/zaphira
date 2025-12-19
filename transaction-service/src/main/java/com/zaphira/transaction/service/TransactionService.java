@@ -18,7 +18,7 @@ import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
-import com.zaphira.transaction.service.authorization.TransactionAuthorizationRequestService;
+import com.zaphira.transaction.service.authorization.TransactionAuthorizationService;
 import com.zaphira.transaction.service.compliance.ComplianceService;
 import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
@@ -26,8 +26,6 @@ import com.zaphira.transaction.service.limit.LimitEvaluationResult;
 import com.zaphira.transaction.service.limit.TransactionLimitService;
 import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.transaction.event.TransactionEventPublisher;
-import com.zaphira.transaction.service.kafka.ValidationOrchestrationService;
-import com.zaphira.transaction.config.ValidationFeatureProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,14 +39,12 @@ public class TransactionService {
     private TransactionValidationService validationService;
     private TransactionLimitService limitService;
     private FeeService feeService;
-    private TransactionAuthorizationRequestService authorizationService;
+    private TransactionAuthorizationService authorizationService;
     private ComplianceService complianceService;
     private LimitProperties limitProperties;
     private WalletClient walletClient;
     private FeignWalletClient feignWalletClient;
     private TransactionEventPublisher transactionEventPublisher;
-    private ValidationOrchestrationService validationOrchestrationService;
-    private ValidationFeatureProperties validationFeatureProperties;
 
     // No-args constructor for Spring
     public TransactionService() {
@@ -60,15 +56,13 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationRequestService authorizationService,
+                              TransactionAuthorizationService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient,
                               FeignWalletClient feignWalletClient,
-                              TransactionEventPublisher transactionEventPublisher,
-                              ValidationOrchestrationService validationOrchestrationService,
-                              ValidationFeatureProperties validationFeatureProperties) {
+                              TransactionEventPublisher transactionEventPublisher) {
         this.repository = repository;
         this.stateHistoryRepository = stateHistoryRepository;
         this.validationService = validationService;
@@ -80,39 +74,37 @@ public class TransactionService {
         this.walletClient = walletClient;
         this.feignWalletClient = feignWalletClient;
         this.transactionEventPublisher = transactionEventPublisher;
-        this.validationOrchestrationService = validationOrchestrationService;
-        this.validationFeatureProperties = validationFeatureProperties;
     }
 
-    // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher or ValidationOrchestrationService
+    // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationRequestService authorizationService,
+                              TransactionAuthorizationService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient,
                               FeignWalletClient feignWalletClient) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null, null, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null);
     }
 
-    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient, EventPublisher or ValidationOrchestrationService
+    // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient or EventPublisher
     public TransactionService(TransactionRepository repository,
                               TransactionStateHistoryRepository stateHistoryRepository,
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationRequestService authorizationService,
+                              TransactionAuthorizationService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null, null, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null);
     }
 
     @Transactional
@@ -168,7 +160,7 @@ public class TransactionService {
             .senderWalletNumber(request.getSenderWalletNumber())
             .receiverWalletNumber(request.getReceiverWalletNumber())
             .amount(request.getAmount())
-            .currency(request.getCurrency())
+                .currency(request.getCurrency())
                 .type(request.getType())
                 .status(TransactionStatus.INITIATED)
                 .channel(request.getChannel())
@@ -203,18 +195,6 @@ public class TransactionService {
             repository.save(saved);
             recordState(saved, TransactionStatus.PENDING, request.getRequestedBy(), evaluation.getReason());
             authorizationService.createAuthorization(saved, evaluation.getMethod(), request.getRequestedBy());
-            
-            // Initiate async Kafka validation only if feature flag is enabled (fail-safe, doesn't block transaction creation)
-            if (shouldInitiateAsyncValidation()) {
-                try {
-                    validationOrchestrationService.initiateAsyncValidation(saved);
-                } catch (Exception e) {
-                    // Log but don't throw - async validation is supplementary
-                    org.slf4j.LoggerFactory.getLogger(TransactionService.class)
-                        .warn("Failed to initiate async validation for transaction: " + saved.getId(), e);
-                }
-            }
-            
             return saved;
         }
 
@@ -285,56 +265,9 @@ public class TransactionService {
             throw new IllegalStateException("Transaction does not require authorization");
         }
         complianceService.assertNotBlocked(tx);
-        
-        // Verify sender's wallet balance
-        verifyAndDeductBalance(tx);
-        
         authorizationService.approveAuthorization(id, request.getMethod(), request.getCode(), request.getAuthorizedBy());
         changeStatus(tx, TransactionStatus.AUTHORIZED, request.getAuthorizedBy(), "Authorization approved");
         return processImmediateTransaction(tx, request.getAuthorizedBy());
-    }
-    
-    /**
-     * Verify that sender has sufficient balance for the transaction (amount + fees)
-     * This method is called during authorization to ensure funds are available
-     * @param transaction The transaction to verify
-     * @throws IllegalStateException if sender has insufficient balance
-     */
-    private void verifyAndDeductBalance(Transaction transaction) {
-        try {
-            // Retrieve sender's wallet details
-            WalletDTO senderWallet = feignWalletClient.getWalletByNumber(transaction.getSenderWalletNumber());
-            
-            if (senderWallet == null) {
-                throw new IllegalStateException("Sender wallet not found: " + transaction.getSenderWalletNumber());
-            }
-            
-            // Calculate total amount to deduct (transaction amount + fees)
-            java.math.BigDecimal totalAmount = transaction.getAmount();
-            if (transaction.getFeeAmount() != null) {
-                totalAmount = totalAmount.add(transaction.getFeeAmount());
-            }
-            
-            // Verify sufficient balance
-            if (senderWallet.getBalance() == null) {
-                throw new IllegalStateException(
-                    "Sender wallet balance is not available. Please try again."
-                );
-            }
-            
-            if (senderWallet.getBalance().compareTo(totalAmount) < 0) {
-                throw new IllegalStateException(
-                    String.format("Insufficient balance. Required: %s, Available: %s",
-                        totalAmount, senderWallet.getBalance())
-                );
-            }
-            
-        } catch (Exception ex) {
-            if (ex instanceof IllegalStateException) {
-                throw ex;
-            }
-            throw new IllegalStateException("Failed to verify sender's balance: " + ex.getMessage(), ex);
-        }
     }
 
     private Transaction processImmediateTransaction(Transaction transaction, String actor) {
@@ -387,27 +320,10 @@ public class TransactionService {
         return Wallet.builder()
                 .id(walletDto.getId())
                 .walletNumber(walletDto.getWalletNumber())
-                .availableBalance(walletDto.getAvailableBalance())
-                .blockedBalance(walletDto.getBlockedBalance())
-                .totalBalance(walletDto.getTotalBalance())
+                .balance(walletDto.getBalance())
                 .currency(walletDto.getCurrency())
-                .type(walletDto.getType())
-                .status(walletDto.getStatus())
+                .active(walletDto.getActive())
                 .userId(walletDto.getUserId())
-                .dailyLimit(walletDto.getDailyLimit())
-                .dailySpent(walletDto.getDailySpent())
-                .monthlyLimit(walletDto.getMonthlyLimit())
-                .monthlySpent(walletDto.getMonthlySpent())
-                .frozenAt(walletDto.getFrozenAt())
-                .frozenBy(walletDto.getFrozenBy())
-                .frozenReason(walletDto.getFrozenReason())
-                .isPrimary(walletDto.getIsPrimary())
-                .createdAt(walletDto.getCreatedAt())
-                .updatedAt(walletDto.getUpdatedAt())
-                .closedAt(walletDto.getClosedAt())
-                .lastLimitReset(walletDto.getLastLimitReset())
-                .metadata(walletDto.getMetadata())
-                .version(walletDto.getVersion())
                 .build();
     }
 
@@ -438,41 +354,6 @@ public class TransactionService {
                     .warn("Failed to publish TransactionCreatedEvent for transaction {}: {}",
                             transaction.getId(), e.getMessage());
         }
-    }
-
-    /**
-     * Determines whether async Kafka validation should be initiated
-     * 
-     * Checks:
-     * 1. Feature flag is enabled (validation.feature.enabled=true)
-     * 2. Random traffic percentage match (supports canary rollout)
-     * 3. ValidationOrchestrationService is available
-     * 
-     * @return true if all conditions met, false otherwise
-     */
-    private boolean shouldInitiateAsyncValidation() {
-        // Feature flag not enabled - safe mode
-        if (validationFeatureProperties == null || !validationFeatureProperties.isEnabled()) {
-            return false;
-        }
-        
-        // ValidationOrchestrationService not injected (shouldn't happen, but failsafe)
-        if (validationOrchestrationService == null) {
-            return false;
-        }
-        
-        // Check traffic percentage for canary rollout (0-100)
-        int trafficPercentage = validationFeatureProperties.getTrafficPercentage();
-        if (trafficPercentage <= 0) {
-            return false;
-        }
-        if (trafficPercentage < 100) {
-            // Random decision based on traffic percentage
-            return (int) (Math.random() * 100) < trafficPercentage;
-        }
-        
-        // 100% traffic - always enable
-        return true;
     }
 
 }

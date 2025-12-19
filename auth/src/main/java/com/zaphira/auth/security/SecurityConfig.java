@@ -39,7 +39,6 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .authorizeHttpRequests(auth -> auth
-                // Routes publiques accessibles sans JWT
                 .requestMatchers(
                         "/api/auth/**",
                         "/api/auth/register",
@@ -52,14 +51,15 @@ public class SecurityConfig {
                         "/refresh",
                         "/logout",
                         "/me",
-                        "/error"
+                        "/error",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
                 ).permitAll()
-                // Toutes les autres requêtes nécessitent authentification
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .userDetailsService(customUserDetailsService)
-            // JWT filter placé avant le UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

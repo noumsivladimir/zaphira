@@ -1,7 +1,6 @@
 package com.zaphira.service_user.model.entities;
 
 import com.zaphira.service_user.model.enums.AccountStatus;
-import com.zaphira.service_user.model.enums.PermissionType;
 import com.zaphira.service_user.model.enums.RoleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Past;
@@ -15,7 +14,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 
 @Entity
@@ -78,7 +76,7 @@ public abstract class User {
     @Column(nullable = false, length = 100)
     private String country;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = true, length = 100)
     private String neighborhood;
 
     @Column(nullable = true, length = 100)
@@ -113,6 +111,9 @@ public abstract class User {
     @Column(length = 50)
     private String lastLoginIp;
 
+    @Column(nullable = false, length = 50)
+    private String registrationIp;
+
     @Column
     @Builder.Default  // ← AJOUTER
     private Integer failedLoginAttempts = 0;
@@ -130,7 +131,7 @@ public abstract class User {
 
     // Abstract methods - to be implemented by subclasses
     public abstract RoleType getRoleType();
-    public abstract Set<PermissionType> getPermissions();
+   // public abstract Set<PermissionType> getPermissions();
 
     // Common business logic methods
     public boolean isAccountLocked() {
@@ -158,10 +159,10 @@ public abstract class User {
     }
 
     public String getFullName() {
-        return firstName + " " + lastName;
+        return this.firstName + " " + lastName;
     }
 
-    public boolean hasPermission(PermissionType permission) {
-        return getPermissions().contains(permission);
-    }
+//    public boolean hasPermission(PermissionType permission) {
+//        return getPermissions().contains(permission);
+//    }
 }

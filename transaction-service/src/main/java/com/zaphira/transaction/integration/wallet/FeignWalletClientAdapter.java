@@ -15,6 +15,10 @@ public class FeignWalletClientAdapter implements WalletClient {
         var wallet = feignClient.getWalletByNumber(walletNumber);
         WalletDetailsResponse response = new WalletDetailsResponse();
         response.setWalletNumber(wallet.getWalletNumber());
+<<<<<<< HEAD
+=======
+        response.setCurrency(wallet.getCurrency());
+>>>>>>> origin/services/wallet
         response.setBalance(wallet.getBalance());
         response.setStatus(wallet.getActive() ? "ACTIVE" : "INACTIVE");
         response.setFrozen(false);

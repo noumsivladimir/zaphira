@@ -13,7 +13,6 @@ import java.util.List;
 public interface UserService {
 
     // User Registration
-    UserResponse registerUser(UserRegistrationRequest request);
     UserResponse registerAdmin(UserRegistrationRequest request);
     UserResponse registerMerchant(UserRegistrationRequest request);
 

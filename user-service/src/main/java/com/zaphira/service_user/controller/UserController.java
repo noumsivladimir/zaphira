@@ -3,11 +3,9 @@ package com.zaphira.service_user.controller;
 import com.zaphira.service_user.dto.request.ChangePinRequest;
 import com.zaphira.service_user.dto.request.UpdateProfileRequest;
 import com.zaphira.service_user.dto.request.UserRegistrationRequest;
-import com.zaphira.service_user.dto.response.ApiResponse;
-import com.zaphira.service_user.dto.response.ChangePinResponse;
-import com.zaphira.service_user.dto.response.UserResponse;
-import com.zaphira.service_user.dto.response.UserSecurityQuestionResponse;
+import com.zaphira.service_user.dto.response.*;
 import com.zaphira.service_user.model.entities.User;
+import com.zaphira.service_user.services.UserRegistrationServiceImpl;
 import com.zaphira.service_user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,17 +29,18 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final UserRegistrationServiceImpl userRegistrationService;
 //    private final AuthService authService;
 
 
 
     @PostMapping("/register")
     @Operation(summary = "Register new user", description = "Register a new regular user account with wallet creation")
-    public ResponseEntity<ApiResponse<UserResponse>> registerUser(
+    public ResponseEntity<ApiResponse<UsersRegistrationResponse>> registerUser(
             @Valid @RequestBody UserRegistrationRequest request) {
 
         log.info("Registration request received for phone: {}", request.getPhoneNumber());
-        UserResponse user = userService.registerUser(request);
+        UsersRegistrationResponse user = userRegistrationService.registerAdmin(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(user, "User registered successfully"));
     }
