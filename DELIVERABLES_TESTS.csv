@@ -1,0 +1,23 @@
+Type,Localisation,Nom Fichier,Objectif,Status,Format
+Configuration,user-service/src/test/resources/,application-test-sync.properties,Configuration SQLite+Feign pour user-service,✅ Créé,Properties
+Configuration,wallet-service/src/test/resources/,application-test-sync.properties,Configuration SQLite+Feign pour wallet-service,✅ Créé,Properties
+Controller,user-service/src/test/java/com/zaphira/service_user/controller/test/,UserServiceTestMessageController.java,Gère messages Feign pour user-service,✅ Créé,Java
+Controller,wallet-service/src/test/java/com/zaphira/wallet/controller/test/,WalletServiceTestMessageController.java,Gère messages Feign pour wallet-service,✅ Créé,Java
+Test E2E,user-service/src/test/java/com/zaphira/service_user/integration/test/,UserRegistrationE2ETest.java,Tests d'enregistrement utilisateur (4 tests),✅ Créé,Java
+Test E2E,user-service/src/test/java/com/zaphira/service_user/integration/test/,SynchronousMicroserviceCommunicationTest.java,Tests communication Feign (4 tests),✅ Créé,Java
+Test E2E,wallet-service/src/test/java/com/zaphira/wallet/integration/test/,WalletCreationE2ETest.java,Tests création portefeuille (2 tests),✅ Créé,Java
+Script,./,run-tests.sh,Script d'exécution des tests (Linux/Mac),✅ Créé,Bash
+Script,./,run-tests.bat,Script d'exécution des tests (Windows),✅ Créé,Batch
+Script,./,Makefile,Commandes Make pour faciliter exécution,✅ Créé,Makefile
+Documentation,./,QUICK_START_TESTS.md,Guide démarrage rapide (5 minutes),✅ Créé,Markdown
+Documentation,./,FINAL_CHECKLIST.md,Checklist détaillé de mise en place,✅ Créé,Markdown
+Documentation,./,TEST_SYNC_STRATEGY.md,Stratégie et architecture des tests,✅ Créé,Markdown
+Documentation,./,GUIDE_EXECUTION_TESTS.md,Guide complet d'exécution (30 min),✅ Créé,Markdown
+Documentation,./,DEPENDENCIES_TEST_CONFIGURATION.md,Configuration des dépendances Maven,✅ Créé,Markdown
+Documentation,./,TEST_IMPLEMENTATION_INDEX.md,Index complet des fichiers créés,✅ Créé,Markdown
+Documentation,./,TEMPLATE_ADD_TESTS_NEW_SERVICE.md,Template pour ajouter tests à un service,✅ Créé,Markdown
+Documentation,./,TEST_STRATEGY_AND_IMPLEMENTATION.md,Index central et guide de lecture,✅ Créé,Markdown
+Documentation,./,IMPLEMENTATION_SUMMARY.txt,Résumé visuel avec diagrammes,✅ Créé,Text
+Documentation,./,IMPLEMENTATION_COMPLETE.txt,Résumé complet de l'implémentation,✅ Créé,Text
+Documentation,./,README_TESTS.md,README central pour les tests,✅ Créé,Markdown
+Documentation,./,DELIVERABLES_TESTS.csv,Ce fichier - Inventaire des livrables,✅ Créé,CSV

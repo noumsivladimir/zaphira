@@ -1,9 +1,5 @@
 server:
-<<<<<<< HEAD
   port: 8086
-=======
-  port: 8083
->>>>>>> origin/services/wallet
 
 spring:
   application:
@@ -12,27 +8,23 @@ spring:
     url: jdbc:postgresql://192.168.0.122:5432/wallet_db
     username: postgres
     password: 1234
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-<<<<<<< HEAD
-      ddl-auto: validate
-=======
       ddl-auto: update
->>>>>>> origin/services/wallet
-    show-sql: true
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
   kafka:
     bootstrap-servers: 192.168.0.122:9092
-    consumer:
-      group-id: wallet-service-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-      enable-auto-commit: false
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    properties:
+      connections.max.idle.ms: 180000
+      retry.backoff.ms: 100
+  
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 # Ajouter cette section
 kafka:

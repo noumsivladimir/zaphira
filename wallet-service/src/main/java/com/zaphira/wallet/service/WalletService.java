@@ -1,10 +1,12 @@
 package com.zaphira.wallet.service;
 
-<<<<<<< HEAD
-import com.zaphira.common.dto.WalletDTO;
+
+import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.common.exception.ResourceNotFoundException;
 //import com.zaphira.wallet.client.TransactionServiceClient;
-import com.zaphira.common.model.entities.Wallet;
+import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.models.enums.WalletType;
 import com.zaphira.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,10 +33,9 @@ public class WalletService {
             .blockedBalance(BigDecimal.ZERO)
             .totalBalance(BigDecimal.ZERO)
             // Default values
-            .status("ACTIVE")
+            .status(WalletStatus.ACTIVE)
             .isPrimary(false)
-            .type("REGULAR")
-            .currency("XOF")
+            .type(WalletType.USER)
             // Limits initialized to null/default
             .dailyLimit(null)
             .dailySpent(BigDecimal.ZERO)
@@ -47,10 +48,6 @@ public class WalletService {
             // Other fields
             .metadata(null)
             .version(0L)
-            .createdAt(java.time.LocalDateTime.now())
-            .updatedAt(java.time.LocalDateTime.now())
-            .closedAt(null)
-            .lastLimitReset(null)
             .build();
 
     // Sauvegarder le wallet en base
@@ -77,11 +74,11 @@ public class WalletService {
         Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
         
-        if (wallet.getBalance().compareTo(amount) < 0) {
+        if (wallet.getAvailableBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Insufficient balance");
         }
         
-        wallet.setBalance(wallet.getBalance().subtract(amount));
+        wallet.debit(amount);
         walletRepository.save(wallet);
     }
 
@@ -90,7 +87,7 @@ public class WalletService {
         Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
         
-        wallet.setBalance(wallet.getBalance().add(amount));
+        wallet.credit(amount);
         walletRepository.save(wallet);
     }
 
@@ -107,7 +104,6 @@ public class WalletService {
                 .availableBalance(wallet.getAvailableBalance())
                 .blockedBalance(wallet.getBlockedBalance())
                 .totalBalance(wallet.getTotalBalance())
-                .currency(wallet.getCurrency())
                 .type(wallet.getType())
                 .status(wallet.getStatus())
                 .userId(wallet.getUserId())
@@ -128,66 +124,3 @@ public class WalletService {
                 .build();
     }
 }
-
-=======
-import com.zaphira.wallet.dto.request.CreateWalletRequest;
-import com.zaphira.wallet.dto.response.CreateWalletResponse;
-
-public interface WalletService {
-
-   // WalletDTO createUserWallet(CreateWalletRequest request);
-   CreateWalletResponse createWalletForUser(CreateWalletRequest request);
-//   WalletDTO createWalletForMerchant(CreateWalletRequest request);
-//    WalletDTO createWalletForUser(Long userId);
-
-    // Consultation
-//    WalletDTO getWalletByNumber(String walletNumber);
-//    WalletDTO getWalletById(Long id);
-//    List<WalletDTO> getUserWallets(Long userId);
-//    WalletDTO getPrimaryWallet(Long userId);
-//    WalletSummaryDTO getWalletSummary(Long userId);
-//
-//    // Gestion du statut
-//    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request);
-//    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
-//    WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy);
-//    WalletDTO activateWallet(String walletNumber, String activatedBy);
-//    WalletDTO closeWallet(String walletNumber, String closedBy, String reason);
-//
-//    // Gestion des soldes
-//    WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request);
-//    WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request);
-//    WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request);
-//    WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request);
-//    WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request);
-//
-//    // Validation de transaction
-//    TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
-//
-//    // Gestion des limites
-//    void resetDailyLimits();
-//    void resetMonthlyLimits();
-//    WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit);
-//
-//    // Utilitaires
-//    boolean hasAvailableBalance(String walletNumber, BigDecimal amount);
-//    void recalculateBalance(String walletNumber);
-//
-//    // Création
-//    WalletDTO createWallet(CreateWalletRequest request, Long requestingUserId);
-//
-//    // Consultation (avec vérification de permissions)
-//    WalletDTO getWallet(String walletNumber, Long requestingUserId);
-//    List<WalletDTO> getAccessibleWallets(Long userId); // Wallets où user a des permissions
-//
-//    // Gestion du statut (avec vérification de permissions)
-//    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request, Long requestingUserId);
-//    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes, Long requestingUserId);
-//
-//    // ... autres méthodes
-//
-//    // Nouvelles méthodes pour hiérarchie
-//    WalletDTO transferBetweenSubWallets(TransferBetweenSubWalletsRequest request, Long requestingUserId);
-//    BalanceSummaryDTO getConsolidatedBalance(String walletNumber, Long requestingUserId);
-}
->>>>>>> origin/services/wallet

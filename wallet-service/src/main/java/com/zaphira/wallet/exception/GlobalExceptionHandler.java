@@ -1,9 +1,5 @@
 package com.zaphira.wallet.exception;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -74,17 +70,4 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
-}
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class ErrorResponse {
-    private LocalDateTime timestamp;
-    private Integer status;
-    private String error;
-    private String message;
-    private String errorCode;
-    private Map<String, String> validationErrors;
 }

@@ -33,7 +33,7 @@ public class SubWalletController {
 
 
         } catch (Exception e) {
-            log.error("Failed to create subWallet");
+            log.error("Failed to create subWallet: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating wallet: " + e.getMessage());
         }

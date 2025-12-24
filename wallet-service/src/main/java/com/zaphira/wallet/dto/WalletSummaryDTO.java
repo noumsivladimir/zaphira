@@ -1,6 +1,5 @@
 package com.zaphira.wallet.dto;
 
-import com.zaphira.common.model.enums.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,5 +17,4 @@ public class WalletSummaryDTO {
     private Integer totalWallets;
     private List<WalletDTO> wallets;
     private BigDecimal totalBalanceAllWallets;
-    private Currency primaryCurrency;
 }

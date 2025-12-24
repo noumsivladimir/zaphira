@@ -116,10 +116,6 @@
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-feign</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.zaphira</groupId>
-			<artifactId>wallet-service</artifactId>
-		</dependency>
 
 	</dependencies>
 

@@ -169,11 +169,10 @@ public class UserRegistrationServiceImpl implements UsersRegistrationService{
 
     public static String generateEmployeeId(CameroonRegion region) {
         int year = Year.now().getValue();
-        int random = ThreadLocalRandom.current().nextInt(0, 1000000);
+        int random = ThreadLocalRandom.current().nextInt(0, 10000);
 
         return String.format(
-                "EMP-%s-%d-%06d",
-                region.name(),
+                "EMP-%d-%04d",
                 year,
                 random
         );

@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class AdminUser extends User {
 
 
-    @Column(unique = true, length = 20)
+    @Column(unique = true, length = 50)
     private String employeeId;
 
     @Column(length = 100)

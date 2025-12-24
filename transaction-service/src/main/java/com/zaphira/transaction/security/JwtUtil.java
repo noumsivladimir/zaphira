@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-//import java.util.Date;
+
 
 @Component
 @RequiredArgsConstructor
@@ -57,5 +57,9 @@ public class JwtUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public String getEmailFromToken(String token) {
+        return extractEmail(token);
     }
 }

@@ -3,7 +3,7 @@ package com.zaphira.service_user.client;
 import com.zaphira.service_user.dto.request.CreateWalletRequest;
 import com.zaphira.service_user.dto.response.WalletResponse;
 import com.zaphira.service_user.exception.WalletServiceException;
-import com.zaphira.wallet.dto.request.FreezeWalletRequest;
+import com.zaphira.common.dto.request.FreezeWalletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;

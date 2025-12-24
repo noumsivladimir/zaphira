@@ -1,6 +1,5 @@
 package com.zaphira.wallet.dto;
 
-import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.models.entities.SubWallet;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import com.zaphira.wallet.models.enums.WalletType;
@@ -24,7 +23,6 @@ public class WalletDTO {
     private WalletType type;
     private WalletStatus status;
     private List<SubWallet> subWallets;
-    private Currency currency;
     private BigDecimal availableBalance;
     private BigDecimal blockedBalance;
     private BigDecimal totalBalance;
@@ -35,7 +33,11 @@ public class WalletDTO {
     private Boolean isPrimary;
     private String frozenReason;
     private LocalDateTime frozenAt;
+    private String frozenBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime closedAt;
+    private LocalDateTime lastLimitReset;
     private String metadata;
+    private Long version;
 }

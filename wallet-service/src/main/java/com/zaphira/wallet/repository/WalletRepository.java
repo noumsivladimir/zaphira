@@ -1,11 +1,5 @@
 package com.zaphira.wallet.repository;
 
-<<<<<<< HEAD
-import com.zaphira.common.model.entities.Wallet;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-=======
 import com.zaphira.wallet.models.entities.Wallet;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import jakarta.persistence.LockModeType;
@@ -16,18 +10,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
->>>>>>> origin/services/wallet
+
 import java.util.Optional;
 
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, Long> {
-<<<<<<< HEAD
+
     Optional<Wallet> findByUserId(Long userId);
-    Optional<Wallet> findByWalletNumber(String walletNumber);
-=======
-
-
-
     Optional<Wallet> findByWalletNumber(String walletNumber);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -50,6 +39,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 //
 //    @Query("SELECT w FROM Wallet w WHERE w.status = :status")
 //    List<Wallet> findAllByStatus(@Param("status") WalletStatus status);
->>>>>>> origin/services/wallet
+
 }
 

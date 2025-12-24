@@ -1,11 +1,32 @@
 server:
-  port: 8084
+  port: 8007
 
 spring:
   application:
     name: notification-service
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+    open-in-view: false
+  
   kafka:
-    bootstrap-servers: 192.168.0.122:9092
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: notification-service
       auto-offset-reset: earliest
@@ -13,6 +34,10 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  
   mail:
     host: smtp.gmail.com
     port: 587
@@ -24,13 +49,69 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 logging:
   level:
+    root: INFO
     com.zaphira.notification: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.orm: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
+# Notification Rules Configuration
+notification:
+  rules:
+    enabled: true
+    async-processing: true
+    batch-size: 100
+    batch-timeout-ms: 5000
+    retry:
+      max-attempts: 3
+      delay-ms: 1000
+      multiplier: 2.0
+  
+  templates:
+    email:
+      transaction-confirmation:
+        subject: "Transaction Confirmation - Zaphira"
+        enabled: true
+      wallet-alert:
+        subject: "Wallet Alert - Zaphira"
+        enabled: true
+      user-registration:
+        subject: "Welcome to Zaphira"
+        enabled: true
+    
+    sms:
+      transaction-alert:
+        enabled: true
+      wallet-low-balance:
+        enabled: true
+
+  preferences:
+    default-channel: EMAIL
+    retry-interval-minutes: 5
+    max-retry-attempts: 3
+    verification-timeout-minutes: 30
+
+  kafka-topics:
+    notifications-in: notification-events
+    notifications-out: notification-results
+    user-registered: user.registered
+    transaction-created: transaction.created
+    wallet-updated: wallet.updated

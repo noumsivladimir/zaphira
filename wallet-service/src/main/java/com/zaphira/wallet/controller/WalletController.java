@@ -1,25 +1,20 @@
 package com.zaphira.wallet.controller;
 
-<<<<<<< HEAD
-import com.zaphira.common.dto.WalletDTO;
+
+import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.wallet.dto.TransferRequest;
-=======
+
 import com.zaphira.wallet.dto.request.CreateWalletRequest;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
->>>>>>> origin/services/wallet
+
 import com.zaphira.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-<<<<<<< HEAD
+
 import org.springframework.web.bind.annotation.*;
-=======
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
->>>>>>> origin/services/wallet
+
 
 @Slf4j
 @RestController
@@ -36,7 +31,6 @@ public class WalletController {
      * @return WalletDTO avec l'ID et le numéro du wallet
      */
     @PostMapping
-<<<<<<< HEAD
     public ResponseEntity<?> createWallet(
             @RequestParam Long userId,
             @RequestParam(defaultValue = "XOF") String currency) {
@@ -46,17 +40,6 @@ public class WalletController {
             return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
         } catch (Exception e) {
             log.error("❌ Failed to create wallet for user {}: {}", userId, e.getMessage(), e);
-=======
-    public ResponseEntity<?> createWallet(@RequestBody CreateWalletRequest request) {
-        try {
-            // ✅ Passer directement le request complet
-            CreateWalletResponse wallet = walletService.createWalletForUser(request);
-
-            log.info("✅ Wallet created for user {}: {}", request.getUserId(), wallet.getWalletNumber());
-            return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
-        } catch (Exception e) {
-            log.error("❌ Failed to create wallet for user {}: {}", request.getUserId(), e.getMessage(), e);
->>>>>>> origin/services/wallet
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating wallet: " + e.getMessage());
         }
@@ -65,7 +48,6 @@ public class WalletController {
     /**
      * Récupère le wallet d'un utilisateur via son ID.
      */
-<<<<<<< HEAD
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getWalletByUserId(@PathVariable Long userId) {
         try {
@@ -128,7 +110,7 @@ public class WalletController {
                     .body("Transfer failed: " + e.getMessage());
         }
     }
-=======
+
 //    @GetMapping("/user/{userId}")
 //    public ResponseEntity<?> getWalletByUserId(@PathVariable Long userId) {
 //        try {
@@ -191,5 +173,5 @@ public class WalletController {
 //                    .body("Transfer failed: " + e.getMessage());
 //        }
 //    }
->>>>>>> origin/services/wallet
+
 }

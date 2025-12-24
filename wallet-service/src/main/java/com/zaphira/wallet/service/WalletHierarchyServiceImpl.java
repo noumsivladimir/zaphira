@@ -20,6 +20,7 @@ public class WalletHierarchyServiceImpl implements WalletHierarchyService{
 
     private final SubWalletRepository subWalletRepository;
     private final WalletService walletService;
+    private final WalletRepository walletRepository;
 
     @Override
     public SubWallet createSubWallet(CreateSubWalletRequest request) {

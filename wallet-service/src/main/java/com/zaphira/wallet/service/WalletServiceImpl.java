@@ -16,14 +16,13 @@ import java.math.BigDecimal;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class WalletServiceImpl implements WalletService{
+public class WalletServiceImpl {
 
     private final WalletRepository walletRepository;
 //    private final WalletMapper walletMapper;
    // private final UserService userServiceClient;
 
 
-    @Override
     public CreateWalletResponse createWalletForUser(CreateWalletRequest request) {
 
         Long userId = request.getUserId();

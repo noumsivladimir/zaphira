@@ -18,7 +18,7 @@ import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
-import com.zaphira.transaction.service.authorization.TransactionAuthorizationService;
+import com.zaphira.transaction.service.authorization.AuthorizationRequestService;
 import com.zaphira.transaction.service.compliance.ComplianceService;
 import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
@@ -39,7 +39,7 @@ public class TransactionService {
     private TransactionValidationService validationService;
     private TransactionLimitService limitService;
     private FeeService feeService;
-    private TransactionAuthorizationService authorizationService;
+    private AuthorizationRequestService authorizationService;
     private ComplianceService complianceService;
     private LimitProperties limitProperties;
     private WalletClient walletClient;
@@ -56,7 +56,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -82,7 +82,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -98,7 +98,7 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
@@ -320,10 +320,24 @@ public class TransactionService {
         return Wallet.builder()
                 .id(walletDto.getId())
                 .walletNumber(walletDto.getWalletNumber())
-                .balance(walletDto.getBalance())
+                .availableBalance(walletDto.getAvailableBalance())
+                .blockedBalance(walletDto.getBlockedBalance())
+                .totalBalance(walletDto.getTotalBalance())
                 .currency(walletDto.getCurrency())
                 .active(walletDto.getActive())
                 .userId(walletDto.getUserId())
+                .status(walletDto.getStatus())
+                .frozenAt(walletDto.getFrozenAt())
+                .frozenBy(walletDto.getFrozenBy())
+                .frozenReason(walletDto.getFrozenReason())
+                .dailyLimit(walletDto.getDailyLimit())
+                .dailySpent(walletDto.getDailySpent())
+                .monthlyLimit(walletDto.getMonthlyLimit())
+                .monthlySpent(walletDto.getMonthlySpent())
+                .lastLimitReset(walletDto.getLastLimitReset())
+                .createdAt(walletDto.getCreatedAt())
+                .updatedAt(walletDto.getUpdatedAt())
+                .closedAt(walletDto.getClosedAt())
                 .build();
     }
 

@@ -1,7 +1,7 @@
 package com.zaphira.wallet.consumer;
 
-<<<<<<< HEAD
-import com.zaphira.common.dto.WalletDTO;
+
+import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.common.event.UserCreatedEvent;
 import com.zaphira.common.event.WalletCreatedEvent;
 import com.zaphira.wallet.service.WalletService;
@@ -10,10 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
-=======
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
->>>>>>> origin/services/wallet
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class UserEventConsumer {
 
-<<<<<<< HEAD
+
     private final WalletService walletService;
     private final KafkaTemplate<String, WalletCreatedEvent> kafkaTemplate;
 
@@ -54,7 +51,7 @@ public class UserEventConsumer {
 
         kafkaTemplate.send(walletCreatedTopic, event.getCorrelationId(), response);
     }
-=======
+
 //    private final WalletServiceImpl walletService;
 //    private final KafkaTemplate<String, WalletCreatedEvent> kafkaTemplate;
 //
@@ -87,5 +84,5 @@ public class UserEventConsumer {
 //
 //        kafkaTemplate.send(walletCreatedTopic, event.getCorrelationId(), response);
 //    }
->>>>>>> origin/services/wallet
+
 }

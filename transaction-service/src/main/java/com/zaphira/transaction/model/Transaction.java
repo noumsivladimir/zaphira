@@ -6,10 +6,10 @@ import com.zaphira.transaction.model.enums.TransactionChannel;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.model.enums.TransactionType;
 import com.zaphira.common.model.entities.Wallet;
-<<<<<<< HEAD
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-=======
->>>>>>> origin/services/wallet
+
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,19 +27,19 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-<<<<<<< HEAD
+
     @Version
     private Long version;
 
-=======
->>>>>>> origin/services/wallet
+
+
     @Column(nullable = false, unique = true, updatable = false)
     private String reference;
 
@@ -51,20 +51,19 @@ public class Transaction {
 
     // RELATIONSHIP: JPA @ManyToOne relationship to sender Wallet entity
     // Allows accessing sender wallet details and associated user via senderWallet.getUserId()
-<<<<<<< HEAD
+
     @JsonIgnore
-=======
->>>>>>> origin/services/wallet
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_wallet_id", nullable = true, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Wallet senderWallet;
 
     // RELATIONSHIP: JPA @ManyToOne relationship to receiver Wallet entity
     // Allows accessing receiver wallet details and associated user via receiverWallet.getUserId()
-<<<<<<< HEAD
+
     @JsonIgnore
-=======
->>>>>>> origin/services/wallet
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_wallet_id", nullable = true, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Wallet receiverWallet;
@@ -86,12 +85,11 @@ public class Transaction {
     private String route;   // e.g. WALLET_INTERNAL, BANK_GATEWAY_X, CARD_NETWORK_Y
 
     @Enumerated(EnumType.STRING)
-<<<<<<< HEAD
+
     private com.zaphira.transaction.model.enums.PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
-=======
->>>>>>> origin/services/wallet
+
     @Column(nullable = false)
     private TransactionType type;
 
@@ -104,13 +102,12 @@ public class Transaction {
 
     private String description;
 
-<<<<<<< HEAD
+
     @Column(nullable = false)
     @Builder.Default
     private Integer authorizationLevel = 0;
 
-=======
->>>>>>> origin/services/wallet
+
     @Enumerated(EnumType.STRING)
     private AuthorizationMethod authorizationMethod;
 

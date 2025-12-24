@@ -3,7 +3,7 @@ package com.zaphira.service_user.client;
 
 import com.zaphira.service_user.dto.request.CreateWalletRequest;
 import com.zaphira.service_user.dto.response.WalletResponse;
-import com.zaphira.wallet.dto.request.FreezeWalletRequest;
+import com.zaphira.common.dto.request.FreezeWalletRequest;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;

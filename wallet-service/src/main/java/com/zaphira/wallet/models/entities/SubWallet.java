@@ -1,6 +1,5 @@
 package com.zaphira.wallet.models.entities;
 
-import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.models.enums.SubWalletType;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import jakarta.persistence.*;
@@ -43,11 +42,6 @@ public class SubWallet {
 
     @Column(name = "sub_wallet_name", length = 100)
     private String subWalletName; // Nom personnalisé par l'utilisateur
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    @Builder.Default
-    private Currency currency = Currency.XAF;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

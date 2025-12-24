@@ -1,0 +1,229 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                    🧪 QUICK REFERENCE CARD                               ║
+║             Tests SQLite + Feign - Commandes et Configuration             ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+┌─ DÉMARRAGE RAPIDE ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  $ make test              ← Lance tous les tests (30 secondes)            │
+│  $ make verify            ← Vérifie l'environnement (Java, Maven)        │
+│  $ make help              ← Voir toutes les commandes                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ COMMANDES MAKE ──────────────────────────────────────────────────────────┐
+│                                                                            │
+│  make test               Tous les tests                                   │
+│  make test-user          User-service seulement                           │
+│  make test-wallet        Wallet-service seulement                         │
+│  make test-debug         Mode debug (logs détaillés)                      │
+│  make test-coverage      Avec couverture de code (Jacoco)                 │
+│  make clean              Nettoyer les artifacts                           │
+│  make report             Générer rapports Surefire/Jacoco                 │
+│  make verify             Vérifier Java, Maven, dépendances                │
+│  make config             Afficher la configuration                        │
+│  make help               Afficher cette aide                              │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ MAVEN DIRECT ────────────────────────────────────────────────────────────┐
+│                                                                            │
+│  mvn clean test -Dspring.profiles.active=test-sync                        │
+│                                                                            │
+│  mvn test -f user-service/pom.xml -Dspring.profiles.active=test-sync     │
+│  mvn test -f wallet-service/pom.xml -Dspring.profiles.active=test-sync   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ SCRIPTS ─────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│  # Linux/Mac                                                              │
+│  ./run-tests.sh all                  # Tous les tests                     │
+│  ./run-tests.sh user-service         # User-service                      │
+│  ./run-tests.sh wallet-service debug # Mode debug                        │
+│                                                                            │
+│  # Windows                                                                │
+│  run-tests.bat all                   # Tous les tests                     │
+│  run-tests.bat user-service          # User-service                      │
+│  run-tests.bat wallet-service debug  # Mode debug                        │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ RÉSULTAT ATTENDU ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  [INFO] BUILD SUCCESS                                                    │
+│  [INFO] Tests run: 10, Failures: 0, Errors: 0                            │
+│  [INFO] Total time: 30 seconds                                           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ CONFIGURATION ────────────────────────────────────────────────────────────┐
+│                                                                            │
+│  Profil:        test-sync                                                 │
+│  BD:            H2 SQLite (in-memory)                                      │
+│  Messaging:     Feign REST (synchrone)                                    │
+│  Port User:     8082                                                      │
+│  Port Wallet:   8086                                                      │
+│                                                                            │
+│  Fichiers config:                                                         │
+│  └─ user-service/src/test/resources/application-test-sync.properties     │
+│  └─ wallet-service/src/test/resources/application-test-sync.properties   │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ TESTS DISPONIBLES ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  User-Service (8 tests):                                                   │
+│  ✅ UserRegistrationE2ETest (4):                                          │
+│     - testAdminRegistrationSuccess()                                      │
+│     - testAdminUserPersistence()                                          │
+│     - testDuplicateEmailRejection()                                       │
+│     - testValidationOfRequiredFields()                                    │
+│                                                                            │
+│  ✅ SynchronousMicroserviceCommunicationTest (4):                        │
+│     - testWalletServiceCommunication()                                    │
+│     - testWalletServiceTimeout()                                          │
+│     - testRetryOnTransientFailure()                                       │
+│     - testRequestValidation()                                             │
+│                                                                            │
+│  Wallet-Service (2 tests):                                                │
+│  ✅ WalletCreationE2ETest (2):                                            │
+│     - testWalletCreationSuccess()                                         │
+│     - testWalletCreationValidation()                                      │
+│                                                                            │
+│  TOTAL: 10 tests ✅                                                       │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DÉPENDANCES MAVEN REQUISES ──────────────────────────────────────────────┐
+│                                                                            │
+│  <dependency>                                                             │
+│      <groupId>com.h2database</groupId>                                   │
+│      <artifactId>h2</artifactId>                                         │
+│      <scope>test</scope>                                                  │
+│  </dependency>                                                            │
+│                                                                            │
+│  <dependency>                                                             │
+│      <groupId>io.rest-assured</groupId>                                  │
+│      <artifactId>rest-assured</artifactId>                               │
+│      <scope>test</scope>                                                  │
+│  </dependency>                                                            │
+│                                                                            │
+│  <dependency>                                                             │
+│      <groupId>org.mockito</groupId>                                      │
+│      <artifactId>mockito-inline</artifactId>                             │
+│      <scope>test</scope>                                                  │
+│  </dependency>                                                            │
+│                                                                            │
+│  <dependency>                                                             │
+│      <groupId>org.assertj</groupId>                                      │
+│      <artifactId>assertj-core</artifactId>                               │
+│      <scope>test</scope>                                                  │
+│  </dependency>                                                            │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ANNOTATIONS IMPORTANTES ─────────────────────────────────────────────────┐
+│                                                                            │
+│  @ActiveProfiles("test-sync")   ← Active le profil test                  │
+│  @SpringBootTest                ← Charge contexte Spring complet         │
+│  @AutoConfigureMockMvc          ← Configure MockMvc                      │
+│  @Test                          ← Marque comme test (JUnit 5)            │
+│  @DisplayName("...")            ← Affiche description du test            │
+│  @MockBean                      ← Mock d'un bean Spring (Feign)          │
+│  @BeforeEach                    ← Setup avant chaque test                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ENDPOINTS DE TEST ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  Message Handlers (Feign targets):                                        │
+│  └─ POST /test-sync/messages/{topic}     (User & Wallet)                 │
+│                                                                            │
+│  Health Checks:                                                           │
+│  └─ GET /test-sync/health               (Diagnostic)                     │
+│                                                                            │
+│  H2 Console (optionnel):                                                  │
+│  └─ GET /h2-console                      (Base de données)               │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DÉPANNAGE RAPIDE ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  ❌ "H2 class not found"                                                  │
+│     → Ajouter dépendance H2 dans pom.xml                                  │
+│                                                                            │
+│  ❌ "test-sync profile not found"                                         │
+│     → Vérifier application-test-sync.properties existe                    │
+│                                                                            │
+│  ❌ "Connection refused"                                                  │
+│     → Normal, services communiquent via Feign (local)                     │
+│                                                                            │
+│  ❌ "Tests not running"                                                   │
+│     → $ mvn clean puis relancer                                           │
+│                                                                            │
+│  ❌ "BUILD FAILURE"                                                       │
+│     → $ make test-debug pour logs détaillés                              │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ FICHIERS CLÉS ────────────────────────────────────────────────────────────┐
+│                                                                            │
+│  📄 Configuration:                                                        │
+│     user-service/src/test/resources/application-test-sync.properties     │
+│     wallet-service/src/test/resources/application-test-sync.properties   │
+│                                                                            │
+│  📝 Controllers:                                                          │
+│     UserServiceTestMessageController.java                                │
+│     WalletServiceTestMessageController.java                              │
+│                                                                            │
+│  🧪 Tests:                                                                │
+│     UserRegistrationE2ETest.java                                         │
+│     SynchronousMicroserviceCommunicationTest.java                        │
+│     WalletCreationE2ETest.java                                           │
+│                                                                            │
+│  📖 Documentation:                                                        │
+│     QUICK_START_TESTS.md (5 min)                                         │
+│     FINAL_CHECKLIST.md (détaillé)                                        │
+│     KEY_POINTS.md (concepts)                                             │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ CHECKLIST AVANT LANCER LES TESTS ────────────────────────────────────────┐
+│                                                                            │
+│  [ ] Java 17+ : java -version                                            │
+│  [ ] Maven 3.8+ : mvn -v                                                 │
+│  [ ] H2 dépendance ajoutée au pom.xml                                    │
+│  [ ] Rest-Assured dépendance ajoutée                                     │
+│  [ ] Mockito dépendance ajoutée                                          │
+│  [ ] application-test-sync.properties existe (user-service)              │
+│  [ ] application-test-sync.properties existe (wallet-service)            │
+│  [ ] mvn clean compile : BUILD SUCCESS                                   │
+│  [ ] make test : BUILD SUCCESS + 10 tests                                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌─ RACCOURCIS UTILES ────────────────────────────────────────────────────────┐
+│                                                                            │
+│  # Vérifier la santé rapidement                                          │
+│  curl http://localhost:8082/test-sync/health                            │
+│  curl http://localhost:8086/test-sync/health                            │
+│                                                                            │
+│  # Voir les logs de test en détail                                       │
+│  tail -f target/surefire-reports/*                                       │
+│                                                                            │
+│  # Récompiler rapidement                                                 │
+│  mvn clean compile                                                       │
+│                                                                            │
+│  # Nettoyer artifacts                                                    │
+│  mvn clean                                                               │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+  📚 Pour plus d'info: QUICK_START_TESTS.md ou KEY_POINTS.md
+
+  Version: 1.0.0 | Date: 2025-12-24 | Status: ✅ Ready to Use
+
+═══════════════════════════════════════════════════════════════════════════

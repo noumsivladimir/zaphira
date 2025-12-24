@@ -1,0 +1,47 @@
+# SQLite Test Configuration
+# This profile activates when running tests with @ActiveProfiles("test")
+# SQLite runs in-memory by default for fast test execution
+
+spring:
+  datasource:
+    url: jdbc:sqlite::memory:
+    driver-class-name: org.sqlite.JDBC
+    # Optional: force file-based SQLite for debugging by setting SQLITE_TEST_DB_PATH
+    # Example: export SQLITE_TEST_DB_PATH=/tmp/test_zaphira.db
+    url-override: ${SQLITE_TEST_DB_PATH:}
+  
+  jpa:
+    hibernate:
+      # Auto-generate schema (create-drop: recreate on each test run)
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        # Use built-in SQLite dialect from Hibernate 6
+        dialect: org.hibernate.dialect.sqlite.SQLiteDialect
+        # Formatting SQL for readability in test logs
+        format_sql: true
+        # Show SQL in logs
+        show_sql: false
+        # Batch size for operations
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+    # Disable Flyway migrations for tests (use Hibernate DDL instead)
+    database-platform: org.hibernate.dialect.sqlite.SQLiteDialect
+    open-in-view: false
+
+  # Disable initialization mode (use Hibernate DDL)
+  sql:
+    init:
+      mode: never
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.zaphira: DEBUG
+    # Uncomment for SQL debugging:
+    # org.hibernate.SQL: DEBUG
+    # org.hibernate.type.descriptor.sql.BasicBinder: TRACE

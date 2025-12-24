@@ -52,10 +52,10 @@ public class WalletRoutingStrategy implements RoutingStrategy {
             return RoutingValidationResult.failure("NO_RECEIVER_WALLET", "Receiver wallet not found");
         }
 
-        // Check sender wallet has sufficient balance
+        // Check sender wallet has sufficient balance (availableBalance is used for transaction validation)
         if (transaction.getAmount() != null && 
-            transaction.getSenderWallet().getBalance() != null &&
-            transaction.getAmount().compareTo(transaction.getSenderWallet().getBalance()) > 0) {
+            transaction.getSenderWallet().getAvailableBalance() != null &&
+            transaction.getAmount().compareTo(transaction.getSenderWallet().getAvailableBalance()) > 0) {
             return RoutingValidationResult.failure("INSUFFICIENT_BALANCE", "Sender wallet has insufficient balance");
         }
 

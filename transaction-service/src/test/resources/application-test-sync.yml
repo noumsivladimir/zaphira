@@ -1,0 +1,89 @@
+# SQLite + Feign Test Configuration for Transaction Service
+# Profile: test-sync
+# Purpose: In-memory SQLite database + synchronous Feign messaging (no Kafka, no Docker)
+# Activate with: @ActiveProfiles("test-sync") or -Dspring.profiles.active=test-sync
+
+spring:
+  profiles: test-sync
+  
+  # ==================== Database Configuration ====================
+  datasource:
+    # In-memory SQLite for fast, isolated tests
+    url: jdbc:sqlite::memory:
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 600000
+  
+  # ==================== JPA Configuration ====================
+  jpa:
+    database-platform: com.zaphira.common.test.TestSQLiteDialect
+    hibernate:
+      # Auto-create schema from entities, drop after test (isolation)
+      ddl-auto: create-drop
+      format_sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.sqlite.SQLiteDialect
+        # Batch inserts for performance
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+    # No Flyway for tests - use Hibernate DDL
+    open-in-view: false
+    show-sql: false
+  
+  sql:
+    init:
+      mode: never
+  
+  # ==================== Feign Configuration ====================
+  # Reduced timeouts for tests, no retries needed in controlled test environment
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 1000
+            readTimeout: 2000
+            loggerLevel: BASIC
+  
+  # ==================== Kafka Disabled (use Feign) ====================
+  kafka:
+    # Set invalid bootstrap server - Kafka should not be used in test-sync mode
+    bootstrap-servers: mock:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: transaction-service-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+# ==================== Service URLs for Feign (test-sync mode) ====================
+test:
+  sync:
+    transaction-service:
+      url: http://localhost:8081
+    wallet-service:
+      url: http://localhost:8082
+    user-service:
+      url: http://localhost:8083
+    notification-service:
+      url: http://localhost:8085
+
+# ==================== Logging ====================
+logging:
+  level:
+    root: WARN
+    com.zaphira: DEBUG
+    org.springframework.test: INFO
+    org.springframework.web: INFO
+    # Uncomment for SQL debugging
+    # org.hibernate.SQL: DEBUG
+    # org.hibernate.type.descriptor.sql.BasicBinder: TRACE

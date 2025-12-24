@@ -1,0 +1,392 @@
+{
+  "project": {
+    "name": "Zaphira Platform",
+    "scannedDate": "2025-12-21",
+    "version": "1.0.0-SNAPSHOT"
+  },
+  "microservices": [
+    {
+      "id": "auth-service",
+      "port": 8081,
+      "name": "Authentication Service",
+      "database": {
+        "type": "PostgreSQL",
+        "url": "jdbc:postgresql://192.168.0.122:5432/auth_db",
+        "username": "postgres",
+        "password": "1234",
+        "ddlStrategy": "create-drop"
+      },
+      "kafka": {
+        "bootstrapServers": "localhost:9092",
+        "producers": [
+          {
+            "class": "com.zaphira.auth.config.KafkaConfig",
+            "kafkaTemplate": "KafkaTemplate<String, UserRegisteredEvent>",
+            "method": "kafkaTemplate()",
+            "topic": "user-registered",
+            "eventType": "UserRegisteredEvent",
+            "description": "Published when user completes authentication"
+          }
+        ],
+        "consumers": [],
+        "consumerGroups": ["auth-service-group"]
+      }
+    },
+    {
+      "id": "user-service",
+      "port": 8082,
+      "name": "User Service",
+      "database": {
+        "type": "PostgreSQL",
+        "url": "jdbc:postgresql://192.168.0.122:5432/wallet_db",
+        "username": "postgres",
+        "password": "1234",
+        "ddlStrategy": "update"
+      },
+      "kafka": {
+        "bootstrapServers": "192.168.0.122:9092",
+        "producers": [
+          {
+            "class": "com.zaphira.service_user.kafka.UserEventProducer",
+            "method": "publishUserCreatedEvent(UserCreatedEvent event)",
+            "topic": "user-created-topic",
+            "eventType": "UserCreatedEvent",
+            "description": "Published when user is created"
+          }
+        ],
+        "consumers": [
+          {
+            "class": "com.zaphira.service_user.kafka.WalletResponseListener",
+            "method": "handleWalletCreatedEvent(WalletCreatedEvent event)",
+            "topic": "wallet-created-topic",
+            "eventType": "WalletCreatedEvent",
+            "annotation": "@KafkaListener(topics = \"${kafka.topics.wallet-created}\", groupId = \"${spring.kafka.consumer.group-id}\")",
+            "description": "Listens for wallet creation response (synchronous pattern with CompletableFuture)"
+          }
+        ],
+        "consumerGroups": ["user-service-group"],
+        "topicsConfig": {
+          "user-created": "user-created-topic",
+          "wallet-created": "wallet-created-topic"
+        }
+      }
+    },
+    {
+      "id": "wallet-service",
+      "port": 8086,
+      "name": "Wallet Service",
+      "database": {
+        "type": "PostgreSQL",
+        "url": "jdbc:postgresql://localhost:5432/wallet_db",
+        "username": "postgres",
+        "password": "1234",
+        "ddlStrategy": "create-drop"
+      },
+      "kafka": {
+        "bootstrapServers": "localhost:9092",
+        "producers": [
+          {
+            "class": "com.zaphira.wallet.consumer.UserEventConsumer",
+            "method": "handleUserCreatedEvent(UserCreatedEvent event)",
+            "topic": "wallet-created-topic",
+            "eventType": "WalletCreatedEvent",
+            "description": "Published when wallet is created in response to user creation event"
+          }
+        ],
+        "consumers": [
+          {
+            "class": "com.zaphira.wallet.consumer.UserEventConsumer",
+            "method": "handleUserCreatedEvent(UserCreatedEvent event)",
+            "topic": "user-created-topic",
+            "eventType": "UserCreatedEvent",
+            "annotation": "@KafkaListener(topics = \"${kafka.topics.user-created}\", groupId = \"${spring.kafka.consumer.group-id}\")",
+            "description": "Listens for user creation events"
+          },
+          {
+            "class": "com.zaphira.wallet.listener.UserEventListener",
+            "method": "handleUserRegistered(UserRegisteredEvent event)",
+            "topic": "user-registered",
+            "eventType": "UserRegisteredEvent",
+            "annotation": "@KafkaListener(topics = \"user-registered\", groupId = \"wallet-service-group\")",
+            "description": "Listens for user registration events (idempotent wallet creation)"
+          }
+        ],
+        "consumerGroups": ["wallet-service-group", "${spring.kafka.consumer.group-id}"],
+        "topicsConfig": {
+          "user-created": "user-created-topic",
+          "wallet-created": "wallet-created-topic"
+        }
+      }
+    },
+    {
+      "id": "transaction-service",
+      "port": 8083,
+      "name": "Transaction Service",
+      "database": {
+        "type": "PostgreSQL",
+        "url": "jdbc:postgresql://192.168.0.122:5432/wallet_db",
+        "username": "postgres",
+        "password": "1234",
+        "ddlStrategy": "update"
+      },
+      "kafka": {
+        "bootstrapServers": "192.168.0.122:9092",
+        "producers": [
+          {
+            "class": "com.zaphira.transaction.kafka.producer.ValidationRequestProducer",
+            "method": "publishValidationRequest(TransactionValidationRequest request)",
+            "topic": "transaction.validation.request",
+            "eventType": "TransactionValidationRequest",
+            "description": "Published when transaction needs validation",
+            "idempotence": "enabled",
+            "correlationId": "UUID-based tracking"
+          }
+        ],
+        "consumers": [],
+        "consumerGroups": ["transaction-service-validation-result"],
+        "warnings": [
+          "No consumer found for transaction.validation.request topic",
+          "Messages may accumulate without processing"
+        ]
+      }
+    },
+    {
+      "id": "notification-service",
+      "port": 8007,
+      "name": "Notification Service",
+      "database": {
+        "type": "PostgreSQL",
+        "url": "jdbc:postgresql://localhost:5432/notification_db",
+        "username": "postgres",
+        "password": "postgres",
+        "ddlStrategy": "validate",
+        "migrations": "Flyway"
+      },
+      "kafka": {
+        "bootstrapServers": "localhost:9092",
+        "producers": [],
+        "consumers": [
+          {
+            "class": "com.zaphira.notification.listener.UserEventListener",
+            "method": "handleUserRegistered(UserRegisteredEvent event)",
+            "topic": "user-registered",
+            "eventType": "UserRegisteredEvent",
+            "annotation": "@KafkaListener(topics = \"user-registered\", groupId = \"notification-service\")",
+            "description": "Sends welcome SMS to registered user"
+          },
+          {
+            "class": "com.zaphira.notification.listener.TransactionEventListener",
+            "method": "handleTransactionCreated(TransactionCreatedEvent event)",
+            "topic": "transaction-created",
+            "eventType": "TransactionCreatedEvent",
+            "annotation": "@KafkaListener(topics = \"transaction-created\", groupId = \"notification-service\")",
+            "description": "Sends transaction confirmation notification"
+          },
+          {
+            "class": "com.zaphira.notification.consumer.UserEventConsumer",
+            "method": "consumeUserEvent(NotificationEvent event)",
+            "topic": "notification.user.events",
+            "eventType": "NotificationEvent",
+            "annotation": "@KafkaListener(topics = \"notification.user.events\", groupId = \"notification-service-user-group\")",
+            "description": "Processes user-related notification events"
+          },
+          {
+            "class": "com.zaphira.notification.consumer.TransactionEventConsumer",
+            "method": "consumeTransactionEvent(NotificationEvent event)",
+            "topic": "notification.transaction.events",
+            "eventType": "NotificationEvent",
+            "annotation": "@KafkaListener(topics = \"notification.transaction.events\", groupId = \"notification-service-transaction-group\")",
+            "description": "Processes transaction-related notification events"
+          },
+          {
+            "class": "com.zaphira.notification.consumer.WalletEventConsumer",
+            "method": "consumeWalletEvent(NotificationEvent event)",
+            "topic": "notification.wallet.events",
+            "eventType": "NotificationEvent",
+            "annotation": "@KafkaListener(topics = \"notification.wallet.events\", groupId = \"notification-service-wallet-group\")",
+            "description": "Processes wallet-related notification events"
+          }
+        ],
+        "consumerGroups": [
+          "notification-service",
+          "notification-service-user-group",
+          "notification-service-transaction-group",
+          "notification-service-wallet-group"
+        ],
+        "warnings": [
+          "No producer found - all events are consumed, none published",
+          "Topics notification.*.events may not have active producers"
+        ]
+      }
+    }
+  ],
+  "kafkaTopics": [
+    {
+      "name": "user-registered",
+      "producer": "auth-service",
+      "consumers": ["wallet-service", "notification-service"],
+      "eventType": "UserRegisteredEvent",
+      "status": "✅ Active"
+    },
+    {
+      "name": "user-created-topic",
+      "producer": "user-service",
+      "consumers": ["wallet-service"],
+      "eventType": "UserCreatedEvent",
+      "status": "✅ Active"
+    },
+    {
+      "name": "wallet-created-topic",
+      "producer": "wallet-service",
+      "consumers": ["user-service"],
+      "eventType": "WalletCreatedEvent",
+      "status": "✅ Active"
+    },
+    {
+      "name": "transaction.validation.request",
+      "producer": "transaction-service",
+      "consumers": [],
+      "eventType": "TransactionValidationRequest",
+      "status": "⚠️ Orphaned - No consumer found"
+    },
+    {
+      "name": "transaction-created",
+      "producer": "Unknown",
+      "consumers": ["notification-service"],
+      "eventType": "TransactionCreatedEvent",
+      "status": "⚠️ Producer not found"
+    },
+    {
+      "name": "notification.user.events",
+      "producer": "Unknown",
+      "consumers": ["notification-service"],
+      "eventType": "NotificationEvent",
+      "status": "⚠️ Producer not found"
+    },
+    {
+      "name": "notification.transaction.events",
+      "producer": "Unknown",
+      "consumers": ["notification-service"],
+      "eventType": "NotificationEvent",
+      "status": "⚠️ Producer not found"
+    },
+    {
+      "name": "notification.wallet.events",
+      "producer": "Unknown",
+      "consumers": ["notification-service"],
+      "eventType": "NotificationEvent",
+      "status": "⚠️ Producer not found"
+    },
+    {
+      "name": "wallet.updated",
+      "producer": "Unknown",
+      "consumers": ["notification-service"],
+      "eventType": "Unknown",
+      "status": "⚠️ Producer not found"
+    }
+  ],
+  "databases": [
+    {
+      "name": "auth_db",
+      "host": "192.168.0.122",
+      "port": 5432,
+      "owner": "auth-service",
+      "ddlStrategy": "create-drop",
+      "notes": "Recreated on each startup"
+    },
+    {
+      "name": "wallet_db",
+      "host": "192.168.0.122",
+      "port": 5432,
+      "owner": ["user-service", "transaction-service"],
+      "ddlStrategy": "update",
+      "notes": "Shared database with schema evolution"
+    },
+    {
+      "name": "wallet_db",
+      "host": "localhost",
+      "port": 5432,
+      "owner": "wallet-service",
+      "ddlStrategy": "create-drop",
+      "notes": "⚠️ Different instance from network wallet_db",
+      "warning": true
+    },
+    {
+      "name": "notification_db",
+      "host": "localhost",
+      "port": 5432,
+      "owner": "notification-service",
+      "ddlStrategy": "validate",
+      "migrations": "Flyway",
+      "notes": "Schema must exist and be valid before startup"
+    }
+  ],
+  "statistics": {
+    "totalMicroservices": 6,
+    "microservicesWithProducers": 4,
+    "microservicesWithConsumers": 4,
+    "totalProducers": 4,
+    "totalConsumers": 8,
+    "activeTopics": 3,
+    "orphanedTopics": 2,
+    "missingProducerTopics": 4,
+    "postgresqlInstances": 4,
+    "springBootVersion": "3.3.4",
+    "postgresqlJdbcVersion": "42.7.3"
+  },
+  "issues": [
+    {
+      "severity": "🔴 High",
+      "topic": "Orphaned Topic: transaction.validation.request",
+      "description": "transaction-service publishes to transaction.validation.request but no consumer is found",
+      "impact": "Messages accumulate in Kafka without processing",
+      "recommendation": "Find or implement the missing consumer service"
+    },
+    {
+      "severity": "🔴 High",
+      "topic": "Database URL Mismatch",
+      "description": "wallet-service uses localhost:5432 while other services use 192.168.0.122:5432",
+      "impact": "Potential data inconsistency across services",
+      "recommendation": "Align all database URLs to use same host"
+    },
+    {
+      "severity": "🟡 Medium",
+      "topic": "Missing Producers",
+      "description": "notification-service has 5 consumers but no producers",
+      "impact": "Cannot trigger notifications from notification-service",
+      "recommendation": "Implement producer for notification events"
+    },
+    {
+      "severity": "🟡 Medium",
+      "topic": "DDL Strategy Inconsistency",
+      "description": "Mixed DDL strategies: create-drop vs update vs validate",
+      "impact": "Data loss risk on restart, difficult debugging",
+      "recommendation": "Use 'update' strategy for all production databases"
+    },
+    {
+      "severity": "🟡 Medium",
+      "topic": "Unknown Topic Producers",
+      "description": "Topics notification.*.events and transaction-created have no identified producer",
+      "impact": "Unclear data flow, potential dead code",
+      "recommendation": "Search codebase for missing producers or remove topics"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Identify consumer for transaction.validation.request topic",
+      "Align PostgreSQL URLs (192.168.0.122 vs localhost)",
+      "Centralize topic configuration in property file"
+    ],
+    "shortTerm": [
+      "Implement missing producers for notification.*.events",
+      "Use consistent DDL strategy (update for all)",
+      "Add retry and DLQ policies to all consumers"
+    ],
+    "mediumTerm": [
+      "Implement Kafka security (SSL/SASL)",
+      "Add Kafka monitoring and metrics",
+      "Document event schema and contracts",
+      "Implement distributed tracing (correlation IDs)"
+    ]
+  }
+}
