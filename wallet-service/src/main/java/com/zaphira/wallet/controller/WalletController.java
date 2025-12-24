@@ -1,8 +1,16 @@
 package com.zaphira.wallet.controller;
 
-import com.zaphira.common.dto.WalletDTO;
-import com.zaphira.wallet.dto.TransferRequest;
+import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.WalletSummaryDTO;
+import com.zaphira.wallet.dto.request.BalanceOperationRequest;
+import com.zaphira.wallet.dto.request.CreateWalletRequest;
+import com.zaphira.wallet.dto.request.FreezeWalletRequest;
+import com.zaphira.wallet.dto.request.TransactionValidationRequest;
+import com.zaphira.wallet.dto.response.CreateWalletResponse;
+import com.zaphira.wallet.dto.response.TransactionValidationResponse;
+import com.zaphira.wallet.service.WalletQueryService;
 import com.zaphira.wallet.service.WalletService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,6 +26,7 @@ import java.math.BigDecimal;
 public class WalletController {
 
     private final WalletService walletService;
+    private final WalletQueryService walletQueryService;
 
     /**
      * Crée un wallet pour un utilisateur donné.
@@ -26,147 +35,251 @@ public class WalletController {
      * @return WalletDTO avec l'ID et le numéro du wallet
      */
     @PostMapping
-    public ResponseEntity<?> createWallet(
-            @RequestParam Long userId,
-            @RequestParam(defaultValue = "XOF") String currency) {
+    public ResponseEntity<?> createWallet(@RequestBody CreateWalletRequest request) {
         try {
-            WalletDTO wallet = walletService.createWallet(userId);
-            log.info("✅ Wallet created for user {}: {}", userId, wallet.getWalletNumber());
+            // ✅ Passer directement le request complet
+            CreateWalletResponse wallet = walletService.createWalletForUser(request);
+
+            log.info("✅ Wallet created for user {}: {}", request.getUserId(), wallet.getWalletNumber());
             return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
         } catch (Exception e) {
-            log.error("❌ Failed to create wallet for user {}: {}", userId, e.getMessage(), e);
+            log.error("❌ Failed to create wallet for user {}: {}", request.getUserId(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating wallet: " + e.getMessage());
         }
     }
 
+
+
+
+
+    @GetMapping("/{walletNumber}")
+    public ResponseEntity<WalletDTO> getWallet(@PathVariable String walletNumber) {
+        log.info("Fetching wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.getWalletByNumber(walletNumber);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<WalletDTO> getWalletById(@PathVariable Long id) {
+        log.info("Fetching wallet by ID: {}", id);
+        WalletDTO wallet = walletService.getWalletById(id);
+        return ResponseEntity.ok(wallet);
+    }
+
+//    @GetMapping("/user/{userId}")
+//    public ResponseEntity<List<WalletDTO>> getUserWallets(@PathVariable Long userId) {
+//        log.info("Fetching wallets for user: {}", userId);
+//        List<WalletDTO> wallets = walletQueryService.getUserWallets(userId);
+//        return ResponseEntity.ok(wallets);
+//    }
+
+
+    @GetMapping("/user/{userId}/summary")
+    public ResponseEntity<WalletSummaryDTO> getWalletSummary(@PathVariable Long userId) {
+        log.info("Fetching wallet summary for user: {}", userId);
+        WalletSummaryDTO summary = walletService.getWalletSummary(userId);
+        return ResponseEntity.ok(summary);
+    }
+
+    // ========== Gestion du statut ==========
+
+    @PutMapping("/{walletNumber}/freeze")
+    public ResponseEntity<WalletDTO> freezeWallet(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody FreezeWalletRequest request) {
+        log.info("Freezing wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.freezeWallet(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PutMapping("/{walletNumber}/unfreeze")
+    public ResponseEntity<WalletDTO> unfreezeWallet(
+            @PathVariable String walletNumber,
+            @RequestParam String unfrozenBy,
+            @RequestParam(required = false) String notes) {
+        log.info("Unfreezing wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.unfreezeWallet(walletNumber, unfrozenBy, notes);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PutMapping("/{walletNumber}/suspend")
+    public ResponseEntity<WalletDTO> suspendWallet(
+            @PathVariable String walletNumber,
+            @RequestParam String reason,
+            @RequestParam String suspendedBy) {
+        log.info("Suspending wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.suspendWallet(walletNumber, reason, suspendedBy);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PutMapping("/{walletNumber}/activate")
+    public ResponseEntity<WalletDTO> activateWallet(
+            @PathVariable String walletNumber,
+            @RequestParam String activatedBy) {
+        log.info("Activating wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.activateWallet(walletNumber, activatedBy);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PutMapping("/{walletNumber}/close")
+    public ResponseEntity<WalletDTO> closeWallet(
+            @PathVariable String walletNumber,
+            @RequestParam String closedBy,
+            @RequestParam String reason) {
+        log.info("Closing wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.closeWallet(walletNumber, closedBy, reason);
+        return ResponseEntity.ok(wallet);
+    }
+
+    // ========== Gestion des soldes ==========
+
+    @PostMapping("/{walletNumber}/credit")
+    public ResponseEntity<WalletDTO> creditWallet(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody BalanceOperationRequest request) {
+        log.info("Crediting wallet: {} with amount: {}", walletNumber, request.getAmount());
+        WalletDTO wallet = walletService.creditWallet(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PostMapping("/{walletNumber}/debit")
+    public ResponseEntity<WalletDTO> debitWallet(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody BalanceOperationRequest request) {
+        log.info("Debiting wallet: {} with amount: {}", walletNumber, request.getAmount());
+        WalletDTO wallet = walletService.debitWallet(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PostMapping("/{walletNumber}/block")
+    public ResponseEntity<WalletDTO> blockAmount(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody BalanceOperationRequest request) {
+        log.info("Blocking amount in wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.blockAmount(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PostMapping("/{walletNumber}/unblock")
+    public ResponseEntity<WalletDTO> unblockAmount(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody BalanceOperationRequest request) {
+        log.info("Unblocking amount in wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.unblockAmount(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PostMapping("/{walletNumber}/release-blocked")
+    public ResponseEntity<WalletDTO> releaseBlockedAmount(
+            @PathVariable String walletNumber,
+            @Valid @RequestBody BalanceOperationRequest request) {
+        log.info("Releasing blocked amount from wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.releaseBlockedAmount(walletNumber, request);
+        return ResponseEntity.ok(wallet);
+    }
+
+
+    // ========== Validation de transaction ==========
+
+    @PostMapping("/validate-transaction")
+    public ResponseEntity<TransactionValidationResponse> validateTransaction(
+            @Valid @RequestBody TransactionValidationRequest request) {
+        log.info("Validating transaction for wallet: {}", request.getWalletNumber());
+        TransactionValidationResponse response = walletService.validateTransaction(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // ========== Gestion des limites ==========
+
+    @PutMapping("/{walletNumber}/limits")
+    public ResponseEntity<WalletDTO> updateLimits(
+            @PathVariable String walletNumber,
+            @RequestParam(required = false) BigDecimal dailyLimit,
+            @RequestParam(required = false) BigDecimal monthlyLimit) {
+        log.info("Updating limits for wallet: {}", walletNumber);
+        WalletDTO wallet = walletService.updateLimits(walletNumber, dailyLimit, monthlyLimit);
+        return ResponseEntity.ok(wallet);
+    }
+
+    // ========== Utilitaires ==========
+    @GetMapping("/{walletNumber}/has-balance")
+    public ResponseEntity<Boolean> hasAvailableBalance(
+            @PathVariable String walletNumber,
+            @RequestParam BigDecimal amount) {
+        boolean hasBalance = walletService.hasAvailableBalance(walletNumber, amount);
+        return ResponseEntity.ok(hasBalance);
+    }
+
+    @PostMapping("/{walletNumber}/recalculate-balance")
+    public ResponseEntity<Void> recalculateBalance(@PathVariable String walletNumber) {
+        log.info("Recalculating balance for wallet: {}", walletNumber);
+        walletService.recalculateBalance(walletNumber);
+        return ResponseEntity.ok().build();
+    }
     /**
      * Récupère le wallet d'un utilisateur via son ID.
      */
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getWalletByUserId(@PathVariable Long userId) {
-        try {
-            WalletDTO wallet = walletService.getWalletByUserId(userId);
-            if (wallet == null) {
-                log.warn("⚠️ Wallet not found for user {}", userId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Wallet not found for user " + userId);
-            }
-            return ResponseEntity.ok(wallet);
-        } catch (Exception e) {
-            log.error("❌ Error fetching wallet for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching wallet: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Récupère un wallet via son numéro.
-     */
-    @GetMapping("/{walletNumber}")
-    public ResponseEntity<?> getWalletByNumber(@PathVariable String walletNumber) {
-        try {
-            WalletDTO wallet = walletService.getWalletByNumber(walletNumber);
-            if (wallet == null) {
-                log.warn("⚠️ Wallet not found with number {}", walletNumber);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Wallet not found with number " + walletNumber);
-            }
-            return ResponseEntity.ok(wallet);
-        } catch (Exception e) {
-            log.error("❌ Error fetching wallet with number {}: {}", walletNumber, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching wallet: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Transfert d'argent entre deux wallets.
-     */
-    @PostMapping("/transfer")
-    public ResponseEntity<?> transfer(@RequestBody TransferRequest request) {
-        try {
-            walletService.transfer(
-                    request.getSenderWalletNumber(),
-                    request.getReceiverWalletNumber(),
-                    request.getAmount()
-            );
-            log.info("✅ Transfer successful from {} to {} amount {}",
-                    request.getSenderWalletNumber(),
-                    request.getReceiverWalletNumber(),
-                    request.getAmount());
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("❌ Transfer failed from {} to {}: {}",
-                    request.getSenderWalletNumber(),
-                    request.getReceiverWalletNumber(),
-                    e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Transfer failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Débite un montant d'un wallet.
-     */
-    @PostMapping("/{walletNumber}/debit")
-    public ResponseEntity<?> debit(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
-        try {
-            walletService.debit(walletNumber, amount);
-            log.info("✅ Debit successful for wallet {} amount {}", walletNumber, amount);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("❌ Debit failed for wallet {}: {}", walletNumber, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Debit failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Crédite un montant sur un wallet.
-     */
-    @PostMapping("/{walletNumber}/credit")
-    public ResponseEntity<?> credit(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
-        try {
-            walletService.credit(walletNumber, amount);
-            log.info("✅ Credit successful for wallet {} amount {}", walletNumber, amount);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("❌ Credit failed for wallet {}: {}", walletNumber, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Credit failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Bloque des fonds sur un wallet.
-     */
-    @PostMapping("/{walletNumber}/block-funds")
-    public ResponseEntity<?> blockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
-        try {
-            walletService.blockFunds(walletNumber, amount);
-            log.info("✅ Block funds successful for wallet {} amount {}", walletNumber, amount);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("❌ Block funds failed for wallet {}: {}", walletNumber, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Block funds failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Débloque des fonds sur un wallet.
-     */
-    @PostMapping("/{walletNumber}/unblock-funds")
-    public ResponseEntity<?> unblockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
-        try {
-            walletService.unblockFunds(walletNumber, amount);
-            log.info("✅ Unblock funds successful for wallet {} amount {}", walletNumber, amount);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("❌ Unblock funds failed for wallet {}: {}", walletNumber, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Unblock funds failed: " + e.getMessage());
-        }
-    }
+//    @GetMapping("/user/{userId}")
+//    public ResponseEntity<?> getWalletByUserId(@PathVariable Long userId) {
+//        try {
+//            WalletDTO wallet = walletService.getWalletByUserId(userId);
+//            if (wallet == null) {
+//                log.warn("⚠️ Wallet not found for user {}", userId);
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                        .body("Wallet not found for user " + userId);
+//            }
+//            return ResponseEntity.ok(wallet);
+//        } catch (Exception e) {
+//            log.error("❌ Error fetching wallet for user {}: {}", userId, e.getMessage(), e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Error fetching wallet: " + e.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * Récupère un wallet via son numéro.
+//     */
+//    @GetMapping("/{walletNumber}")
+//    public ResponseEntity<?> getWalletByNumber(@PathVariable String walletNumber) {
+//        try {
+//            WalletDTO wallet = walletService.getWalletByNumber(walletNumber);
+//            if (wallet == null) {
+//                log.warn("⚠️ Wallet not found with number {}", walletNumber);
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                        .body("Wallet not found with number " + walletNumber);
+//            }
+//            return ResponseEntity.ok(wallet);
+//        } catch (Exception e) {
+//            log.error("❌ Error fetching wallet with number {}: {}", walletNumber, e.getMessage(), e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Error fetching wallet: " + e.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * Transfert d'argent entre deux wallets.
+//     */
+//    @PostMapping("/transfer")
+//    public ResponseEntity<?> transfer(@RequestBody TransferRequest request) {
+//        try {
+//            walletService.transfer(
+//                    request.getSenderWalletNumber(),
+//                    request.getReceiverWalletNumber(),
+//                    request.getAmount()
+//            );
+//            log.info("✅ Transfer successful from {} to {} amount {}",
+//                    request.getSenderWalletNumber(),
+//                    request.getReceiverWalletNumber(),
+//                    request.getAmount());
+//            return ResponseEntity.ok().build();
+//        } catch (Exception e) {
+//            log.error("❌ Transfer failed from {} to {}: {}",
+//                    request.getSenderWalletNumber(),
+//                    request.getReceiverWalletNumber(),
+//                    e.getMessage(), e);
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+//                    .body("Transfer failed: " + e.getMessage());
+//        }
+//    }
 }

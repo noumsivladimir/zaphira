@@ -1,0 +1,593 @@
+package com.zaphira.wallet.service;
+
+import com.zaphira.common.model.enums.Currency;
+import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.WalletSummaryDTO;
+import com.zaphira.wallet.dto.request.BalanceOperationRequest;
+import com.zaphira.wallet.dto.request.CreateWalletRequest;
+import com.zaphira.wallet.dto.request.FreezeWalletRequest;
+import com.zaphira.wallet.dto.request.TransactionValidationRequest;
+import com.zaphira.wallet.dto.response.CreateWalletResponse;
+import com.zaphira.wallet.dto.response.TransactionValidationResponse;
+import com.zaphira.wallet.exception.*;
+import com.zaphira.wallet.mapper.WalletMapper;
+import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.models.entities.WalletStatusHistory;
+import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.models.enums.WalletType;
+import com.zaphira.wallet.repository.WalletRepository;
+import com.zaphira.wallet.repository.WalletSubWalletRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+
+@Slf4j
+@RequiredArgsConstructor
+@Service
+public class WalletServiceImpl implements WalletService{
+
+    private final WalletRepository walletRepository;
+    private final WalletQueryService walletQueryService;
+    private final WalletMapper walletMapper;
+    private final WalletSubWalletRepository walletSubWalletRepository;
+    @Lazy
+    private final WalletHierarchyService walletHierarchyService;
+   // private final UserService userServiceClient;
+
+
+    @Override
+    public CreateWalletResponse createWalletForUser(CreateWalletRequest request) {
+
+        Long userId = request.getUserId();
+
+        log.info("Creating wallet for user: {}", request.getUserId());
+
+        //Algo generation du WalletNumber Unique
+        String walletNumber = String.format("%08d", (userId * 1234567) % 100_000_000);
+
+        log.info("WalletNumber generated: {}", walletNumber);
+        // Créer le wallet avec walletNumber déjà défini
+
+        Wallet wallet = Wallet.builder()
+                .userId(request.getUserId())
+                .availableBalance( BigDecimal.ZERO)
+                .walletNumber(walletNumber)
+                .type(WalletType.USER )
+                .status(WalletStatus.ACTIVE)
+                 // si ta colonne NOT NULL
+                .build();
+
+
+        // Sauvegarder le wallet en base
+        Wallet saved = walletRepository.save(wallet);
+
+        return toDTO(saved);
+    }
+
+//    @Override
+//    public WalletDTO createWalletForMerchant(CreateWalletRequest request) {
+//        return null;
+//    }
+
+
+//
+//    @Override
+//    public WalletDTO createWalletForUser(Long userId) {
+//        return null;
+//    }
+//
+    @Override
+    public WalletDTO getWalletByNumber(String walletNumber) {
+
+
+        Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+
+        return walletMapper.toDTO(wallet);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WalletDTO getWalletById(Long id) {
+        Wallet wallet = walletRepository.findById(id)
+                .orElseThrow(() -> new WalletNotFoundException("Wallet non trouvé avec l'ID: " + id));
+        return walletMapper.toDTO(wallet);
+    }
+
+
+
+    @Override
+    public WalletSummaryDTO getWalletSummary(Long userId) {
+
+        Wallet wallet = walletRepository.findByUserId(userId);
+
+        //+1 for the main wallet
+        int totalWallets = walletHierarchyService.managingWallet(wallet.getId()).size() + 1;
+
+
+        WalletSummaryDTO walletSummaryDTO = WalletSummaryDTO.builder()
+                .userId(userId)
+
+                .build();
+
+
+
+//        List<Wallet> wallets = walletRepository.findByUserId(userId);
+//
+//        BigDecimal totalBalance = wallets.stream()
+//                .filter(w -> !WalletStatus.CLOSED.equals(w.getStatus()))
+//                .map(Wallet::getTotalBalance)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return WalletSummaryDTO.builder()
+                .userId(userId)
+                .totalBalanceAllWallets(BigDecimal.ZERO)
+                .totalWallets(totalWallets)
+                .currency(Currency.XAF)
+                .build();
+    }
+
+    @Override
+    public WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request) {
+
+        log.info("Freezing wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (WalletStatus.FROZEN.equals(wallet.getStatus())) {
+            throw new InvalidOperationException("Le wallet est déjà gelé");
+        }
+
+        if (WalletStatus.CLOSED.equals(wallet.getStatus())) {
+            throw new InvalidOperationException("Impossible de geler un wallet fermé");
+        }
+
+        WalletStatus previousStatus = wallet.getStatus();
+        wallet.setStatus(WalletStatus.FROZEN);
+        wallet.setFrozenReason(request.getReason());
+        wallet.setFrozenAt(LocalDateTime.now());
+        wallet.setFrozenBy(request.getFrozenBy());
+
+        // Ajouter à l'historique
+        WalletStatusHistory history = WalletStatusHistory.builder()
+                .previousStatus(previousStatus)
+                .newStatus(WalletStatus.FROZEN)
+                .reason(request.getReason())
+                .changedBy(request.getFrozenBy())
+                .notes(request.getNotes())
+                .build();
+        wallet.addStatusHistory(history);
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet frozen successfully: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes) {
+        log.info("Unfreezing wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (!WalletStatus.FROZEN.equals(wallet.getStatus())) {
+            throw new InvalidOperationException("Le wallet n'est pas gelé");
+        }
+
+        wallet.setStatus(WalletStatus.ACTIVE);
+        wallet.setFrozenReason(null);
+        wallet.setFrozenAt(null);
+        wallet.setFrozenBy(null);
+
+        // Ajouter à l'historique
+        WalletStatusHistory history = WalletStatusHistory.builder()
+                .previousStatus(WalletStatus.FROZEN)
+                .newStatus(WalletStatus.ACTIVE)
+                .reason("Wallet dégelé")
+                .changedBy(unfrozenBy)
+                .notes(notes)
+                .build();
+        wallet.addStatusHistory(history);
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet unfrozen successfully: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy) {
+        log.info("Suspending wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (WalletStatus.CLOSED.equals(wallet.getStatus())) {
+            throw new InvalidOperationException("Impossible de suspendre un wallet fermé");
+        }
+
+        WalletStatus previousStatus = wallet.getStatus();
+        wallet.setStatus(WalletStatus.SUSPENDED);
+
+        WalletStatusHistory history = WalletStatusHistory.builder()
+                .previousStatus(previousStatus)
+                .newStatus(WalletStatus.SUSPENDED)
+                .reason(reason)
+                .changedBy(suspendedBy)
+                .build();
+        wallet.addStatusHistory(history);
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet suspended successfully: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO activateWallet(String walletNumber, String activatedBy) {
+        log.info("Activating wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (WalletStatus.CLOSED.equals(wallet.getStatus())) {
+            throw new InvalidOperationException("Impossible d'activer un wallet fermé");
+        }
+
+        WalletStatus previousStatus = wallet.getStatus();
+        wallet.setStatus(WalletStatus.ACTIVE);
+
+        WalletStatusHistory history = WalletStatusHistory.builder()
+                .previousStatus(previousStatus)
+                .newStatus(WalletStatus.ACTIVE)
+                .reason("Wallet activé")
+                .changedBy(activatedBy)
+                .build();
+        wallet.addStatusHistory(history);
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet activated successfully: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO closeWallet(String walletNumber, String closedBy, String reason) {
+        log.info("Closing wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        // Vérifier que le solde est à zéro
+        if (wallet.getTotalBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new InvalidOperationException("Impossible de fermer un wallet avec un solde non nul");
+        }
+
+        WalletStatus previousStatus = wallet.getStatus();
+        wallet.setStatus(WalletStatus.CLOSED);
+        wallet.setClosedAt(LocalDateTime.now());
+
+        WalletStatusHistory history = WalletStatusHistory.builder()
+                .previousStatus(previousStatus)
+                .newStatus(WalletStatus.CLOSED)
+                .reason(reason)
+                .changedBy(closedBy)
+                .build();
+        wallet.addStatusHistory(history);
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet closed successfully: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request) {
+        log.info("Crediting wallet: {} with amount: {}", walletNumber, request.getAmount());
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        // Vérifier que le wallet peut recevoir des fonds
+        if (!wallet.getStatus().canReceive()) {
+            throw new WalletInactiveException("Le wallet ne peut pas recevoir de fonds. Statut: " + wallet.getStatus());
+        }
+
+        wallet.credit(request.getAmount());
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet credited successfully. New balance: {}", savedWallet.getAvailableBalance());
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request) {
+        log.info("Debiting wallet: {} with amount: {}", walletNumber, request.getAmount());
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        // Vérifications
+        if (!wallet.canTransact()) {
+            throw new WalletInactiveException("Le wallet ne peut pas effectuer de transactions. Statut: " + wallet.getStatus());
+        }
+
+        if (!wallet.hasAvailableBalance(request.getAmount())) {
+            throw new InsufficientBalanceException("Solde insuffisant. Disponible: " + wallet.getAvailableBalance());
+        }
+
+        // Vérifier les limites
+        checkLimits(wallet, request.getAmount());
+
+        wallet.debit(request.getAmount());
+
+        // Mettre à jour les montants dépensés
+        wallet.setDailySpent(wallet.getDailySpent().add(request.getAmount()));
+        wallet.setMonthlySpent(wallet.getMonthlySpent().add(request.getAmount()));
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Wallet debited successfully. New balance: {}", savedWallet.getAvailableBalance());
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request) {
+        log.info("Blocking amount in wallet: {} amount: {}", walletNumber, request.getAmount());
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (!wallet.canTransact()) {
+            throw new WalletInactiveException("Le wallet ne peut pas effectuer de transactions");
+        }
+
+        wallet.blockAmount(request.getAmount());
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Amount blocked successfully. Available: {}, Blocked: {}",
+                savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request) {
+        log.info("Unblocking amount in wallet: {} amount: {}", walletNumber, request.getAmount());
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        wallet.unblockAmount(request.getAmount());
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Amount unblocked successfully. Available: {}, Blocked: {}",
+                savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request) {
+        log.info("Releasing blocked amount from wallet: {} amount: {}", walletNumber, request.getAmount());
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        wallet.releaseBlockedAmount(request.getAmount());
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Blocked amount released successfully. Available: {}, Blocked: {}",
+                savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    public TransactionValidationResponse validateTransaction(TransactionValidationRequest request) {
+        log.info("Validating transaction for wallet: {}", request.getWalletNumber());
+
+        try {
+            Wallet wallet = walletQueryService.findWalletByNumber(request.getWalletNumber());
+
+            // 1. Vérifier que le wallet est actif
+            if (!wallet.canTransact()) {
+                return TransactionValidationResponse.invalid(
+                        "Wallet inactif. Statut: " + wallet.getStatus(),
+                        "WALLET_INACTIVE"
+                );
+            }
+
+            // 2. Pour les débits, vérifier le solde
+            if ("DEBIT".equalsIgnoreCase(request.getTransactionType())) {
+                if (!wallet.hasAvailableBalance(request.getAmount())) {
+                    return TransactionValidationResponse.invalid(
+                            "Solde insuffisant",
+                            "INSUFFICIENT_BALANCE"
+                    );
+                }
+
+                // 3. Vérifier les limites
+                if (!checkLimitsValid(wallet, request.getAmount())) {
+                    return TransactionValidationResponse.invalid(
+                            "Limite dépassée",
+                            "LIMIT_EXCEEDED"
+                    );
+                }
+            }
+
+            // 4. Vérifier la devise (si applicable)
+            // ... logique additionnelle si nécessaire
+
+            return TransactionValidationResponse.valid();
+
+        } catch (WalletNotFoundException e) {
+            return TransactionValidationResponse.invalid(
+                    "Wallet non trouvé",
+                    "WALLET_NOT_FOUND"
+            );
+        }
+    }
+
+    @Override
+    public void resetDailyLimits() {
+
+        log.info("Resetting daily limits for all wallets");
+
+        List<Wallet> wallets = walletRepository.findAllByStatus(WalletStatus.ACTIVE);
+        LocalDate today = LocalDate.now();
+
+        wallets.forEach(wallet -> {
+            LocalDate lastReset = wallet.getLastLimitReset() != null ?
+                    wallet.getLastLimitReset().toLocalDate() : null;
+
+            if (lastReset == null || !lastReset.equals(today)) {
+                wallet.setDailySpent(BigDecimal.ZERO);
+                wallet.setLastLimitReset(LocalDateTime.now());
+            }
+        });
+
+        walletRepository.saveAll(wallets);
+        log.info("Daily limits reset for {} wallets", wallets.size());
+    }
+
+    @Override
+    public void resetMonthlyLimits() {
+
+        log.info("Resetting monthly limits for all wallets");
+
+        List<Wallet> wallets = walletRepository.findAllByStatus(WalletStatus.ACTIVE);
+
+        wallets.forEach(wallet -> wallet.setMonthlySpent(BigDecimal.ZERO));
+
+        walletRepository.saveAll(wallets);
+        log.info("Monthly limits reset for {} wallets", wallets.size());
+    }
+
+    @Override
+    public WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit) {
+        log.info("Updating limits for wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        if (dailyLimit != null) {
+            wallet.setDailyLimit(dailyLimit);
+        }
+
+        if (monthlyLimit != null) {
+            wallet.setMonthlyLimit(monthlyLimit);
+        }
+
+        Wallet savedWallet = walletRepository.save(wallet);
+        log.info("Limits updated successfully for wallet: {}", walletNumber);
+
+        return walletMapper.toDTO(savedWallet);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public boolean hasAvailableBalance(String walletNumber, BigDecimal amount) {
+        Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+        return wallet.hasAvailableBalance(amount);
+    }
+
+    @Override
+    public void recalculateBalance(String walletNumber) {
+
+        log.info("Recalculating balance for wallet: {}", walletNumber);
+
+        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        wallet.calculateTotalBalance();
+
+        walletRepository.save(wallet);
+        log.info("Balance recalculated for wallet: {}", walletNumber);
+    }
+
+
+
+//    @Override
+//    public WalletDTO getWallet(String walletNumber, Long requestingUserId) {
+//        return null;
+//    }
+//
+//    @Override
+//    public List<WalletDTO> getAccessibleWallets(Long userId) {
+//        return List.of();
+//    }
+//
+//    @Override
+//    public WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request, Long requestingUserId) {
+//        return null;
+//    }
+//
+//    @Override
+//    public WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes, Long requestingUserId) {
+//        return null;
+//    }
+//
+//    @Override
+//    public WalletDTO transferBetweenSubWallets(TransferBetweenSubWalletsRequest request, Long requestingUserId) {
+//        return null;
+//    }
+//
+//    @Override
+//    public BalanceSummaryDTO getConsolidatedBalance(String walletNumber, Long requestingUserId) {
+//        return null;
+//    }
+//
+//     Méthodes privées utilitaires
+//
+//    private void validateUserStatus(Long userId) {
+//        // Appel au User Service pour vérifier le statut
+//        // Cette méthode sera implémentée via Feign Client
+//        try {
+//            userServiceClient.getUserStatus(userId);
+//        } catch (Exception e) {
+//            log.error("Failed to validate user status for userId: {}", userId, e);
+//            throw new InvalidOperationException("Impossible de valider le statut de l'utilisateur");
+//        }
+//    }
+
+    private CreateWalletResponse toDTO(Wallet wallet) {
+        return CreateWalletResponse.builder()
+                .id(wallet.getId())
+                .userId(wallet.getUserId())
+                .walletNumber(wallet.getWalletNumber())
+                .type(wallet.getType())
+                .status(wallet.getStatus())
+                .build();
+    }
+
+    private void checkLimits(Wallet wallet, BigDecimal amount) {
+        // Vérifier limite journalière
+        if (wallet.getDailyLimit() != null) {
+            BigDecimal newDailySpent = wallet.getDailySpent().add(amount);
+            if (newDailySpent.compareTo(wallet.getDailyLimit()) > 0) {
+                throw new LimitExceededException("Limite journalière dépassée");
+            }
+        }
+
+        // Vérifier limite mensuelle
+        if (wallet.getMonthlyLimit() != null) {
+            BigDecimal newMonthlySpent = wallet.getMonthlySpent().add(amount);
+            if (newMonthlySpent.compareTo(wallet.getMonthlyLimit()) > 0) {
+                throw new LimitExceededException("Limite mensuelle dépassée");
+            }
+        }
+    }
+
+    private boolean checkLimitsValid(Wallet wallet, BigDecimal amount) {
+        try {
+            checkLimits(wallet, amount);
+            return true;
+        } catch (LimitExceededException e) {
+            return false;
+        }
+    }
+
+
+    //Utilities functions
+
+
+}
+
