@@ -13,12 +13,27 @@ public class FeignWalletClientAdapter implements WalletClient {
     @Override
     public WalletDetailsResponse getWalletDetails(String walletNumber) {
         var wallet = feignClient.getWalletByNumber(walletNumber);
-        WalletDetailsResponse response = new WalletDetailsResponse();
-        response.setWalletNumber(wallet.getWalletNumber());
-        response.setCurrency(wallet.getCurrency());
-        response.setBalance(wallet.getBalance());
-        response.setStatus(wallet.getActive() ? "ACTIVE" : "INACTIVE");
-        response.setFrozen(false);
+        WalletDetailsResponse response = WalletDetailsResponse.builder()
+                .id(wallet.getId())
+                .walletNumber(wallet.getWalletNumber())
+                .userId(wallet.getUserId())
+                .availableBalance(wallet.getAvailableBalance())
+                .blockedBalance(wallet.getBlockedBalance())
+                .totalBalance(wallet.getTotalBalance())
+                .currency(wallet.getCurrency())
+                .type(wallet.getType())
+                .status(wallet.getStatus() )
+                .frozen(wallet.getActive() == null || !wallet.getActive())
+                .dailyLimit(wallet.getDailyLimit())
+                .dailySpent(wallet.getDailySpent())
+                .monthlyLimit(wallet.getMonthlyLimit())
+                .monthlySpent(wallet.getMonthlySpent())
+                .frozenAt(wallet.getFrozenAt())
+                .frozenBy(wallet.getFrozenBy())
+                .frozenReason(wallet.getFrozenReason())
+                .createdAt(wallet.getCreatedAt())
+                .updatedAt(wallet.getUpdatedAt())
+                .build();
         return response;
     }
 

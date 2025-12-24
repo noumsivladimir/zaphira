@@ -44,7 +44,7 @@ public class TransactionValidationService {
             throw new IllegalArgumentException("Receiver wallet is frozen");
         }
 
-        if (senderWallet.getBalance().compareTo(request.getAmount()) < 0) {
+        if (senderWallet.getAvailableBalance().compareTo(request.getAmount()) < 0) {
             throw new IllegalArgumentException("Insufficient balance in sender wallet");
         }
     }

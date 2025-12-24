@@ -16,9 +16,10 @@ import com.zaphira.transaction.model.Transaction;
 import com.zaphira.transaction.model.TransactionStateHistory;
 import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.TransactionStatus;
+import com.zaphira.transaction.model.enums.TransactionType;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
-import com.zaphira.transaction.service.authorization.TransactionAuthorizationService;
+import com.zaphira.transaction.service.authorization.AuthorizationRequestService;
 import com.zaphira.transaction.service.compliance.ComplianceService;
 import com.zaphira.transaction.service.fee.FeeCalculationResult;
 import com.zaphira.transaction.service.fee.FeeService;
@@ -28,6 +29,8 @@ import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.transaction.event.TransactionEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -39,12 +42,13 @@ public class TransactionService {
     private TransactionValidationService validationService;
     private TransactionLimitService limitService;
     private FeeService feeService;
-    private TransactionAuthorizationService authorizationService;
+    private AuthorizationRequestService authorizationService;
     private ComplianceService complianceService;
     private LimitProperties limitProperties;
     private WalletClient walletClient;
     private FeignWalletClient feignWalletClient;
     private TransactionEventPublisher transactionEventPublisher;
+    private BalanceService balanceService;
 
     // No-args constructor for Spring
     public TransactionService() {
@@ -56,13 +60,14 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient,
                               FeignWalletClient feignWalletClient,
-                              TransactionEventPublisher transactionEventPublisher) {
+                              TransactionEventPublisher transactionEventPublisher,
+                              BalanceService balanceService) {
         this.repository = repository;
         this.stateHistoryRepository = stateHistoryRepository;
         this.validationService = validationService;
@@ -74,6 +79,7 @@ public class TransactionService {
         this.walletClient = walletClient;
         this.feignWalletClient = feignWalletClient;
         this.transactionEventPublisher = transactionEventPublisher;
+        this.balanceService = balanceService;
     }
 
     // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher
@@ -82,14 +88,15 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
                               WalletClient walletClient,
-                              FeignWalletClient feignWalletClient) {
+                              FeignWalletClient feignWalletClient,
+                              BalanceService balanceService) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, feignWalletClient, null, balanceService);
     }
 
     // Backwards-compatible constructor used by tests or code that doesn't provide FeignWalletClient or EventPublisher
@@ -98,13 +105,14 @@ public class TransactionService {
                               TransactionValidationService validationService,
                               TransactionLimitService limitService,
                               FeeService feeService,
-                              TransactionAuthorizationService authorizationService,
+                              AuthorizationRequestService authorizationService,
                               ComplianceService complianceService,
                               LimitProperties limitProperties,
                               FeeProperties feeProperties,
-                              WalletClient walletClient) {
+                              WalletClient walletClient,
+                              BalanceService balanceService) {
         this(repository, stateHistoryRepository, validationService, limitService, feeService,
-                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null);
+                authorizationService, complianceService, limitProperties, feeProperties, walletClient, null, null, balanceService);
     }
 
     @Transactional
@@ -273,21 +281,130 @@ public class TransactionService {
     private Transaction processImmediateTransaction(Transaction transaction, String actor) {
         complianceService.assertNotBlocked(transaction);
         changeStatus(transaction, TransactionStatus.PROCESSING, actor, "Processing started");
+
         try {
-            walletClient.executeTransfer(WalletTransferRequest.builder()
-                    .reference(transaction.getReference())
-                    .senderWalletNumber(transaction.getSenderWalletNumber())
-                    .receiverWalletNumber(transaction.getReceiverWalletNumber())
-                    .amount(transaction.getAmount())
-                    .currency(transaction.getCurrency())
-                    .description(transaction.getDescription())
-                    .build());
+            // Process balance updates based on transaction type
+            boolean balanceUpdateSuccess = processBalanceUpdates(transaction);
+
+            if (!balanceUpdateSuccess) {
+                throw new RuntimeException("Balance update failed for transaction: " + transaction.getReference());
+            }
+
             changeStatus(transaction, TransactionStatus.COMPLETED, actor, "Transaction completed successfully");
         } catch (Exception ex) {
             changeStatus(transaction, TransactionStatus.FAILED, actor, ex.getMessage());
             throw ex;
         }
         return transaction;
+    }
+
+    /**
+     * Processes balance updates based on transaction type and ensures balance consistency
+     */
+    private boolean processBalanceUpdates(Transaction transaction) {
+        TransactionType type = transaction.getType();
+        BigDecimal amount = transaction.getAmount();
+        String senderWalletNumber = transaction.getSenderWalletNumber();
+        String receiverWalletNumber = transaction.getReceiverWalletNumber();
+
+        switch (type) {
+            // Transfer operations: debit sender, credit receiver
+            case P2P_TRANSFER:
+            case INTERNAL_TRANSFER:
+            case CROSS_BORDER_TRANSFER:
+            case BANK_TRANSFER:
+            case CARD_TRANSFER:
+                if (senderWalletNumber != null && receiverWalletNumber != null) {
+                    // Check if sender can perform transaction
+                    if (!balanceService.canPerformTransaction(senderWalletNumber, amount, TransactionType.ATM_WITHDRAWAL)) {
+                        return false;
+                    }
+                    // Debit sender
+                    boolean debitSuccess = balanceService.updateBalanceForTransaction(senderWalletNumber, amount, TransactionType.ATM_WITHDRAWAL);
+                    if (!debitSuccess) return false;
+
+                    // Credit receiver
+                    boolean creditSuccess = balanceService.updateBalanceForTransaction(receiverWalletNumber, amount, TransactionType.WALLET_TOPUP);
+                    return creditSuccess;
+                }
+                return false;
+
+            // Payment operations: debit sender
+            case MERCHANT_PAYMENT:
+            case BILL_PAYMENT:
+            case SUBSCRIPTION_PAYMENT:
+            case INVOICE_PAYMENT:
+            case QR_PAYMENT:
+            case PAYMENT_LINK:
+            case IN_APP_PAYMENT:
+            case CONTACTLESS_PAYMENT:
+            case MOBILE_RECHARGE:
+            case GIFT_CARD_PURCHASE:
+                if (senderWalletNumber != null) {
+                    return balanceService.canPerformTransaction(senderWalletNumber, amount, type) &&
+                           balanceService.updateBalanceForTransaction(senderWalletNumber, amount, type);
+                }
+                return false;
+
+            // Withdrawal operations: debit sender
+            case ATM_WITHDRAWAL:
+            case AGENT_WITHDRAWAL:
+            case CRYPTO_WITHDRAWAL:
+                if (senderWalletNumber != null) {
+                    return balanceService.canPerformTransaction(senderWalletNumber, amount, type) &&
+                           balanceService.updateBalanceForTransaction(senderWalletNumber, amount, type);
+                }
+                return false;
+
+            // Top-up/Deposit operations: credit receiver
+            case WALLET_TOPUP:
+            case TRANSIT_TOPUP:
+                if (receiverWalletNumber != null) {
+                    return balanceService.updateBalanceForTransaction(receiverWalletNumber, amount, type);
+                }
+                return false;
+
+            // Refund operations: credit receiver
+            case REFUND:
+                if (receiverWalletNumber != null) {
+                    return balanceService.updateBalanceForTransaction(receiverWalletNumber, amount, TransactionType.REFUND);
+                }
+                return false;
+
+            // Reversal operations: reverse the original transaction
+            case REVERSAL:
+                // For reversals, we need to reverse the original transaction direction
+                // This is a simplified implementation - in production you'd look up the original transaction
+                if (senderWalletNumber != null && receiverWalletNumber != null) {
+                    // Credit sender (reverse debit)
+                    boolean creditSender = balanceService.updateBalanceForTransaction(senderWalletNumber, amount, TransactionType.REFUND);
+                    if (!creditSender) return false;
+
+                    // Debit receiver (reverse credit)
+                    return balanceService.canPerformTransaction(receiverWalletNumber, amount, TransactionType.ATM_WITHDRAWAL) &&
+                           balanceService.updateBalanceForTransaction(receiverWalletNumber, amount, TransactionType.ATM_WITHDRAWAL);
+                }
+                return false;
+
+            // Other operations that might not affect balances immediately
+            case ESCROW:
+            case SCHEDULED:
+            case RECURRING:
+            case SPLIT_BILL:
+            case REQUEST_MONEY:
+            case DONATION:
+            case TIP:
+            case BULK_TRANSFER:
+            case SPLIT_TRANSFER:
+            case GROUP_TRANSFER:
+                // These might require special handling or might not affect balances immediately
+                // For now, treat as successful (no balance changes)
+                return true;
+
+            default:
+                // Unknown transaction type
+                return false;
+        }
     }
 
     private void changeStatus(Transaction transaction, TransactionStatus newStatus, String changedBy, String reason) {
@@ -320,10 +437,24 @@ public class TransactionService {
         return Wallet.builder()
                 .id(walletDto.getId())
                 .walletNumber(walletDto.getWalletNumber())
-                .balance(walletDto.getBalance())
+                .availableBalance(walletDto.getAvailableBalance())
+                .blockedBalance(walletDto.getBlockedBalance())
+                .totalBalance(walletDto.getTotalBalance())
                 .currency(walletDto.getCurrency())
                 .active(walletDto.getActive())
                 .userId(walletDto.getUserId())
+                .status(walletDto.getStatus())
+                .frozenAt(walletDto.getFrozenAt())
+                .frozenBy(walletDto.getFrozenBy())
+                .frozenReason(walletDto.getFrozenReason())
+                .dailyLimit(walletDto.getDailyLimit())
+                .dailySpent(walletDto.getDailySpent())
+                .monthlyLimit(walletDto.getMonthlyLimit())
+                .monthlySpent(walletDto.getMonthlySpent())
+                .lastLimitReset(walletDto.getLastLimitReset())
+                .createdAt(walletDto.getCreatedAt())
+                .updatedAt(walletDto.getUpdatedAt())
+                .closedAt(walletDto.getClosedAt())
                 .build();
     }
 

@@ -58,7 +58,7 @@ public class MerchantUser extends User {
         return RoleType.MERCHANT;
     }
 
-    @Override
+//    @Override
     public Set<PermissionType> getPermissions() {
         return Set.of(
                 PermissionType.VIEW_OWN_PROFILE,

@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/wallets")
@@ -101,6 +103,70 @@ public class WalletController {
                     e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Transfer failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Débite un montant d'un wallet.
+     */
+    @PostMapping("/{walletNumber}/debit")
+    public ResponseEntity<?> debit(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
+        try {
+            walletService.debit(walletNumber, amount);
+            log.info("✅ Debit successful for wallet {} amount {}", walletNumber, amount);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("❌ Debit failed for wallet {}: {}", walletNumber, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Debit failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crédite un montant sur un wallet.
+     */
+    @PostMapping("/{walletNumber}/credit")
+    public ResponseEntity<?> credit(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
+        try {
+            walletService.credit(walletNumber, amount);
+            log.info("✅ Credit successful for wallet {} amount {}", walletNumber, amount);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("❌ Credit failed for wallet {}: {}", walletNumber, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Credit failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Bloque des fonds sur un wallet.
+     */
+    @PostMapping("/{walletNumber}/block-funds")
+    public ResponseEntity<?> blockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
+        try {
+            walletService.blockFunds(walletNumber, amount);
+            log.info("✅ Block funds successful for wallet {} amount {}", walletNumber, amount);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("❌ Block funds failed for wallet {}: {}", walletNumber, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Block funds failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Débloque des fonds sur un wallet.
+     */
+    @PostMapping("/{walletNumber}/unblock-funds")
+    public ResponseEntity<?> unblockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount) {
+        try {
+            walletService.unblockFunds(walletNumber, amount);
+            log.info("✅ Unblock funds successful for wallet {} amount {}", walletNumber, amount);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("❌ Unblock funds failed for wallet {}: {}", walletNumber, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Unblock funds failed: " + e.getMessage());
         }
     }
 }

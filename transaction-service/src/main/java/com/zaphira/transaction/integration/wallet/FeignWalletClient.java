@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.math.BigDecimal;
+
 @FeignClient(name = "wallet-service")
 public interface FeignWalletClient {
 
@@ -20,5 +22,17 @@ public interface FeignWalletClient {
 
     @PostMapping("/api/wallets/transfer")
     void executeTransfer(@RequestBody WalletTransferRequest request);
+
+    @PostMapping("/api/wallets/{walletNumber}/debit")
+    void debit(@PathVariable String walletNumber, @RequestBody BigDecimal amount);
+
+    @PostMapping("/api/wallets/{walletNumber}/credit")
+    void credit(@PathVariable String walletNumber, @RequestBody BigDecimal amount);
+
+    @PostMapping("/api/wallets/{walletNumber}/block-funds")
+    void blockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount);
+
+    @PostMapping("/api/wallets/{walletNumber}/unblock-funds")
+    void unblockFunds(@PathVariable String walletNumber, @RequestBody BigDecimal amount);
 }
 

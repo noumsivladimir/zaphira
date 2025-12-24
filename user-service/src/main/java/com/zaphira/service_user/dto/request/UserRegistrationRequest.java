@@ -1,5 +1,6 @@
 package com.zaphira.service_user.dto.request;
 
+import com.zaphira.common.model.enums.CameroonRegion;
 import com.zaphira.service_user.model.enums.AdminLevel;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
@@ -28,6 +29,10 @@ public class UserRegistrationRequest {
     @Column(nullable = false, length = 6)
     private String pin;
 
+
+    @Email(message = "Invalid email format")
+    private String email;
+
     @NotBlank(message = "First name is required")
     @Size(max = 100)
     private String firstName;
@@ -49,10 +54,6 @@ public class UserRegistrationRequest {
     private String address;
 
     @Size(max = 100)
-    @Email
-    private String email;
-
-    @Size(max = 100)
     private String city;
 
     @Size(max = 100)
@@ -69,6 +70,8 @@ public class UserRegistrationRequest {
     private String position;
     private String employeeId;
     private AdminLevel adminLevel;
+
+    private CameroonRegion regionCode;
 
     // Merchant user specific
     private String businessName;
