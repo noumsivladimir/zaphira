@@ -7,7 +7,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 
-@Entity
+@Entity(name = "CommonWallet")
 @Table(name = "wallets", indexes = {
         @Index(name = "idx_user_id", columnList = "user_id"),
         @Index(name = "idx_wallet_number", columnList = "wallet_number", unique = true),
