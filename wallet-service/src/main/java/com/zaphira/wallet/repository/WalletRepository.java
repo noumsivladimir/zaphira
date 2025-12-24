@@ -23,9 +23,11 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     @Query("SELECT w FROM Wallet w WHERE w.walletNumber = :walletNumber")
     Optional<Wallet> findByWalletNumberWithLock(@Param("walletNumber") String walletNumber);
 
-//    List<Wallet> findByUserId(Long userId);
+    Wallet findByUserId(Long userId);
 
     List<Wallet> findByUserIdAndStatus(Long userId, WalletStatus status);
+
+    List<Wallet> findAllById(Iterable<Long> ids);
 
     Optional<Wallet> findByUserIdAndIsPrimaryTrue(Long userId);
 
@@ -37,7 +39,7 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 //    @Query("SELECT COUNT(w) FROM Wallet w WHERE w.userId = :userId AND w.status != 'CLOSED'")
 //    long countActiveWalletsByUserId(@Param("userId") Long userId);
 //
-//    @Query("SELECT w FROM Wallet w WHERE w.status = :status")
-//    List<Wallet> findAllByStatus(@Param("status") WalletStatus status);
+    @Query("SELECT w FROM Wallet w WHERE w.status = :status")
+    List<Wallet> findAllByStatus(@Param("status") WalletStatus status);
 }
 

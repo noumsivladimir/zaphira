@@ -1,17 +1,67 @@
 package com.zaphira.wallet.service;
 
+import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.WalletSummaryDTO;
+import com.zaphira.wallet.dto.request.BalanceOperationRequest;
 import com.zaphira.wallet.dto.request.CreateWalletRequest;
+import com.zaphira.wallet.dto.request.FreezeWalletRequest;
+import com.zaphira.wallet.dto.request.TransactionValidationRequest;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
+import com.zaphira.wallet.dto.response.TransactionValidationResponse;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 public interface WalletService {
 
    // WalletDTO createUserWallet(CreateWalletRequest request);
    CreateWalletResponse createWalletForUser(CreateWalletRequest request);
+
+
 //   WalletDTO createWalletForMerchant(CreateWalletRequest request);
 //    WalletDTO createWalletForUser(Long userId);
 
     // Consultation
-//    WalletDTO getWalletByNumber(String walletNumber);
+    WalletDTO getWalletByNumber(String walletNumber);
+
+   //
+   @Transactional(readOnly = true)
+   WalletDTO getWalletById(Long id);
+
+   WalletSummaryDTO getWalletSummary(Long userId);
+
+    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request);
+
+    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
+
+    WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy);
+
+    WalletDTO activateWallet(String walletNumber, String activatedBy);
+
+    WalletDTO closeWallet(String walletNumber, String closedBy, String reason);
+
+    WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request);
+
+    WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request);
+
+    WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request);
+
+    WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request);
+
+    WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request);
+
+    TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
+
+    void resetDailyLimits();
+
+    void resetMonthlyLimits();
+
+    WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit);
+
+    @Transactional(readOnly = true)
+    boolean hasAvailableBalance(String walletNumber, BigDecimal amount);
+
+    void recalculateBalance(String walletNumber);
 //    WalletDTO getWalletById(Long id);
 //    List<WalletDTO> getUserWallets(Long userId);
 //    WalletDTO getPrimaryWallet(Long userId);

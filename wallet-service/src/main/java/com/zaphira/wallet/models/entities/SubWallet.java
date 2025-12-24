@@ -3,6 +3,7 @@ package com.zaphira.wallet.models.entities;
 import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.models.enums.SubWalletType;
 import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.models.enums.WalletType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -35,6 +36,10 @@ public class SubWallet {
 
     @ManyToMany(mappedBy = "subWallets")
     private List<Wallet> managingWallets = new ArrayList<>();
+
+    @OneToMany(mappedBy = "subWallet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<WalletSubWallet> walletSubWallets = new ArrayList<>();
 
 
     @Enumerated(EnumType.STRING)
@@ -134,10 +139,23 @@ public class SubWallet {
     }
 
     public List<Wallet> getManagingWallets() {
+        if (managingWallets == null) {
+            managingWallets = new ArrayList<>();
+        }
         return managingWallets;
     }
 
     public void setManagingWallets(List<Wallet> managingWallets) {
         this.managingWallets = managingWallets;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WalletSummary {
+        private Long id;
+        private String walletNumber;
+        private WalletType type;
     }
 }

@@ -1,15 +1,22 @@
 package com.zaphira.wallet.service;
 
 import com.zaphira.common.dto.WalletDTO;
+import com.zaphira.common.model.enums.Currency;
+import com.zaphira.wallet.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.request.CreateSubWalletRequest;
+import com.zaphira.wallet.dto.response.SubWalletResponse;
+import com.zaphira.wallet.mapper.SubWalletMapper;
 import com.zaphira.wallet.models.entities.SubWallet;
 import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.models.entities.WalletSubWallet;
+import com.zaphira.wallet.models.enums.WalletStatus;
 import com.zaphira.wallet.repository.SubWalletRepository;
-import com.zaphira.wallet.repository.WalletRepository;
+import com.zaphira.wallet.repository.WalletSubWalletRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,32 +26,51 @@ import java.util.List;
 public class WalletHierarchyServiceImpl implements WalletHierarchyService{
 
     private final SubWalletRepository subWalletRepository;
-    private final WalletService walletService;
+    private final WalletQueryService walletQueryService;
+    private final WalletSubWalletRepository walletSubWalletRepository;
+    private final SubWalletMapper subWalletMapper;
 
     @Override
-    public SubWallet createSubWallet(CreateSubWalletRequest request) {
-
-        List<Wallet> walletWhichCanManage = new ArrayList<>();
-
-        for (String walletNumber : request.getWalletNumberWhichCanManage()) {
-            //check que le wallet existe
-
-            Wallet wallet = walletRepository.findByWalletNumber(walletNumber).orElseThrow(()-> new IllegalArgumentException("Wallet with number "+walletNumber+" does not exist"));
-            walletWhichCanManage.add(wallet);
-
-        }
+    public SubWalletResponse createSubWallet(CreateSubWalletRequest request) {
 
 
-
+        // Step 1: Create SubWallet with all required fields explicitly set
         SubWallet subWallet = SubWallet.builder()
                 .subWalletName(request.getSubWalletName())
                 .type(request.getType())
-                .managingWallets(walletWhichCanManage)
+                .currency(Currency.XAF)  // Explicitly set
+                .status(WalletStatus.ACTIVE)  // Explicitly set
+                .availableBalance(BigDecimal.ZERO)  // Explicitly set
+                .blockedBalance(BigDecimal.ZERO)  // Explicitly set
+                .totalBalance(BigDecimal.ZERO)  // Explicitly set
+                .isDefault(false)  // Explicitly set
                 .build();
 
-        SubWallet saved = subWalletRepository.save(subWallet);
+        log.info("Creating subwallet: {}", subWallet.getSubWalletName());
 
-        return saved;
+
+        //save wallet to Repo
+        SubWallet createdSubWallet = subWalletRepository.save(subWallet);
+
+        log.info("SubWallet with ID {}", subWallet.getId() + "Created successfully for user:");
+
+        // Step 3: Create relationships for each managing wallet
+        for (String walletNumber : request.getWalletNumberWhichCanManage()) {
+            Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+            WalletSubWallet link = WalletSubWallet.builder()
+                    .walletId(wallet.getId())
+                    .subwalletId(createdSubWallet.getId())
+                    .subWallet(createdSubWallet)
+                    .build();
+            walletSubWalletRepository.save(link);
+
+        }
+
+        SubWalletResponse subWalletResponse = subWalletMapper.toResponse(createdSubWallet, managingWallet(createdSubWallet.getId()) );
+
+        // ✅ Step 3: Reload the SubWallet with relationships
+        return subWalletResponse;
+
     }
 
     @Override
@@ -53,13 +79,57 @@ public class WalletHierarchyServiceImpl implements WalletHierarchyService{
     }
 
     @Override
-    public List<WalletDTO> getSubWallets(String walletNumber) {
-        return List.of();
+    public List<SubWalletResponse> getSubWallets(String walletNumber) {
+
+
+        Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+
+        Long walletId = wallet.getId();
+
+        List <WalletSubWallet > subWalletList = walletSubWalletRepository.findByWalletId(walletId);
+
+        List <SubWalletResponse > subWalletResponses = new ArrayList<>();
+
+        for (WalletSubWallet subWallet : subWalletList) {
+
+            Long subwalletId = subWallet.getSubwalletId();
+            SubWallet subWalletEntity = subWalletRepository.findById(subwalletId)
+                    .orElseThrow(() -> new IllegalArgumentException("SubWallet with ID " + subwalletId + " does not exist"));
+
+            subWalletResponses.add(subWalletMapper.toResponse(subWalletEntity, managingWallet(subwalletId)));
+
+        }
+
+        return subWalletResponses;
+
+
     }
 
     @Override
     public List<WalletDTO> getParentChain(String walletNumber) {
         return List.of();
+    }
+
+    @Override
+    public List<WalletSummaryDTO> managingWallet(Long subWalletId) {
+
+        List <Long> walletId = walletSubWalletRepository.findAllWalletIdBySuWalletNumber(subWalletId);
+
+        List <Wallet > wallets = walletQueryService.findAllById(walletId);
+
+//        List <Wallet > wallets = walletRepository.findAllById(walletId);
+
+        List <WalletSummaryDTO > managingWallets;
+
+        managingWallets = wallets.stream()
+                .map(wallet -> WalletSummaryDTO.builder()
+                        .userId(wallet.getUserId())
+                        .walletNumber(wallet.getWalletNumber())
+                        .build()
+                )
+                .toList();
+
+        return managingWallets;
     }
 
     @Override

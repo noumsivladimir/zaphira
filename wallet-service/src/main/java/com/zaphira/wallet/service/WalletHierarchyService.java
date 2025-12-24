@@ -1,20 +1,24 @@
 package com.zaphira.wallet.service;
 
 import com.zaphira.common.dto.WalletDTO;
+import com.zaphira.wallet.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.request.CreateSubWalletRequest;
-import com.zaphira.wallet.models.entities.SubWallet;
+import com.zaphira.wallet.dto.response.SubWalletResponse;
 
 import java.util.List;
 
 public interface WalletHierarchyService {
 
     // Création de sous-wallets
-    SubWallet createSubWallet(CreateSubWalletRequest request);
+    SubWalletResponse createSubWallet(CreateSubWalletRequest request);
 
     // Navigation hiérarchique
     WalletDTO getWalletWithSubWallets(String walletNumber, boolean recursive);
-    List<WalletDTO> getSubWallets(String walletNumber);
+    List<SubWalletResponse> getSubWallets(String walletNumber);
     List<WalletDTO> getParentChain(String walletNumber);
+
+
+    List<WalletSummaryDTO> managingWallet(Long subWalletId);
 //    WalletHierarchyDTO getFullHierarchy(String rootWalletNumber);
 
     // Déplacement

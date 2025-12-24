@@ -194,4 +194,23 @@ public class Wallet {
         this.blockedBalance = this.blockedBalance.subtract(amount);
         calculateTotalBalance();
     }
+
+
+    public List<SubWallet> getSubWallets() {
+        if (subWallets == null) {
+            subWallets = new ArrayList<>();
+        }
+        return subWallets;
+    }
+
+//    // ✅ Méthode helper pour obtenir les SubWallets
+//    public List<SubWallet> getSubWallets() {
+//        if (subWallets == null || subWallets.isEmpty()) {
+//            return new ArrayList<>();
+//        }
+//        return subWallets.stream()
+//                .map(SubWallet::getSubwall)
+//                .filter(java.util.Objects::nonNull)
+//                .collect(java.util.stream.Collectors.toList());
+//    }
 }

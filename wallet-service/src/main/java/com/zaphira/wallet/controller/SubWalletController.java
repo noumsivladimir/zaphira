@@ -2,7 +2,7 @@ package com.zaphira.wallet.controller;
 
 
 import com.zaphira.wallet.dto.request.CreateSubWalletRequest;
-import com.zaphira.wallet.models.entities.SubWallet;
+import com.zaphira.wallet.dto.response.SubWalletResponse;
 import com.zaphira.wallet.service.WalletHierarchyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class SubWalletController {
 
         try {
 
-            SubWallet subWallet= walletHierarchyService.createSubWallet(request);
+            SubWalletResponse subWallet= walletHierarchyService.createSubWallet(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(subWallet);
 
 
