@@ -15,7 +15,7 @@ public class WalletDTO {
     private Long id;
     private String walletNumber;
     private BigDecimal balance;
-   // private String currency;
+    private String currency;
     private Boolean active;
     private Long userId;
 }
