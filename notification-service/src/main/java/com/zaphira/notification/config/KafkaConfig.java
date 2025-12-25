@@ -2,6 +2,8 @@ package com.zaphira.notification.config;
 
 import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.common.event.UserRegisteredEvent;
+import com.zaphira.common.event.WalletBalanceUpdatedEvent;
+import com.zaphira.common.event.WalletCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,6 +84,66 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, TransactionCreatedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(transactionConsumerFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
+
+    /**
+     * ConsumerFactory pour WalletCreatedEvent
+     */
+    @Bean
+    public ConsumerFactory<String, WalletCreatedEvent> walletConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, WalletCreatedEvent.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    /**
+     * KafkaListenerContainerFactory pour WalletCreatedEvent
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, WalletCreatedEvent> walletKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, WalletCreatedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(walletConsumerFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
+
+    /**
+     * ConsumerFactory pour WalletBalanceUpdatedEvent
+     */
+    @Bean
+    public ConsumerFactory<String, WalletBalanceUpdatedEvent> walletBalanceConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, WalletBalanceUpdatedEvent.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    /**
+     * KafkaListenerContainerFactory pour WalletBalanceUpdatedEvent
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, WalletBalanceUpdatedEvent> walletBalanceKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, WalletBalanceUpdatedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(walletBalanceConsumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         return factory;
     }

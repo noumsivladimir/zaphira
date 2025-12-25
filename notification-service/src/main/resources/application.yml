@@ -1,5 +1,5 @@
 server:
-  port: 8084
+  port: 8085
 
 spring:
   application:
@@ -29,6 +29,11 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+telegram:
+  bot:
+    token: 7490034483:AAFCwqBCCjpaHGfLlsfz6ucymsTaU0peov4
+    chat-id: 7584204126
 
 logging:
   level:

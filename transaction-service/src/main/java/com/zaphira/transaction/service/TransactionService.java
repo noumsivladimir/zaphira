@@ -177,7 +177,7 @@ public class TransactionService {
                 .feeCurrency(fee.getFeeCurrency())
                 .feeType(fee.getFeeType())
                 .authorizationRequired(evaluation.isAuthorizationRequired())
-                .authorizationMethod(evaluation.isAuthorizationRequired() ? evaluation.getMethod() : AuthorizationMethod.NONE)
+                .authorizationMethod(evaluation.isAuthorizationRequired() ? evaluation.getMethod() : null)
                 .initiatedBy(actorEmail)
                 .lastUpdatedBy(actorEmail)
                 .build();
