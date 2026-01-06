@@ -3,34 +3,38 @@ package com.zaphira.service_user.dto.event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.kafka.core.KafkaTemplate;
+import com.zaphira.service_user.model.entities.User;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class UserEventPublisher {
 
-//    private final KafkaTemplate<String, Object> kafkaTemplate;
-//
-//    private static final String USER_EVENTS_TOPIC = "user-events";
-//    private static final String KYC_EVENTS_TOPIC = "kyc-events";
-//
-//    public void publishUserRegisteredEvent(User user) {
-//        try {
-//            UserRegisteredEvent event = UserRegisteredEvent.builder()
-//                    .userId(user.getUserId())
-//                    .email(user.getEmail())
-//                    .firstName(user.getFirstName())
-//                    .lastName(user.getLastName())
-//                    .roleType(user.getRoleType().name())
-//                    .registeredAt(LocalDateTime.now())
-//                    .build();
-//
-//            kafkaTemplate.send(USER_EVENTS_TOPIC, "user.registered", event);
-//            log.info("Published UserRegisteredEvent for user ID: {}", user.getUserId());
-//        } catch (Exception e) {
-//            log.error("Failed to publish UserRegisteredEvent", e);
-//        }
-//    }
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    private static final String USER_EVENTS_TOPIC = "user-registered";
+    private static final String KYC_EVENTS_TOPIC = "kyc-events";
+
+    public void publishUserRegisteredEvent(User user) {
+        try {
+            UserRegisteredEvent event = UserRegisteredEvent.builder()
+                    .userId(user.getUserId())
+                    .email(user.getEmail())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .phoneNumber(user.getPhoneNumber())
+                    .roleType(user.getRoleType().name())
+                    .registeredAt(LocalDateTime.now())
+                    .build();
+
+            kafkaTemplate.send(USER_EVENTS_TOPIC, "user.registered", event);
+            log.info("Published UserRegisteredEvent for user ID: {}", user.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to publish UserRegisteredEvent", e);
+        }
+    }
 //
 //    public void publishUserUpdatedEvent(User user) {
 //        try {

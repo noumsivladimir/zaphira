@@ -1,9 +1,9 @@
 package com.zaphira.notification.listener;
 
 import com.zaphira.common.event.TransactionCreatedEvent;
-//import com.zaphira.notification.service.EmailService;
+import com.zaphira.notification.service.EmailService;
 import com.zaphira.notification.service.SmsService;
-import com.zaphira.notification.service.TelegramService;
+//import com.zaphira.notification.service.TelegramService;
 import com.zaphira.notification.service.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TransactionEventListener {
 
-    //private final EmailService emailService;
+    private final EmailService emailService;
     private final SmsService smsService;
-    private final TelegramService telegramService;
+    //private final TelegramService telegramService;
     private final UserServiceClient userServiceClient;
 
     @KafkaListener(
@@ -29,64 +29,66 @@ public class TransactionEventListener {
         log.info("Received transaction event: {}", event.getReference());
 
         try {
-            // Récupérer les informations de l'utilisateur
-            Long userId = getTransactionUserId(event);
-            String chatId = getUserTelegramChatId(userId);
-            String phoneNumber = getUserPhoneNumber(userId);
-
-            // Send Telegram notification
-            if (chatId != null) {
-                // Déterminer le type de transaction
-                String transactionType = determineTransactionType(event);
-                telegramService.sendTransactionMessage(chatId,
-                    event.getReference(),
-                    event.getAmount().toString() + " " + event.getCurrency(),
-                    transactionType,
-                    event.getStatus());
+            // Send email notification to sender if exists
+            if (event.getSenderWalletNumber() != null) {
+                Long senderUserId = userServiceClient.getUserIdFromWalletNumber(event.getSenderWalletNumber());
+                if (senderUserId != null) {
+                    UserServiceClient.UserNotificationInfo info = userServiceClient.getUserNotificationInfo(senderUserId);
+                    String email = (info != null) ? info.getEmail() : null;
+                    if (email != null) {
+                        String type = event.getReceiverWalletNumber() != null ? "Transfert" : "Débit";
+                        String subject = "Notification de transaction - " + event.getReference();
+                        String body = String.format(
+                            "Bonjour,\n\n" +
+                            "Votre transaction %s a été %s.\n\n" +
+                            "Référence: %s\n" +
+                            "Montant: %s %s\n" +
+                            "Statut: %s\n\n" +
+                            "Merci d'utiliser Zaphira.\n\n" +
+                            "L'équipe Zaphira",
+                            type, event.getStatus().toLowerCase(),
+                            event.getReference(),
+                            event.getAmount(), event.getCurrency(),
+                            event.getStatus()
+                        );
+                        emailService.sendEmail(email, subject, body);
+                        log.info("Transaction email sent to sender: {}", senderUserId);
+                    }
+                }
             }
 
-            // Send SMS notification (if phone number available)
-            if (phoneNumber != null) {
-                smsService.sendTransactionSms(
-                    phoneNumber,
-                    event.getReference(),
-                    event.getAmount().toString(),
-                    event.getStatus()
-                );
+            // Send email notification to receiver if exists
+            if (event.getReceiverWalletNumber() != null) {
+                Long receiverUserId = userServiceClient.getUserIdFromWalletNumber(event.getReceiverWalletNumber());
+                if (receiverUserId != null) {
+                    UserServiceClient.UserNotificationInfo info = userServiceClient.getUserNotificationInfo(receiverUserId);
+                    String email = (info != null) ? info.getEmail() : null;
+                    if (email != null) {
+                        String type = event.getSenderWalletNumber() != null ? "Transfert" : "Crédit";
+                        String subject = "Notification de transaction - " + event.getReference();
+                        String body = String.format(
+                            "Bonjour,\n\n" +
+                            "Votre transaction %s a été %s.\n\n" +
+                            "Référence: %s\n" +
+                            "Montant: %s %s\n" +
+                            "Statut: %s\n\n" +
+                            "Merci d'utiliser Zaphira.\n\n" +
+                            "L'équipe Zaphira",
+                            type, event.getStatus().toLowerCase(),
+                            event.getReference(),
+                            event.getAmount(), event.getCurrency(),
+                            event.getStatus()
+                        );
+                        emailService.sendEmail(email, subject, body);
+                        log.info("Transaction email sent to receiver: {}", receiverUserId);
+                    }
+                }
             }
 
             log.info("Transaction notification processed for: {}", event.getReference());
         } catch (Exception e) {
             log.error("Failed to process transaction notification for: {}", event.getReference(), e);
         }
-    }
-
-    // TODO: Implémenter ces méthodes
-    private Long getTransactionUserId(TransactionCreatedEvent event) {
-        // Pour l'instant, extraire depuis la référence ou ajouter userId à l'événement
-        // Supposons que la référence contient l'userId ou faire un appel au transaction-service
-        return null; // Temporaire
-    }
-
-    private String getUserTelegramChatId(Long userId) {
-        if (userId == null) return null;
-        return userServiceClient.getUserTelegramChatId(userId);
-    }
-
-    private String getUserPhoneNumber(Long userId) {
-        if (userId == null) return null;
-        return userServiceClient.getUserPhoneNumber(userId);
-    }
-
-    private String determineTransactionType(TransactionCreatedEvent event) {
-        if (event.getSenderWalletNumber() != null && event.getReceiverWalletNumber() != null) {
-            return "TRANSFER";
-        } else if (event.getSenderWalletNumber() != null) {
-            return "DEBIT";
-        } else if (event.getReceiverWalletNumber() != null) {
-            return "CREDIT";
-        }
-        return "TRANSACTION";
     }
 }
 

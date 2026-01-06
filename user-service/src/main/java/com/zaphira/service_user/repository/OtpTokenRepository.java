@@ -11,4 +11,8 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
     Optional<OtpToken> findByPhoneNumberAndPurposeAndUsedFalse(String phoneNumber, OtpPurpose purpose);
 
     void deleteByPhoneNumberAndPurpose(String phoneNumber, OtpPurpose purpose);
+
+    Optional<OtpToken> findByEmailAndPurposeAndUsedFalse(String email, OtpPurpose purpose);
+
+    void deleteByEmailAndPurpose(String email, OtpPurpose purpose);
 }

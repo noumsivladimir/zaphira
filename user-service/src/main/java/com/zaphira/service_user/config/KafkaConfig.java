@@ -1,7 +1,7 @@
 // config/KafkaConfig.java
 package com.zaphira.service_user.config;
 
-import com.zaphira.common.event.UserCreatedEvent;
+import com.zaphira.common.event.UserRegisteredEvent;
 import com.zaphira.common.event.WalletCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -29,7 +29,7 @@ public class KafkaConfig {
 
     // Producer Config
     @Bean
-    public ProducerFactory<String, UserCreatedEvent> producerFactory() {
+    public ProducerFactory<String, UserRegisteredEvent> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -38,8 +38,22 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, UserCreatedEvent> kafkaTemplate() {
+    public KafkaTemplate<String, UserRegisteredEvent> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    @Bean
+    public ProducerFactory<String, Object> generalProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<String, Object> generalKafkaTemplate() {
+        return new KafkaTemplate<>(generalProducerFactory());
     }
 
     // Consumer Config for Wallet Response

@@ -1,55 +1,48 @@
-# Test des Notifications Telegram
-# Utilisez ce script pour tester facilement les notifications
+# Test des Notifications Email
+# Utilisez ce script pour tester facilement les notifications par email
 
-$chatId = "7584204126"  # Votre chat ID
-$baseUrl = "http://localhost:8084/api/notifications/test"
+$baseUrl = "http://localhost:8085/api/notifications"
 
-Write-Host "=== Test des Notifications Telegram ===" -ForegroundColor Cyan
-Write-Host "Chat ID: $chatId" -ForegroundColor Yellow
+Write-Host "=== Test des Notifications Email ===" -ForegroundColor Cyan
+Write-Host "Base URL: $baseUrl" -ForegroundColor Yellow
 Write-Host ""
 
-# Test 1: Message simple
-Write-Host "1. Test message simple..." -ForegroundColor Green
+# Test 1: Envoi de code de vérification
+Write-Host "1. Test envoi de code de vérification..." -ForegroundColor Green
 try {
-    $response = Invoke-RestMethod -Uri "$baseUrl/telegram?chatId=$chatId&message=Test%20de%20notification%20Telegram%20!%20%F0%9F%93%B1" -Method POST
-    Write-Host "✓ Message envoyé avec succès" -ForegroundColor Green
+    $response = Invoke-RestMethod -Uri "$baseUrl/send/verification/1" -Method POST
+    Write-Host "✓ Code de vérification envoyé avec succès" -ForegroundColor Green
+    Write-Host "Réponse: $($response | ConvertTo-Json)" -ForegroundColor Gray
 } catch {
-    Write-Host "✗ Erreur lors de l'envoi du message: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "✗ Erreur lors de l'envoi du code de vérification: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Start-Sleep -Seconds 2
 
-# Test 2: Message de bienvenue
-Write-Host "2. Test message de bienvenue..." -ForegroundColor Green
+# Test 2: Simulation d'inscription utilisateur
+Write-Host "2. Test simulation d'inscription utilisateur..." -ForegroundColor Green
 try {
-    $response = Invoke-RestMethod -Uri "$baseUrl/welcome?chatId=$chatId" -Method POST
-    Write-Host "✓ Message de bienvenue envoyé" -ForegroundColor Green
+    $response = Invoke-RestMethod -Uri "$baseUrl/test/simulate-user-registered?firstName=John&lastName=Doe&phoneNumber=237123456789&email=test@example.com" -Method POST
+    Write-Host "✓ Simulation d'inscription effectuée" -ForegroundColor Green
+    Write-Host "Réponse: $($response | ConvertTo-Json)" -ForegroundColor Gray
 } catch {
-    Write-Host "✗ Erreur lors de l'envoi du message de bienvenue: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "✗ Erreur lors de la simulation d'inscription: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Start-Sleep -Seconds 2
 
-# Test 3: Notification de transaction
+# Test 3: Notification de transaction (nécessite une transaction existante)
 Write-Host "3. Test notification de transaction..." -ForegroundColor Green
 try {
-    $response = Invoke-RestMethod -Uri "$baseUrl/transaction?chatId=$chatId" -Method POST
+    # Remplacer 1 par un ID de transaction réel
+    $response = Invoke-RestMethod -Uri "$baseUrl/send/transaction/1" -Method POST
     Write-Host "✓ Notification de transaction envoyée" -ForegroundColor Green
+    Write-Host "Réponse: $($response | ConvertTo-Json)" -ForegroundColor Gray
 } catch {
     Write-Host "✗ Erreur lors de l'envoi de la notification de transaction: $($_.Exception.Message)" -ForegroundColor Red
-}
-
-Start-Sleep -Seconds 2
-
-# Test 4: Notifications portefeuille
-Write-Host "4. Test notifications portefeuille..." -ForegroundColor Green
-try {
-    $response = Invoke-RestMethod -Uri "$baseUrl/wallet?chatId=$chatId" -Method POST
-    Write-Host "✓ Notifications portefeuille envoyées" -ForegroundColor Green
-} catch {
-    Write-Host "✗ Erreur lors de l'envoi des notifications portefeuille: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Note: Assurez-vous qu'une transaction avec l'ID 1 existe" -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "=== Tests terminés ===" -ForegroundColor Cyan
-Write-Host "Vérifiez votre Telegram pour voir les messages !" -ForegroundColor Yellow
+Write-Host "Vérifiez votre boîte email pour voir les notifications !" -ForegroundColor Yellow

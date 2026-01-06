@@ -25,8 +25,10 @@ public class OtpToken {
     @Column(nullable = false)
     private String code;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String phoneNumber;
+
+    private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -10,4 +10,7 @@ public interface UsersRegistrationService   {
     UsersRegistrationResponse registerAdmin(UserRegistrationRequest request);
     UsersRegistrationResponse registerMerchant(UserRegistrationRequest request);
     UsersRegistrationResponse registerSupport(UserRegistrationRequest request);
+    
+    // Email Verification
+    UsersRegistrationResponse verifyEmailAndActivateAccount(String email, String verificationCode);
 }

@@ -2,8 +2,14 @@ package com.zaphira.service_user.controller;
 
 import com.zaphira.service_user.dto.request.ChangePinRequest;
 import com.zaphira.service_user.dto.request.UpdateProfileRequest;
+import com.zaphira.service_user.dto.request.VerifyEmailRequest;
+import com.zaphira.service_user.dto.response.UserNotificationInfoResponse;
+import com.zaphira.service_user.dto.response.ApiResponse;
+import com.zaphira.service_user.dto.response.UsersRegistrationResponse;
 import com.zaphira.service_user.dto.request.UserRegistrationRequest;
-import com.zaphira.service_user.dto.response.*;
+import com.zaphira.service_user.dto.response.UserResponse;
+import com.zaphira.service_user.dto.response.ChangePinResponse;
+import com.zaphira.service_user.dto.response.UserSecurityQuestionResponse;
 import com.zaphira.service_user.model.entities.User;
 import com.zaphira.service_user.services.UserRegistrationServiceImpl;
 import com.zaphira.service_user.services.UserService;
@@ -40,9 +46,111 @@ public class UserController {
             @Valid @RequestBody UserRegistrationRequest request) {
 
         log.info("Registration request received for phone: {}", request.getPhoneNumber());
-        UsersRegistrationResponse user = userRegistrationService.registerAdmin(request);
+        UsersRegistrationResponse user = userRegistrationService.registerRegularUser(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(user, "User registered successfully"));
+                .body(ApiResponse.success(user, "User registered successfully. Please check your email for verification code."));
+    }
+
+    @PostMapping("/verify-email")
+    @Operation(summary = "Verify email and activate account", description = "Verify email with OTP code and activate user account")
+    public ResponseEntity<ApiResponse<UsersRegistrationResponse>> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
+
+        log.info("Email verification request received for: {}", request.getEmail());
+        UsersRegistrationResponse user = userRegistrationService.verifyEmailAndActivateAccount(
+                request.getEmail(), request.getVerificationCode());
+        return ResponseEntity.ok(ApiResponse.success(user, "Email verified successfully. Account activated."));
+    }
+
+    @GetMapping("/verify-email-link")
+    @Operation(summary = "Verify email via link", description = "Verify email by clicking on the link sent in the email")
+    public ResponseEntity<String> verifyEmailViaLink(
+            @RequestParam String email,
+            @RequestParam String code) {
+
+        log.info("Email verification link clicked for: {}", email);
+
+        try {
+            UsersRegistrationResponse user = userRegistrationService.verifyEmailAndActivateAccount(email, code);
+
+            // Retourner une page HTML de succès
+            String htmlResponse = String.format(
+                "<!DOCTYPE html>" +
+                "<html lang='fr'>" +
+                "<head>" +
+                "<meta charset='UTF-8'>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                "<title>Email Vérifié - Zaphira</title>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }" +
+                ".container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }" +
+                ".success { color: #28a745; font-size: 48px; margin-bottom: 20px; }" +
+                ".message { font-size: 18px; color: #333; margin-bottom: 30px; }" +
+                ".user-info { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }" +
+                ".button { display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }" +
+                ".button:hover { background: #0056b3; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<div class='success'>✓</div>" +
+                "<h1>Email Vérifié avec Succès !</h1>" +
+                "<p class='message'>Votre compte Zaphira a été activé. Vous pouvez maintenant vous connecter et commencer à utiliser nos services.</p>" +
+                "<div class='user-info'>" +
+                "<strong>Informations du compte :</strong><br>" +
+                "Email : %s<br>" +
+                "Nom : %s %s<br>" +
+                "Statut : %s" +
+                "</div>" +
+                "<a href='http://localhost:3000/login' class='button'>Se Connecter</a>" +
+                "</div>" +
+                "</body>" +
+                "</html>",
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getAccountStatus()
+            );
+
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                    .body(htmlResponse);
+
+        } catch (Exception e) {
+            log.error("Email verification failed for: {}", email, e);
+
+            // Retourner une page HTML d'erreur
+            String errorHtml = String.format(
+                "<!DOCTYPE html>" +
+                "<html lang='fr'>" +
+                "<head>" +
+                "<meta charset='UTF-8'>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                "<title>Erreur de Vérification - Zaphira</title>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }" +
+                ".container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }" +
+                ".error { color: #dc3545; font-size: 48px; margin-bottom: 20px; }" +
+                ".message { font-size: 18px; color: #333; margin-bottom: 30px; }" +
+                ".button { display: inline-block; padding: 12px 24px; background: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }" +
+                ".button:hover { background: #c82333; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<div class='error'>✗</div>" +
+                "<h1>Erreur de Vérification</h1>" +
+                "<p class='message'>Le lien de vérification est invalide ou a expiré. Veuillez réessayer ou contacter le support.</p>" +
+                "<a href='http://localhost:3000/register' class='button'>Retour à l'Inscription</a>" +
+                "</div>" +
+                "</body>" +
+                "</html>"
+            );
+
+            return ResponseEntity.badRequest()
+                    .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                    .body(errorHtml);
+        }
     }
 
     @GetMapping("/profile")
@@ -126,11 +234,12 @@ public class UserController {
 
     }
 
-//    @GetMapping("/sessions")
-//    @Operation(summary = "Get active sessions", description = "Get all active sessions for current user")
-//    public ResponseEntity<ApiResponse<List<SessionResponse>>> getActiveSessions(
-//            @RequestAttribute("userId") Long userId,
-//            @RequestHeader("Authorization") String token) {
+    @GetMapping("/{userId}/notification-info")
+    @Operation(summary = "Get user notification info", description = "Get user information needed for notifications")
+    public ResponseEntity<UserNotificationInfoResponse> getUserNotificationInfo(@PathVariable Long userId) {
+        UserNotificationInfoResponse info = userService.getUserNotificationInfo(userId);
+        return ResponseEntity.ok(info);
+    }
 //
 //        String jwtToken = token.replace("Bearer ", "");
 //        List<SessionResponse> sessions = authService.getActiveSessions(userId, jwtToken);

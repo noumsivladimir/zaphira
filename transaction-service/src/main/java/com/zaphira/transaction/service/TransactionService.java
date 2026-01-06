@@ -291,6 +291,7 @@ public class TransactionService {
             }
 
             changeStatus(transaction, TransactionStatus.COMPLETED, actor, "Transaction completed successfully");
+            publishTransactionEvent(transaction);
         } catch (Exception ex) {
             changeStatus(transaction, TransactionStatus.FAILED, actor, ex.getMessage());
             throw ex;

@@ -101,18 +101,55 @@ services:
     networks:
       - zaphira-network
 
-  notification-service:
+  user-service:
     build:
-      context: ../notification-service
+      context: ../user-service
       dockerfile: Dockerfile
-    container_name: zaphira-notification
+    container_name: zaphira-user
     ports:
-      - "8084:8084"
+      - "8086:8082"
     depends_on:
+      - postgres
       - eureka-server
       - config-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
     networks:
       - zaphira-network
+
+#  zookeeper:
+#    image: confluentinc/cp-zookeeper:7.4.0
+#    container_name: zaphira-zookeeper
+#    environment:
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_TICK_TIME: 2000
+#    ports:
+#      - "2181:2181"
+#    networks:
+#      - zaphira-network
+
+#  kafka:
+#    image: confluentinc/cp-kafka:7.4.0
+#    container_name: zaphira-kafka
+#    depends_on:
+#      - zookeeper
+#    ports:
+#      - "9092:9092"
+#      - "9093:9093"
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+#      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+#    networks:
+#      - zaphira-network
 
 volumes:
   postgres_data:

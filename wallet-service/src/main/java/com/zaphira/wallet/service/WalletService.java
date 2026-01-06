@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Random;
+
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
@@ -20,10 +24,8 @@ public class WalletService {
     //private final TransactionServiceClient transactionServiceClient;
 
     public WalletDTO createWallet(Long userId) {
-        // Générer walletNumber unique à 8 chiffres basé sur l'ID utilisateur
-        // Exemple : (userId * 1234567) % 100_000_000 pour rester sur 8 chiffres
-
-        String walletNumber = String.format("%08d", (userId * 1234567) % 100_000_000);
+        // Générer un numéro de portefeuille unique à 8 chiffres
+        String walletNumber = generateUniqueWalletNumber();
 
         // Créer le wallet avec walletNumber déjà défini
         Wallet wallet = Wallet.builder()
@@ -46,6 +48,30 @@ public class WalletService {
         Wallet saved = walletRepository.save(wallet);
 
         return toDTO(saved);
+    }
+
+    /**
+     * Génère un numéro de portefeuille unique à 8 chiffres
+     * Utilise une approche aléatoire avec vérification d'unicité en base
+     */
+    private String generateUniqueWalletNumber() {
+        Random random = new Random();
+        String walletNumber;
+        int maxAttempts = 100; // Éviter une boucle infinie
+        int attempts = 0;
+
+        do {
+            // Générer un nombre aléatoire entre 10000000 et 99999999
+            int number = 10000000 + random.nextInt(90000000);
+            walletNumber = String.format("%08d", number);
+            attempts++;
+
+            if (attempts >= maxAttempts) {
+                throw new RuntimeException("Impossible de générer un numéro de portefeuille unique après " + maxAttempts + " tentatives");
+            }
+        } while (walletRepository.existsByWalletNumber(walletNumber));
+
+        return walletNumber;
     }
 
     public WalletDTO getWalletByUserId(Long userId) {

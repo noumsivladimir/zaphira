@@ -1,11 +1,18 @@
 server:
-  port: 8085
+  port: 8089
 
 spring:
   application:
     name: notification-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:no-kafka}
+---
+spring:
+  config:
+    activate:
+      on-profile: kafka
   kafka:
-    bootstrap-servers: 192.168.0.122:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:192.168.0.122:9092}
     consumer:
       group-id: notification-service
       auto-offset-reset: earliest
@@ -13,17 +20,39 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      ack-mode: manual_immediate
+---
+spring:
+  config:
+    activate:
+      on-profile: no-kafka
+  datasource:
+    url: jdbc:h2:mem:notificationdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: mail.saad-consulting.com
+    port: 465
+    username: assistance@saad-consulting.com
+    password: gJ9$GvuMWg_hx*W
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 3000
+          writetimeout: 5000
 
 eureka:
   client:
@@ -32,7 +61,8 @@ eureka:
 
 telegram:
   bot:
-    token: 7490034483:AAFCwqBCCjpaHGfLlsfz6ucymsTaU0peov4
+    # Paramètres du bot Telegram pour les tests - envoi vers chat de test uniquement
+    token: 7471715246:AAESbs4jp91fCJgTjvrNZpYZ0MPWM5lqNHo
     chat-id: 7584204126
 
 logging:
