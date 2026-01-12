@@ -4,10 +4,12 @@ import com.zaphira.common.event.EmailSendEvent;
 import com.zaphira.notification.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class EmailEventListener {
@@ -23,6 +25,7 @@ public class EmailEventListener {
         log.info("Received email send event for: {} | Type: {}", event.getTo(), event.getEmailType());
 
         try {
+            // Envoyer l'email selon le type de contenu
             if (event.getHtmlBody() != null && !event.getHtmlBody().isEmpty()) {
                 // Envoyer un email HTML
                 emailService.sendHtmlEmail(event.getTo(), event.getSubject(), event.getHtmlBody());

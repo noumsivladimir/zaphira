@@ -1,3 +1,4 @@
+
 package com.zaphira.service_user.repository;
 
 import com.zaphira.service_user.model.entities.RegularUser;
@@ -20,6 +21,8 @@ public interface RegularUserRepository extends JpaRepository<RegularUser, Long> 
     List<RegularUser> findByPreferredCurrency(String currency);
 
     List<RegularUser> findByPreferredLanguage(String language);
+
+        Optional<RegularUser> findByPhoneNumber(String phoneNumber);
 //
 //    @Query("SELECT u FROM RegularUser u WHERE u.KYC.kycStatus = :status")
 //    List<RegularUser> findByKycStatus(@Param("status") KYCStatus status);

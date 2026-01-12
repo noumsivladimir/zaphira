@@ -1,8 +1,163 @@
-# 📚 Guide d'Implémentation : Création Automatique de Wallet
+# 📚 Guide d'Implémentation : Architecture Microservices Zaphira
 
 ## 🎯 Vue d'Ensemble
 
-Deux approches complètes sont disponibles pour créer automatiquement un wallet lorsqu'un utilisateur est enregistré.
+Ce guide couvre les principales implémentations de l'architecture Zaphira :
+- Processus d'inscription avec vérification OTP
+- Création automatique de wallet
+- Communication synchrone et asynchrone entre services
+
+---
+
+## 🔐 Processus d'Inscription avec Vérification OTP
+
+### 🎯 Vue d'Ensemble
+
+Le processus d'inscription suit un workflow en deux étapes :
+1. **Inscription** : Création du compte utilisateur (statut `PENDING_VERIFICATION`)
+2. **Vérification OTP** : Validation via code OTP et activation du compte
+
+### 📊 Flux de l'Inscription
+
+```
+POST /api/users/register
+  ↓
+UserRegistrationService.registerRegularUser()
+  ↓
+User enregistré avec AccountStatus.PENDING_VERIFICATION
+  ↓
+Wallet NON créé (attente vérification)
+  ↓
+Réponse : "User registered successfully. Please request OTP verification to complete registration."
+```
+
+### 📱 Flux de Vérification OTP
+
+```
+POST /api/users/send-otp/{userId}
+  ↓
+NotificationServiceClient.sendOtp(userId)
+  ↓
+VerificationService.generateOtpForJsonResponse()
+  ↓
+OTP généré et stocké en base
+  ↓
+Réponse JSON avec l'OTP :
+{
+  "status": "otp_generated",
+  "otp": "123456",
+  "expiresIn": "10 minutes",
+  "message": "OTP généré avec succès..."
+}
+```
+
+### ✅ Flux d'Activation Finale
+
+```
+POST /api/users/verify-otp
+Body: {"userId": 123, "otpCode": "123456"}
+  ↓
+UserRegistrationService.verifyOtpAndActivateAccount()
+  ↓
+NotificationServiceClient.verifyOtp() → Vérification via notification-service
+  ↓
+AccountStatus changé à ACTIVE
+  ↓
+Wallet créé automatiquement
+  ↓
+Email de bienvenue envoyé
+  ↓
+Réponse avec compte activé
+```
+
+### 🔧 Endpoints Implémentés
+
+#### 1. Inscription Utilisateur
+```http
+POST /api/users/register
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "+237612345678",
+  "email": "john.doe@example.com",
+  "pin": "1234",
+  "dateOfBirth": "1990-01-01",
+  "country": "Cameroon",
+  "city": "Douala",
+  "region": "Littoral",
+  "neighborhood": "Bonapriso"
+}
+```
+
+#### 2. Demande d'OTP
+```http
+POST /api/users/send-otp/{userId}
+```
+
+**Réponse :**
+```json
+{
+  "status": "success",
+  "data": {
+    "status": "otp_generated",
+    "otp": "123456",
+    "expiresIn": "10 minutes",
+    "message": "OTP généré avec succès..."
+  }
+}
+```
+
+#### 3. Vérification OTP
+```http
+POST /api/users/verify-otp
+Content-Type: application/json
+
+{
+  "userId": 123,
+  "otpCode": "123456"
+}
+```
+
+### 📁 Fichiers Implémentés
+
+1. **UserController** : `user-service/src/main/java/com/zaphira/service_user/controller/UserController.java`
+   - `registerUser()` - Inscription
+   - `sendOtpForVerification()` - Demande OTP
+   - `verifyOtpAndActivate()` - Vérification et activation
+
+2. **UserRegistrationServiceImpl** : `user-service/src/main/java/com/zaphira/service_user/services/UserRegistrationServiceImpl.java`
+   - `registerRegularUser()` - Inscription sans OTP automatique
+   - `sendOtpForUser()` - Appel notification-service
+   - `verifyOtpForUser()` - Vérification via notification-service
+   - `verifyOtpAndActivateAccount()` - Activation finale
+
+3. **NotificationServiceClient** : `user-service/src/main/java/com/zaphira/service_user/client/NotificationServiceClient.java`
+   - Client Feign pour communication avec notification-service
+
+4. **VerifyOtpRequest** : `user-service/src/main/java/com/zaphira/service_user/dto/request/VerifyOtpRequest.java`
+   - DTO pour la vérification OTP
+
+### ✅ Avantages du Processus
+
+- **Sécurité renforcée** : Vérification obligatoire avant activation
+- **Expérience utilisateur** : OTP retourné directement (pas de SMS)
+- **Architecture propre** : Séparation des responsabilités
+- **Session persistante** : L'utilisateur peut prendre son temps pour entrer l'OTP
+- **Timeout configurable** : 3 minutes pour entrer le code (côté frontend)
+
+### 🧪 Test Automatique
+
+Utilisez le script `test_otp_registration.ps1` pour tester le processus complet :
+
+```powershell
+.\test_otp_registration.ps1
+```
+
+---
+
+## 💰 Création Automatique de Wallet
 
 ---
 

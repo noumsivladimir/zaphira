@@ -25,7 +25,7 @@ public class OtpToken {
     @Column(nullable = false)
     private String code;
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String phoneNumber;
 
     private String email;

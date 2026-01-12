@@ -3,12 +3,14 @@ package com.zaphira.service_user.controller;
 import com.zaphira.service_user.dto.request.ChangePinRequest;
 import com.zaphira.service_user.dto.request.UpdateProfileRequest;
 import com.zaphira.service_user.dto.request.VerifyEmailRequest;
+import com.zaphira.service_user.dto.request.VerifyOtpRequest;
 import com.zaphira.service_user.dto.response.UserNotificationInfoResponse;
 import com.zaphira.service_user.dto.response.ApiResponse;
 import com.zaphira.service_user.dto.response.UsersRegistrationResponse;
 import com.zaphira.service_user.dto.request.UserRegistrationRequest;
 import com.zaphira.service_user.dto.response.UserResponse;
 import com.zaphira.service_user.dto.response.ChangePinResponse;
+import com.zaphira.service_user.dto.response.UserVerificationStatusResponse;
 import com.zaphira.service_user.dto.response.UserSecurityQuestionResponse;
 import com.zaphira.service_user.model.entities.User;
 import com.zaphira.service_user.services.UserRegistrationServiceImpl;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -60,6 +63,35 @@ public class UserController {
         UsersRegistrationResponse user = userRegistrationService.verifyEmailAndActivateAccount(
                 request.getEmail(), request.getVerificationCode());
         return ResponseEntity.ok(ApiResponse.success(user, "Email verified successfully. Account activated."));
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify OTP and activate account", description = "Verify OTP code for registration and activate user account")
+    public ResponseEntity<ApiResponse<UsersRegistrationResponse>> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+
+        log.info("OTP verification request received for phone: {}", request.getPhoneNumber());
+        UsersRegistrationResponse user = userRegistrationService.verifyOtpAndActivateAccount(
+                request.getPhoneNumber(), request.getOtpCode());
+        return ResponseEntity.ok(ApiResponse.success(user, "OTP verified successfully. Account activated."));
+    }
+
+    @PostMapping("/send-otp/{userId}")
+    @Operation(summary = "Send OTP for user verification", description = "Send OTP code to user's phone number for account verification")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendOtpForUser(@PathVariable Long userId) {
+
+        log.info("Send OTP request received for user: {}", userId);
+        Map<String, Object> response = userRegistrationService.sendOtpForUser(userId);
+        return ResponseEntity.ok(ApiResponse.success(response, "OTP sent successfully"));
+    }
+
+    @PostMapping("/generate-email-otp/{userId}")
+    @Operation(summary = "Generate email OTP for user verification", description = "Generate and send OTP code to user's email address for account verification")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> generateEmailOtpForUser(@PathVariable Long userId) {
+
+        log.info("Generate email OTP request received for user: {}", userId);
+        Map<String, Object> response = userRegistrationService.generateOtpForUser(userId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Email OTP sent successfully"));
     }
 
     @GetMapping("/verify-email-link")
@@ -299,4 +331,34 @@ public class UserController {
 //                    .body(ApiResponse.error("Invalid 2FA code"));
 //        }
 //    }
+
+    @GetMapping("/verification-status")
+    @Operation(summary = "Check user verification status", description = "Check if a user email is already verified")
+    public ResponseEntity<ApiResponse<UserVerificationStatusResponse>> getUserVerificationStatus(
+            @RequestParam("email") String email) {
+
+        log.info("Checking verification status for email: {}", email);
+
+        try {
+            User user = userService.findUserEntityByEmail(email);
+
+            if (user == null) {
+                return ResponseEntity.ok(ApiResponse.success(
+                    new UserVerificationStatusResponse(false, "USER_NOT_FOUND", email),
+                    "User not found"));
+            }
+
+            boolean isVerified = "ACTIVE".equals(user.getAccountStatus().name());
+            String status = isVerified ? "VERIFIED" : "PENDING_VERIFICATION";
+
+            UserVerificationStatusResponse response = new UserVerificationStatusResponse(isVerified, status, email);
+
+            return ResponseEntity.ok(ApiResponse.success(response, "Verification status retrieved successfully"));
+
+        } catch (Exception e) {
+            log.error("Error checking verification status for email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to check verification status"));
+        }
+    }
 }

@@ -1,71 +1,40 @@
+twilio:
+  account-sid: "AC4ee2203ca9ee74fe8df3010675a03cd2"
+  auth-token: "c94f6cac374ebe85351766659a3ced4b"
+  from-number: "+17177897813"
+
+otp:
+  ttl-minutes: 10
+  max-tokens-per-user: 5  # Limite le nombre de tokens actifs par utilisateur
+  cleanup:
+    enabled: true
+    interval-minutes: 5    # Nettoyage toutes les 5 minutes
+    deep-cleanup-hours: 1  # Nettoyage profond toutes les heures
+
 server:
   port: 8089
 
 spring:
-  application:
-    name: notification-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:no-kafka}
----
-spring:
-  config:
-    activate:
-      on-profile: kafka
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:192.168.0.122:9092}
-    consumer:
-      group-id: notification-service
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-    listener:
-      ack-mode: manual_immediate
----
-spring:
-  config:
-    activate:
-      on-profile: no-kafka
+  # PostgreSQL configuration (same as user-service)
   datasource:
-    url: jdbc:h2:mem:notificationdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://192.168.0.122:5432/wallet_db
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
   mail:
-    host: mail.saad-consulting.com
-    port: 465
-    username: assistance@saad-consulting.com
-    password: gJ9$GvuMWg_hx*W
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
-          ssl:
-            enable: true
           starttls:
-            enable: false
-          connectiontimeout: 5000
-          timeout: 3000
-          writetimeout: 5000
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-
-telegram:
-  bot:
-    # Paramètres du bot Telegram pour les tests - envoi vers chat de test uniquement
-    token: 7471715246:AAESbs4jp91fCJgTjvrNZpYZ0MPWM5lqNHo
-    chat-id: 7584204126
-
-logging:
-  level:
-    com.zaphira.notification: DEBUG
+            enable: true
 

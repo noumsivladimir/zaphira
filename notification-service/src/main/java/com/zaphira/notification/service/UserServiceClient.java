@@ -1,6 +1,7 @@
 package com.zaphira.notification.service;
 
 import com.zaphira.common.dto.WalletDTO;
+import com.zaphira.common.model.enums.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,16 +33,6 @@ public class UserServiceClient {
         return info != null ? info.getPhoneNumber() : null;
     }
 
-    public String getUserTelegramChatId(Long userId) {
-        try {
-            UserNotificationInfo info = getUserNotificationInfo(userId);
-            return info != null ? info.getTelegramChatId() : null;
-        } catch (Exception e) {
-            log.warn("User service not available, cannot get Telegram chat ID for user: {}", userId);
-            return null; // Retourner null pour utiliser le chat par défaut
-        }
-    }
-
     public Long getUserIdFromWalletNumber(String walletNumber) {
         try {
             String url = WALLET_SERVICE_URL + "/api/wallets/" + walletNumber;
@@ -55,17 +46,14 @@ public class UserServiceClient {
 
     public static class UserNotificationInfo {
         private String phoneNumber;
-        private String telegramChatId;
         private String email;
         private String firstName;
         private String lastName;
+        private AccountStatus accountStatus;
 
         // Getters and setters
         public String getPhoneNumber() { return phoneNumber; }
         public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-        public String getTelegramChatId() { return telegramChatId; }
-        public void setTelegramChatId(String telegramChatId) { this.telegramChatId = telegramChatId; }
 
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
@@ -75,5 +63,8 @@ public class UserServiceClient {
 
         public String getLastName() { return lastName; }
         public void setLastName(String lastName) { this.lastName = lastName; }
+
+        public AccountStatus getAccountStatus() { return accountStatus; }
+        public void setAccountStatus(AccountStatus accountStatus) { this.accountStatus = accountStatus; }
     }
 }

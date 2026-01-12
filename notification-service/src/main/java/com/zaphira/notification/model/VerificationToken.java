@@ -33,5 +33,6 @@ public class VerificationToken {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean used = false;
 }
