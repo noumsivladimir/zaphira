@@ -34,7 +34,6 @@ The Twilio configuration can be removed or kept for future SMS integration if ne
 
 #### user-service (application.properties)
 
-
 ## API Endpoints
 
 ### Notification Service

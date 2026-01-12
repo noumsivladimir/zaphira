@@ -1,7 +1,3 @@
-twilio:
-  account-sid: ""
-  auth-token: ""
-  from-number: ""
 
 otp:
   ttl-minutes: 10
