@@ -11,11 +11,7 @@ Le service notification de Zaphira utilise Twilio pour l'envoi d'OTP par SMS. Ce
 Assurez-vous que les variables suivantes sont configurées dans `application.yml` :
 
 ```yaml
-twilio:
-  account-sid: "AC4ee2203ca9ee74fe8df3010675a03cd2"
-  auth-token: "votre_auth_token_twilio"
-  from-number: "+17177897813"
-```
+
 
 ### Obtention des credentials Twilio
 

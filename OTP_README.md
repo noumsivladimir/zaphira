@@ -33,11 +33,7 @@ No Twilio configuration is required anymore. The system generates OTP codes loca
 The Twilio configuration can be removed or kept for future SMS integration if needed.
 
 #### user-service (application.properties)
-```properties
-twilio.account-sid=${TWILIO_ACCOUNT_SID:}
-twilio.auth-token=${TWILIO_AUTH_TOKEN:}
-twilio.phone-number=${TWILIO_PHONE_NUMBER:}
-```
+
 
 ## API Endpoints
 
