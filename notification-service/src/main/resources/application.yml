@@ -1,7 +1,7 @@
 twilio:
-  account-sid: "AC4ee2203ca9ee74fe8df3010675a03cd2"
-  auth-token: "c94f6cac374ebe85351766659a3ced4b"
-  from-number: "+17177897813"
+  account-sid: ""
+  auth-token: ""
+  from-number: ""
 
 otp:
   ttl-minutes: 10
