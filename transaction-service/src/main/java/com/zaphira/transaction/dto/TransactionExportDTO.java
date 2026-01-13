@@ -1,5 +1,6 @@
 package com.zaphira.transaction.dto;
 
+import com.zaphira.common.model.enums.Currency;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.model.enums.TransactionType;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ public class TransactionExportDTO {
     private String senderWalletNumber;
     private String receiverWalletNumber;
     private BigDecimal amount;
-    private String currency;
+    private Currency currency;
     private BigDecimal feeAmount;
     private String feeCurrency;
     private TransactionType type;

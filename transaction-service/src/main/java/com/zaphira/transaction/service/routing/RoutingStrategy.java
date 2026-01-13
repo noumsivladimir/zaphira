@@ -1,6 +1,6 @@
 package com.zaphira.transaction.service.routing;
 
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.PaymentMethod;
 
 /**

@@ -1,6 +1,6 @@
 package com.zaphira.transaction.service;
 
-import com.zaphira.transaction.dto.TransactionRequest;
+import com.zaphira.transaction.dto.requests.TransactionRequest;
 import com.zaphira.transaction.integration.wallet.WalletClient;
 import com.zaphira.transaction.integration.wallet.dto.WalletDetailsResponse;
 import org.springframework.stereotype.Component;

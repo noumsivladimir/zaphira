@@ -1,9 +1,9 @@
 package com.zaphira.transaction.service;
 
 import com.zaphira.common.exception.ResourceNotFoundException;
+import com.zaphira.transaction.dto.TransactionDTO;
 import com.zaphira.transaction.event.SettlementCompletedEvent;
 import com.zaphira.transaction.exception.ExchangeRateException;
-import com.zaphira.transaction.model.Transaction;
 import com.zaphira.transaction.model.TransactionSettlement;
 import com.zaphira.transaction.model.enums.CurrencyCode;
 import com.zaphira.transaction.model.enums.SettlementStatus;
@@ -55,7 +55,7 @@ public class SettlementService {
     private final TransactionSettlementRepository settlementRepository;
     private final ExchangeRateService exchangeRateService;
     private final MultiCurrencyFeeService feeService;
-    private final TransactionService transactionService;
+    private final TransactionServiceImpl transactionServiceImpl;
     @Nullable
     private final KafkaTemplate<String, SettlementCompletedEvent> kafkaTemplate;
     
@@ -92,7 +92,7 @@ public class SettlementService {
         );
         
         // Get transaction
-        Transaction transaction = transactionService.getTransaction(transactionId);
+        TransactionDTO transaction = transactionServiceImpl.getTransactionById(transactionId);
         if (transaction == null) {
             throw new ResourceNotFoundException("Transaction not found: " + transactionId);
         }

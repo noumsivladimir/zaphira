@@ -1,5 +1,6 @@
 package com.zaphira.transaction.model;
 
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.DisputeCategory;
 import com.zaphira.transaction.model.enums.DisputeInitiatorRole;
 import com.zaphira.transaction.model.enums.DisputeResolutionType;

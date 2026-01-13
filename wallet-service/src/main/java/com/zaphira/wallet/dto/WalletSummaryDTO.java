@@ -1,0 +1,24 @@
+package com.zaphira.wallet.dto;
+
+import com.zaphira.common.model.enums.Currency;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class WalletSummaryDTO {
+    private Long userId;
+    private  Long walletId;
+    private Integer totalWallets;
+    private String walletNumber;
+    private List <String> subWalletsName;
+    private BigDecimal totalBalanceAllWallets;
+    private Currency currency;
+}

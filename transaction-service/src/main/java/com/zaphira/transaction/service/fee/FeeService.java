@@ -1,7 +1,7 @@
 package com.zaphira.transaction.service.fee;
 
 import com.zaphira.transaction.config.FeeProperties;
-import com.zaphira.transaction.dto.TransactionRequest;
+import com.zaphira.transaction.dto.requests.TransactionRequest;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,59 +15,27 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class WalletDTO {
     private Long id;
+    private Long userId;
     private String walletNumber;
-    
-    // Balance fields (matching DB structure)
+    private String type;
+    private String status;
+    private List<SubWalletDTO> subWallets;
+    private String currency;
+    private Boolean active;
     private BigDecimal availableBalance;
     private BigDecimal blockedBalance;
     private BigDecimal totalBalance;
-    
-    // Wallet info
-    private String currency;
-    private String type;
-    private String status;
-    private Long userId;
-    
-    // Limits and spending
     private BigDecimal dailyLimit;
-    private BigDecimal dailySpent;
     private BigDecimal monthlyLimit;
+    private BigDecimal dailySpent;
     private BigDecimal monthlySpent;
-    
-    // Frozen status
+    private LocalDateTime lastLimitReset;
+    private Boolean isPrimary;
+    private String frozenReason;
     private LocalDateTime frozenAt;
     private Long frozenBy;
-    private String frozenReason;
-    
-    // Primary wallet flag
-    private Boolean isPrimary;
-    
-    // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime closedAt;
-    private LocalDateTime lastLimitReset;
-    
-    // Metadata and versioning
     private String metadata;
-    private Long version;
-    
-    // Backward compatibility: balance property returns availableBalance
-    public BigDecimal getBalance() {
-        return this.availableBalance != null ? this.availableBalance : BigDecimal.ZERO;
-    }
-    
-    public void setBalance(BigDecimal balance) {
-        this.availableBalance = balance;
-    }
-    
-    // Backward compatibility: active property based on frozenAt
-    public Boolean getActive() {
-        return this.frozenAt == null;
-    }
-
-    public String getStatus() {
-        return this.status; 
-    }
 }
-

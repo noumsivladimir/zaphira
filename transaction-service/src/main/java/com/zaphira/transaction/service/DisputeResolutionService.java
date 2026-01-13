@@ -1,7 +1,7 @@
 package com.zaphira.transaction.service;
 
 import com.zaphira.common.exception.ResourceNotFoundException;
-import com.zaphira.transaction.dto.DisputeResolutionRequest;
+import com.zaphira.transaction.dto.requests.DisputeResolutionRequest;
 import com.zaphira.transaction.event.DisputeResolvedEvent;
 import com.zaphira.transaction.exception.AccessDeniedException;
 import com.zaphira.transaction.model.*;
@@ -258,7 +258,7 @@ public class DisputeResolutionService {
         );
         
         try {
-            // Create refund transaction using TransactionService pattern
+            // Create refund transaction using TransactionServiceImpl pattern
             // Example:
             // walletService.refundAmount(
             //     dispute.getTransactionId(),

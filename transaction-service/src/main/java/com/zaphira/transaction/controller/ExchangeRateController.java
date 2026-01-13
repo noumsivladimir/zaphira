@@ -1,6 +1,6 @@
 package com.zaphira.transaction.controller;
 
-import com.zaphira.transaction.dto.ExchangeRateResponse;
+import com.zaphira.transaction.dto.response.ExchangeRateResponse;
 import com.zaphira.transaction.model.ExchangeRate;
 import com.zaphira.transaction.model.enums.CurrencyCode;
 import com.zaphira.transaction.service.ExchangeRateService;

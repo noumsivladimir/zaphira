@@ -1,6 +1,6 @@
 package com.zaphira.transaction.service.routing;
 
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.PaymentMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,12 +44,12 @@ public class CardRoutingStrategy implements RoutingStrategy {
         }
 
         // Check receiver has card details
-        if (transaction.getReceiverWallet() == null) {
+        if (transaction.getReceiverWalletId() == null) {
             return RoutingValidationResult.failure("NO_RECEIVER_CARD", "Receiver card details not available");
         }
 
         // Check card is not expired or frozen
-        if (!Boolean.TRUE.equals(transaction.getReceiverWallet().getActive())) {
+        if (!Boolean.TRUE.equals(transaction.getReceiverWalletId())) {
             return RoutingValidationResult.failure("CARD_FROZEN", "Receiver card is frozen");
         }
 

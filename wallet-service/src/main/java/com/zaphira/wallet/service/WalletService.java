@@ -1,12 +1,10 @@
 package com.zaphira.wallet.service;
 
-import com.zaphira.common.dto.WalletDTO;
-import com.zaphira.common.exception.ResourceNotFoundException;
-//import com.zaphira.wallet.client.TransactionServiceClient;
-import com.zaphira.common.model.entities.Wallet;
-import com.zaphira.wallet.repository.WalletRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.zaphira.common.dto.WalletSummaryDTO;
+import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.request.*;
+import com.zaphira.wallet.dto.response.CreateWalletResponse;
+import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -16,39 +14,22 @@ import java.util.Random;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
-@Service
-@RequiredArgsConstructor
-public class WalletService {
+public interface WalletService {
 
-    private final WalletRepository walletRepository;
-    //private final TransactionServiceClient transactionServiceClient;
+   // WalletDTO createUserWallet(CreateWalletRequest request);
+   CreateWalletResponse createWalletForUser(CreateWalletRequest request);
 
     public WalletDTO createWallet(Long userId) {
         // Générer un numéro de portefeuille unique à 8 chiffres
         String walletNumber = generateUniqueWalletNumber();
 
-        // Créer le wallet avec walletNumber déjà défini
-        Wallet wallet = Wallet.builder()
-                .userId(userId)
-                .availableBalance(BigDecimal.ZERO)
-                .blockedBalance(BigDecimal.ZERO)
-                .totalBalance(BigDecimal.ZERO)
-                .active(true)
-                .walletNumber(walletNumber)
-                .currency("XOF")  // Default currency for Cameroon
-                .status("ACTIVE")  // Default status
-                .type("USER")  // Default type for regular users
-                .dailySpent(BigDecimal.ZERO)
-                .monthlySpent(BigDecimal.ZERO)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+   //
+   @Transactional(readOnly = true)
+   WalletDTO getWalletById(Long id);
 
-        // Sauvegarder le wallet en base
-        Wallet saved = walletRepository.save(wallet);
+   WalletSummaryDTO getWalletSummary(Long userId);
 
-        return toDTO(saved);
-    }
+   com.zaphira.common.dto.WalletSummaryDTO getWalletSummaryByWalletNumber(String walletNumber);
 
     /**
      * Génère un numéro de portefeuille unique à 8 chiffres
@@ -80,228 +61,83 @@ public class WalletService {
         return toDTO(wallet);
     }
 
-    public WalletDTO getWalletByNumber(String walletNumber) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
-        return toDTO(wallet);
-    }
+    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
 
-    @Transactional
-    public void debit(String walletNumber, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
+    WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy);
 
-        // Vérifier si le wallet est gelé
-        if (wallet.getFrozenAt() != null) {
-            throw new RuntimeException("Wallet is frozen and cannot be debited");
-        }
+    WalletDTO activateWallet(String walletNumber, String activatedBy);
 
-        // Vérifier les limites quotidiennes
-        checkAndUpdateDailyLimits(wallet, amount);
+    WalletDTO closeWallet(String walletNumber, String closedBy, String reason);
 
-        // Vérifier le solde disponible
-        if (wallet.getAvailableBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient available balance");
-        }
+    WalletDTO creditWallet(Long walletId, BalanceOperationRequest request);
 
-        // Mettre à jour les soldes en maintenant la cohérence
-        BigDecimal newAvailableBalance = wallet.getAvailableBalance().subtract(amount);
-        BigDecimal blockedBalance = wallet.getBlockedBalance() != null ? wallet.getBlockedBalance() : BigDecimal.ZERO;
-        BigDecimal newTotalBalance = newAvailableBalance.add(blockedBalance);
+    WalletDTO debitWallet(Long walletId, BalanceOperationRequest request);
 
-        wallet.setAvailableBalance(newAvailableBalance);
-        wallet.setTotalBalance(newTotalBalance);
-        wallet.setUpdatedAt(LocalDateTime.now());
+    WalletDTO blockAmount(Long walletId, BalanceOperationRequest request);
 
-        walletRepository.save(wallet);
-    }
+    WalletDTO unblockAmount(Long walletId, BalanceOperationRequest request);
 
-    @Transactional
-    public void credit(String walletNumber, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
+    WalletDTO releaseBlockedAmount(Long walletId, BalanceOperationRequest request);
 
-        // Créditer le wallet en maintenant la cohérence
-        BigDecimal newAvailableBalance = wallet.getAvailableBalance().add(amount);
-        BigDecimal blockedBalance = wallet.getBlockedBalance() != null ? wallet.getBlockedBalance() : BigDecimal.ZERO;
-        BigDecimal newTotalBalance = newAvailableBalance.add(blockedBalance);
+    TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
 
-        wallet.setAvailableBalance(newAvailableBalance);
-        wallet.setTotalBalance(newTotalBalance);
-        wallet.setUpdatedAt(LocalDateTime.now());
+    void resetDailyLimits();
 
-        walletRepository.save(wallet);
-    }
+    void resetMonthlyLimits();
 
-    @Transactional
-    public void transfer(String senderWalletNumber, String receiverWalletNumber, BigDecimal amount) {
-        debit(senderWalletNumber, amount);
-        credit(receiverWalletNumber, amount);
-    }
+    WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit);
 
-    /**
-     * Bloque des fonds sur un wallet (les rend indisponibles pour les transactions)
-     */
-    @Transactional
-    public void blockFunds(String walletNumber, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
+    @Transactional(readOnly = true)
+    boolean hasAvailableBalance(String walletNumber, BigDecimal amount);
 
-        // Vérifier que le solde disponible est suffisant
-        if (wallet.getAvailableBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient available balance to block funds");
-        }
+//    WalletIdResponseLo getWalletIdByWalletNumber (String walletNumber);
 
-        // Bloquer les fonds : available -= amount, blocked += amount, total reste inchangé
-        BigDecimal newAvailableBalance = wallet.getAvailableBalance().subtract(amount);
-        BigDecimal newBlockedBalance = wallet.getBlockedBalance().add(amount);
-        // total_balance reste inchangé car available + blocked = constant
-
-        wallet.setAvailableBalance(newAvailableBalance);
-        wallet.setBlockedBalance(newBlockedBalance);
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-        walletRepository.save(wallet);
-    }
-
-    /**
-     * Débloque des fonds sur un wallet (les rend disponibles pour les transactions)
-     */
-    @Transactional
-    public void unblockFunds(String walletNumber, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
-
-        // Vérifier que les fonds bloqués sont suffisants
-        if (wallet.getBlockedBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient blocked balance to unblock funds");
-        }
-
-        // Débloquer les fonds : available += amount, blocked -= amount, total reste inchangé
-        BigDecimal newAvailableBalance = wallet.getAvailableBalance().add(amount);
-        BigDecimal newBlockedBalance = wallet.getBlockedBalance().subtract(amount);
-        // total_balance reste inchangé car available + blocked = constant
-
-        wallet.setAvailableBalance(newAvailableBalance);
-        wallet.setBlockedBalance(newBlockedBalance);
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-        walletRepository.save(wallet);
-    }
-
-    /**
-     * Recalcule et met à jour total_balance pour maintenir la cohérence
-     * total_balance = available_balance + blocked_balance
-     */
-    @Transactional
-    public void recalculateTotalBalance(String walletNumber) {
-        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
-
-        BigDecimal availableBalance = wallet.getAvailableBalance() != null ? wallet.getAvailableBalance() : BigDecimal.ZERO;
-        BigDecimal blockedBalance = wallet.getBlockedBalance() != null ? wallet.getBlockedBalance() : BigDecimal.ZERO;
-        BigDecimal correctTotalBalance = availableBalance.add(blockedBalance);
-
-        if (!correctTotalBalance.equals(wallet.getTotalBalance())) {
-            wallet.setTotalBalance(correctTotalBalance);
-            wallet.setUpdatedAt(LocalDateTime.now());
-            walletRepository.save(wallet);
-        }
-    }
-
-    /**
-     * Vérifie la cohérence des soldes d'un wallet
-     */
-    public boolean isBalanceConsistent(String walletNumber) {
-        try {
-            Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-                    .orElseThrow(() -> new ResourceNotFoundException("Wallet with number " + walletNumber));
-
-            BigDecimal availableBalance = wallet.getAvailableBalance() != null ? wallet.getAvailableBalance() : BigDecimal.ZERO;
-            BigDecimal blockedBalance = wallet.getBlockedBalance() != null ? wallet.getBlockedBalance() : BigDecimal.ZERO;
-            BigDecimal totalBalance = wallet.getTotalBalance() != null ? wallet.getTotalBalance() : BigDecimal.ZERO;
-
-            return totalBalance.equals(availableBalance.add(blockedBalance));
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
-     * Vérifie et met à jour les limites quotidiennes.
-     * Gele le wallet si la limite est dépassée.
-     */
-    private void checkAndUpdateDailyLimits(Wallet wallet, BigDecimal amount) {
-        LocalDateTime now = LocalDateTime.now();
-
-        // Reset daily spent si c'est un nouveau jour
-        if (wallet.getLastLimitReset() == null ||
-            !wallet.getLastLimitReset().toLocalDate().equals(now.toLocalDate())) {
-            wallet.setDailySpent(BigDecimal.ZERO);
-            wallet.setLastLimitReset(now);
-        }
-
-        // Calculer le nouveau daily spent
-        BigDecimal newDailySpent = wallet.getDailySpent().add(amount);
-
-        // Vérifier la limite quotidienne
-        if (wallet.getDailyLimit() != null && newDailySpent.compareTo(wallet.getDailyLimit()) > 0) {
-            // Geler le wallet
-            wallet.setFrozenAt(now);
-            wallet.setFrozenBy(0L); // System
-            wallet.setFrozenReason("Daily limit exceeded");
-            wallet.setStatus("FROZEN");
-            walletRepository.save(wallet);
-            throw new RuntimeException("Daily limit exceeded. Wallet frozen.");
-        }
-
-        // Mettre à jour daily spent
-        wallet.setDailySpent(newDailySpent);
-
-        // Reset monthly spent si c'est un nouveau mois
-        if (wallet.getLastLimitReset() == null ||
-            wallet.getLastLimitReset().getMonth() != now.getMonth()) {
-            wallet.setMonthlySpent(BigDecimal.ZERO);
-        }
-
-        // Calculer et vérifier monthly spent
-        BigDecimal newMonthlySpent = wallet.getMonthlySpent().add(amount);
-        if (wallet.getMonthlyLimit() != null && newMonthlySpent.compareTo(wallet.getMonthlyLimit()) > 0) {
-            // Geler le wallet
-            wallet.setFrozenAt(now);
-            wallet.setFrozenBy(0L); // System
-            wallet.setFrozenReason("Monthly limit exceeded");
-            wallet.setStatus("FROZEN");
-            walletRepository.save(wallet);
-            throw new RuntimeException("Monthly limit exceeded. Wallet frozen.");
-        }
-
-        wallet.setMonthlySpent(newMonthlySpent);
-    }
-
-    private WalletDTO toDTO(Wallet wallet) {
-        return WalletDTO.builder()
-                .id(wallet.getId())
-                .walletNumber(wallet.getWalletNumber())
-                .availableBalance(wallet.getAvailableBalance())
-                .blockedBalance(wallet.getBlockedBalance())
-                .totalBalance(wallet.getTotalBalance())
-                .currency(wallet.getCurrency())
-                .type(wallet.getType())
-                .status(wallet.getStatus())
-                .userId(wallet.getUserId())
-                .dailyLimit(wallet.getDailyLimit())
-                .dailySpent(wallet.getDailySpent())
-                .monthlyLimit(wallet.getMonthlyLimit())
-                .monthlySpent(wallet.getMonthlySpent())
-                .frozenAt(wallet.getFrozenAt())
-                .frozenBy(wallet.getFrozenBy())
-                .frozenReason(wallet.getFrozenReason())
-                .createdAt(wallet.getCreatedAt())
-                .updatedAt(wallet.getUpdatedAt())
-                .closedAt(wallet.getClosedAt())
-                .lastLimitReset(wallet.getLastLimitReset())
-                .build();
-    }
+    void recalculateBalance(String walletNumber);
+//    WalletDTO getWalletById(Long id);
+//    List<WalletDTO> getUserWallets(Long userId);
+//    WalletDTO getPrimaryWallet(Long userId);
+//    WalletSummaryDTO getWalletSummary(Long userId);
+//
+//    // Gestion du statut
+//    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request);
+//    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
+//    WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy);
+//    WalletDTO activateWallet(String walletNumber, String activatedBy);
+//    WalletDTO closeWallet(String walletNumber, String closedBy, String reason);
+//
+//    // Gestion des soldes
+//    WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request);
+//    WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request);
+//    WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request);
+//    WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request);
+//    WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request);
+//
+//    // Validation de transaction
+//    TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
+//
+//    // Gestion des limites
+//    void resetDailyLimits();
+//    void resetMonthlyLimits();
+//    WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit);
+//
+//    // Utilitaires
+//    boolean hasAvailableBalance(String walletNumber, BigDecimal amount);
+//    void recalculateBalance(String walletNumber);
+//
+//    // Création
+//    WalletDTO createWallet(CreateWalletRequest request, Long requestingUserId);
+//
+//    // Consultation (avec vérification de permissions)
+//    WalletDTO getWallet(String walletNumber, Long requestingUserId);
+//    List<WalletDTO> getAccessibleWallets(Long userId); // Wallets où user a des permissions
+//
+//    // Gestion du statut (avec vérification de permissions)
+//    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request, Long requestingUserId);
+//    WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes, Long requestingUserId);
+//
+//    // ... autres méthodes
+//
+//    // Nouvelles méthodes pour hiérarchie
+//    WalletDTO transferBetweenSubWallets(TransferBetweenSubWalletsRequest request, Long requestingUserId);
+//    BalanceSummaryDTO getConsolidatedBalance(String walletNumber, Long requestingUserId);
 }
-

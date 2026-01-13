@@ -1,86 +1,34 @@
 package com.zaphira.transaction.service;
 
-import com.zaphira.transaction.config.FeeProperties;
-import com.zaphira.common.model.entities.Wallet;
-import com.zaphira.transaction.config.LimitProperties;
-import com.zaphira.transaction.dto.AuthorizationInfoResponse;
-import com.zaphira.transaction.dto.AuthorizationValidationRequest;
-import com.zaphira.transaction.dto.TransactionRequest;
-import com.zaphira.transaction.dto.UpdateStatusRequest;
-import com.zaphira.transaction.integration.wallet.WalletClient;
-import com.zaphira.transaction.integration.wallet.FeignWalletClient;
-import com.zaphira.common.dto.WalletDTO;
-import com.zaphira.transaction.integration.wallet.WalletTransferRequest;
-import com.zaphira.transaction.model.AuthorizationRequest;
-import com.zaphira.transaction.model.Transaction;
-import com.zaphira.transaction.model.TransactionStateHistory;
-import com.zaphira.transaction.model.enums.AuthorizationMethod;
-import com.zaphira.transaction.model.enums.TransactionStatus;
-import com.zaphira.transaction.model.enums.TransactionType;
-import com.zaphira.transaction.repository.TransactionRepository;
-import com.zaphira.transaction.repository.TransactionStateHistoryRepository;
-import com.zaphira.transaction.service.authorization.AuthorizationRequestService;
-import com.zaphira.transaction.service.compliance.ComplianceService;
-import com.zaphira.transaction.service.fee.FeeCalculationResult;
-import com.zaphira.transaction.service.fee.FeeService;
-import com.zaphira.transaction.service.limit.LimitEvaluationResult;
-import com.zaphira.transaction.service.limit.TransactionLimitService;
-import com.zaphira.common.event.TransactionCreatedEvent;
-import com.zaphira.transaction.event.TransactionEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.zaphira.transaction.dto.TransactionDTO;
+import com.zaphira.transaction.dto.TransactionSummaryDTO;
+import com.zaphira.transaction.dto.requests.CreateTransactionRequest;
+import org.springframework.data.domain.Page;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 
-import java.util.List;
+public interface TransactionService {
 
-@Service
-public class TransactionService {
 
-    private TransactionRepository repository;
-    private TransactionStateHistoryRepository stateHistoryRepository;
-    private TransactionValidationService validationService;
-    private TransactionLimitService limitService;
-    private FeeService feeService;
-    private AuthorizationRequestService authorizationService;
-    private ComplianceService complianceService;
-    private LimitProperties limitProperties;
-    private WalletClient walletClient;
-    private FeignWalletClient feignWalletClient;
-    private TransactionEventPublisher transactionEventPublisher;
-    private BalanceService balanceService;
+    TransactionDTO createTransaction(CreateTransactionRequest request);
+//    TransactionDTO initiateTransfer(TransferRequest request);
+//    TransactionDTO initiateWithdrawal(WithdrawalRequest request);
+//    TransactionDTO initiateDeposit(DepositRequest request);
+//    Boolean initiateTransfer(TransferRequest request);
 
-    // No-args constructor for Spring
-    public TransactionService() {
-    }
+    // Consultation
+    TransactionDTO getTransaction(String transactionReference);
+    TransactionDTO getTransactionById(Long id);
+    Page<TransactionDTO> getUserTransactions(Long userId, int page, int size);
+//    Page<TransactionDTO> getWalletTransactions(String walletNumber, int page, int size);
+//    Page<TransactionDTO> searchTransactions(TransactionSearchCriteria criteria);
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public TransactionService(TransactionRepository repository,
-                              TransactionStateHistoryRepository stateHistoryRepository,
-                              TransactionValidationService validationService,
-                              TransactionLimitService limitService,
-                              FeeService feeService,
-                              AuthorizationRequestService authorizationService,
-                              ComplianceService complianceService,
-                              LimitProperties limitProperties,
-                              FeeProperties feeProperties,
-                              WalletClient walletClient,
-                              FeignWalletClient feignWalletClient,
-                              TransactionEventPublisher transactionEventPublisher,
-                              BalanceService balanceService) {
-        this.repository = repository;
-        this.stateHistoryRepository = stateHistoryRepository;
-        this.validationService = validationService;
-        this.limitService = limitService;
-        this.feeService = feeService;
-        this.authorizationService = authorizationService;
-        this.complianceService = complianceService;
-        this.limitProperties = limitProperties;
-        this.walletClient = walletClient;
-        this.feignWalletClient = feignWalletClient;
-        this.transactionEventPublisher = transactionEventPublisher;
-        this.balanceService = balanceService;
-    }
+    // Gestion du statut
+    TransactionDTO processTransaction(String transactionReference);
+    TransactionDTO completeTransaction(String transactionReference);
+    TransactionDTO failTransaction(String transactionReference, String reason);
+    TransactionDTO cancelTransaction(String transactionReference, String reason);
+//    TransactionDTO reverseTransaction(String transactionReference, String reason);
 
     // Backwards-compatible constructor used by tests or code that provides FeignWalletClient but not EventPublisher
     public TransactionService(TransactionRepository repository,
@@ -488,4 +436,7 @@ public class TransactionService {
         }
     }
 
+    // Utilitaires
+//    boolean existsByReference(String transactionReference);
+//    void retryFailedTransaction(String transactionReference);
 }
