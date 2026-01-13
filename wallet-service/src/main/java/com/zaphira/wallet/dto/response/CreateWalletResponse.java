@@ -18,5 +18,7 @@ public class CreateWalletResponse {
     private String walletNumber;
     private WalletType type;
     private WalletStatus status;
+    private String merchantCode;
+    private String merchantName;
 }
 

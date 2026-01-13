@@ -1,11 +1,8 @@
 package com.zaphira.wallet.service;
 
+import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.WalletDTO;
-import com.zaphira.wallet.dto.WalletSummaryDTO;
-import com.zaphira.wallet.dto.request.BalanceOperationRequest;
-import com.zaphira.wallet.dto.request.CreateWalletRequest;
-import com.zaphira.wallet.dto.request.FreezeWalletRequest;
-import com.zaphira.wallet.dto.request.TransactionValidationRequest;
+import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +14,7 @@ public interface WalletService {
    // WalletDTO createUserWallet(CreateWalletRequest request);
    CreateWalletResponse createWalletForUser(CreateWalletRequest request);
 
-
-//   WalletDTO createWalletForMerchant(CreateWalletRequest request);
+    CreateWalletResponse createWalletForMerchant(CreateMerchantWalletRequest request);
 //    WalletDTO createWalletForUser(Long userId);
 
     // Consultation
@@ -30,6 +26,8 @@ public interface WalletService {
 
    WalletSummaryDTO getWalletSummary(Long userId);
 
+   com.zaphira.common.dto.WalletSummaryDTO getWalletSummaryByWalletNumber(String walletNumber);
+
     WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request);
 
     WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
@@ -40,15 +38,15 @@ public interface WalletService {
 
     WalletDTO closeWallet(String walletNumber, String closedBy, String reason);
 
-    WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request);
+    WalletDTO creditWallet(Long walletId, BalanceOperationRequest request);
 
-    WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request);
+    WalletDTO debitWallet(Long walletId, BalanceOperationRequest request);
 
-    WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request);
+    WalletDTO blockAmount(Long walletId, BalanceOperationRequest request);
 
-    WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request);
+    WalletDTO unblockAmount(Long walletId, BalanceOperationRequest request);
 
-    WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request);
+    WalletDTO releaseBlockedAmount(Long walletId, BalanceOperationRequest request);
 
     TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
 
@@ -60,6 +58,8 @@ public interface WalletService {
 
     @Transactional(readOnly = true)
     boolean hasAvailableBalance(String walletNumber, BigDecimal amount);
+
+//    WalletIdResponseLo getWalletIdByWalletNumber (String walletNumber);
 
     void recalculateBalance(String walletNumber);
 //    WalletDTO getWalletById(Long id);

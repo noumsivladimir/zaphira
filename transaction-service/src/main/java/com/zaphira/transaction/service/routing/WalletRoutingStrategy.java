@@ -1,6 +1,6 @@
 package com.zaphira.transaction.service.routing;
 
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.PaymentMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -39,32 +39,33 @@ public class WalletRoutingStrategy implements RoutingStrategy {
 
     @Override
     public RoutingValidationResult validate(Transaction transaction, PaymentMethod paymentMethod) {
-        if (!supports(paymentMethod)) {
-            return RoutingValidationResult.failure("UNSUPPORTED_METHOD", "Wallet routing does not support " + paymentMethod);
-        }
-
-        // Check both wallets are present and active
-        if (transaction.getSenderWallet() == null) {
-            return RoutingValidationResult.failure("NO_SENDER_WALLET", "Sender wallet not found");
-        }
-
-        if (transaction.getReceiverWallet() == null) {
-            return RoutingValidationResult.failure("NO_RECEIVER_WALLET", "Receiver wallet not found");
-        }
-
-        // Check sender wallet has sufficient balance (availableBalance is used for transaction validation)
-        if (transaction.getAmount() != null && 
-            transaction.getSenderWallet().getAvailableBalance() != null &&
-            transaction.getAmount().compareTo(transaction.getSenderWallet().getAvailableBalance()) > 0) {
-            return RoutingValidationResult.failure("INSUFFICIENT_BALANCE", "Sender wallet has insufficient balance");
-        }
-
-        // Check both wallets are active
-        if (!isBothWalletsActive(transaction)) {
-            return RoutingValidationResult.failure("INACTIVE_WALLET", "One or both wallets are inactive");
-        }
-
-        return RoutingValidationResult.success();
+//        if (!supports(paymentMethod)) {
+//            return RoutingValidationResult.failure("UNSUPPORTED_METHOD", "Wallet routing does not support " + paymentMethod);
+//        }
+//
+//        // Check both wallets are present and active
+//        if (transaction.getSenderWalletId() == null) {
+//            return RoutingValidationResult.failure("NO_SENDER_WALLET", "Sender wallet not found");
+//        }
+//
+//        if (transaction.getReceiverWalletId() == null) {
+//            return RoutingValidationResult.failure("NO_RECEIVER_WALLET", "Receiver wallet not found");
+//        }
+//
+//        // Check sender wallet has sufficient balance (availableBalance is used for transaction validation)
+//        if (transaction.getAmount() != null &&
+//            transaction.getSenderWalletId() != null &&
+//            transaction.getAmount().compareTo(transaction.getSenderWalletId().getAvailableBalance()) > 0) {
+//            return RoutingValidationResult.failure("INSUFFICIENT_BALANCE", "Sender wallet has insufficient balance");
+//        }
+//
+//        // Check both wallets are active
+//        if (!isBothWalletsActive(transaction)) {
+//            return RoutingValidationResult.failure("INACTIVE_WALLET", "One or both wallets are inactive");
+//        }
+//
+//        return RoutingValidationResult.success();
+        return null;
     }
 
     @Override
@@ -73,9 +74,9 @@ public class WalletRoutingStrategy implements RoutingStrategy {
     }
 
     private boolean isBothWalletsActive(Transaction transaction) {
-        return transaction.getSenderWallet() != null && 
-               transaction.getReceiverWallet() != null &&
-               Boolean.TRUE.equals(transaction.getSenderWallet().getActive()) &&
-               Boolean.TRUE.equals(transaction.getReceiverWallet().getActive());
+        return transaction.getSenderWalletId() != null &&
+               transaction.getReceiverWalletId() != null &&
+               Boolean.TRUE.equals(transaction.getSenderWalletId()) &&
+               Boolean.TRUE.equals(transaction.getReceiverWalletId());
     }
 }

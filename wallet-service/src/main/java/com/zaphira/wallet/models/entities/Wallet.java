@@ -1,5 +1,6 @@
 package com.zaphira.wallet.models.entities;
 
+import com.zaphira.wallet.models.enums.PermissionType;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import com.zaphira.wallet.models.enums.WalletType;
 import jakarta.persistence.*;
@@ -10,7 +11,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Builder
 @Entity
@@ -42,6 +45,12 @@ public class Wallet {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private WalletStatus status;
+
+    @Column
+    private String merchantName;
+
+    @Column(length = 6)
+    private String merchantCode;
 
 //    @Column(name = "wallet_name", length = 100)
 //    private String walletName;
@@ -76,6 +85,12 @@ public class Wallet {
     @Builder.Default
     private BigDecimal totalBalance = BigDecimal.ZERO;
 
+
+    //Permissions en fonction du type de wallet
+    @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<WalletPermission> permissions = new HashSet<>();
+
+
     // Limite journalière
     @Column(name = "daily_limit", precision = 19, scale = 4)
     private BigDecimal dailyLimit;
@@ -103,7 +118,7 @@ public class Wallet {
     private Boolean isPrimary = true;
 
     @Version
-    private Long version;
+    private Long version = 0L;
 
     @Column(name = "frozen_reason")
     private String frozenReason;
@@ -201,6 +216,11 @@ public class Wallet {
             subWallets = new ArrayList<>();
         }
         return subWallets;
+    }
+
+    public boolean hasPermission(PermissionType type) {
+        return permissions.stream()
+                .anyMatch(p -> p.getPermissionType() == type && p.getEnabled());
     }
 
 //    // ✅ Méthode helper pour obtenir les SubWallets

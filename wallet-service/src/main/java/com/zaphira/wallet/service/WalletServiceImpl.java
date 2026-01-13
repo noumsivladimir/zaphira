@@ -1,12 +1,9 @@
 package com.zaphira.wallet.service;
 
+import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.dto.WalletDTO;
-import com.zaphira.wallet.dto.WalletSummaryDTO;
-import com.zaphira.wallet.dto.request.BalanceOperationRequest;
-import com.zaphira.wallet.dto.request.CreateWalletRequest;
-import com.zaphira.wallet.dto.request.FreezeWalletRequest;
-import com.zaphira.wallet.dto.request.TransactionValidationRequest;
+import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import com.zaphira.wallet.exception.*;
@@ -27,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 @Slf4j
@@ -72,10 +70,32 @@ public class WalletServiceImpl implements WalletService{
         return toDTO(saved);
     }
 
-//    @Override
-//    public WalletDTO createWalletForMerchant(CreateWalletRequest request) {
-//        return null;
-//    }
+    @Override
+    public CreateWalletResponse createWalletForMerchant(CreateMerchantWalletRequest request) {
+
+
+        Wallet wallet = walletRepository.findByWalletNumber(request.getWalletNumber()).orElseThrow(
+                () -> new WalletNotFoundException(request.getWalletNumber()));
+
+        log.info ("Verifying if a merchant wallet exists for wallet: {}", request.getWalletNumber());
+        if (wallet.getMerchantCode() != null && wallet.getMerchantName() != null) {
+            throw new MerchantAlreadyExistsException("ALREADY MERCHANT USER");
+        }
+
+        log.info("Creating Merchant Wallet for WalletId: {}", wallet.getId());
+
+        //Algo generation du WalletNumber Unique
+        String merchantCode = String.format("%06d", (wallet.getId() * 1234567) % 1_000_000);
+
+        log.info("WalletCode generated: {}", merchantCode);
+        // Créer le wallet avec walletNumber déjà défini
+
+        wallet.setMerchantName(request.getMerchantName());
+        wallet.setMerchantCode(merchantCode);
+        Wallet saved = walletRepository.save(wallet);
+
+        return toDTO(saved);
+    }
 
 
 //
@@ -94,9 +114,10 @@ public class WalletServiceImpl implements WalletService{
     }
 
     @Override
-    @Transactional(readOnly = true)
+//    @Transactional(readOnly = true)
+    @Transactional
     public WalletDTO getWalletById(Long id) {
-        Wallet wallet = walletRepository.findById(id)
+        Wallet wallet = walletRepository.findByWalletIdWithLock(id)
                 .orElseThrow(() -> new WalletNotFoundException("Wallet non trouvé avec l'ID: " + id));
         return walletMapper.toDTO(wallet);
     }
@@ -104,16 +125,18 @@ public class WalletServiceImpl implements WalletService{
 
 
     @Override
-    public WalletSummaryDTO getWalletSummary(Long userId) {
+    public WalletSummaryDTO getWalletSummary(Long walletId) {
 
-        Wallet wallet = walletRepository.findByUserId(userId);
+        Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+        );
 
         //+1 for the main wallet
         int totalWallets = walletHierarchyService.managingWallet(wallet.getId()).size() + 1;
 
 
         WalletSummaryDTO walletSummaryDTO = WalletSummaryDTO.builder()
-                .userId(userId)
+                .walletId(walletId)
 
                 .build();
 
@@ -127,9 +150,19 @@ public class WalletServiceImpl implements WalletService{
 //                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return WalletSummaryDTO.builder()
-                .userId(userId)
+                .walletId(walletId)
                 .totalBalanceAllWallets(BigDecimal.ZERO)
                 .totalWallets(totalWallets)
+                .currency(Currency.XAF)
+                .build();
+    }
+
+    @Override
+    public WalletSummaryDTO getWalletSummaryByWalletNumber(String walletNumber) {
+        return WalletSummaryDTO.builder()
+                .walletNumber(walletNumber)
+                .userId(walletQueryService.findWalletByNumber(walletNumber).getUserId())
+                .walletId(walletQueryService.findWalletByNumber(walletNumber).getId())
                 .currency(Currency.XAF)
                 .build();
     }
@@ -257,6 +290,7 @@ public class WalletServiceImpl implements WalletService{
     }
 
     @Override
+
     public WalletDTO closeWallet(String walletNumber, String closedBy, String reason) {
         log.info("Closing wallet: {}", walletNumber);
 
@@ -286,10 +320,17 @@ public class WalletServiceImpl implements WalletService{
     }
 
     @Override
-    public WalletDTO creditWallet(String walletNumber, BalanceOperationRequest request) {
-        log.info("Crediting wallet: {} with amount: {}", walletNumber, request.getAmount());
+    @Transactional
+    public WalletDTO creditWallet(Long walletId, BalanceOperationRequest request) {
+        log.info("Crediting wallet: {} with amount: {}", walletId, request.getAmount());
 
-        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+        Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+        );
+        log.info("Crediting wallet number : {} with amount: {}", wallet.getWalletNumber(), request.getAmount());
+
+        log.info("Test");
 
         // Vérifier que le wallet peut recevoir des fonds
         if (!wallet.getStatus().canReceive()) {
@@ -304,11 +345,17 @@ public class WalletServiceImpl implements WalletService{
         return walletMapper.toDTO(savedWallet);
     }
 
-    @Override
-    public WalletDTO debitWallet(String walletNumber, BalanceOperationRequest request) {
-        log.info("Debiting wallet: {} with amount: {}", walletNumber, request.getAmount());
 
-        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+
+
+    @Override
+    @Transactional
+    public WalletDTO debitWallet(Long walletId, BalanceOperationRequest request) {
+        log.info("Debiting wallet: {} with amount: {}", walletId, request.getAmount());
+
+        Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+        );
 
         // Vérifications
         if (!wallet.canTransact()) {
@@ -335,29 +382,47 @@ public class WalletServiceImpl implements WalletService{
     }
 
     @Override
-    public WalletDTO blockAmount(String walletNumber, BalanceOperationRequest request) {
-        log.info("Blocking amount in wallet: {} amount: {}", walletNumber, request.getAmount());
+    @Transactional
+    public WalletDTO blockAmount(Long walletId, BalanceOperationRequest request) {
+        log.info("Blocking amount in wallet: {} amount: {}", walletId, request.getAmount());
 
-        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        try {
+            Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                    () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+            );
 
-        if (!wallet.canTransact()) {
-            throw new WalletInactiveException("Le wallet ne peut pas effectuer de transactions");
+            if (!wallet.canTransact()) {
+                throw new WalletInactiveException("Le wallet ne peut pas effectuer de transactions");
+            }
+
+            log.debug("Before block - Available: {}, Blocked: {}, Total: {}",
+                    wallet.getAvailableBalance(), wallet.getBlockedBalance(), wallet.getTotalBalance());
+
+            wallet.blockAmount(request.getAmount());
+
+            log.debug("After block - Available: {}, Blocked: {}, Total: {}",
+                    wallet.getAvailableBalance(), wallet.getBlockedBalance(), wallet.getTotalBalance());
+
+            Wallet savedWallet = walletRepository.save(wallet);
+
+            log.info("Amount blocked successfully. Available: {}, Blocked: {}",
+                    savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
+
+            return walletMapper.toDTO(savedWallet);
+        } catch (Exception e) {
+            log.error("Error blocking amount: ", e);
+            throw e;
         }
-
-        wallet.blockAmount(request.getAmount());
-
-        Wallet savedWallet = walletRepository.save(wallet);
-        log.info("Amount blocked successfully. Available: {}, Blocked: {}",
-                savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
-
-        return walletMapper.toDTO(savedWallet);
     }
 
     @Override
-    public WalletDTO unblockAmount(String walletNumber, BalanceOperationRequest request) {
-        log.info("Unblocking amount in wallet: {} amount: {}", walletNumber, request.getAmount());
+    @Transactional
+    public WalletDTO unblockAmount(Long walletId, BalanceOperationRequest request) {
+        log.info("Unblocking amount in wallet: {} amount: {}", walletId, request.getAmount());
 
-        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+        );
 
         wallet.unblockAmount(request.getAmount());
 
@@ -369,11 +434,13 @@ public class WalletServiceImpl implements WalletService{
     }
 
     @Override
-    public WalletDTO releaseBlockedAmount(String walletNumber, BalanceOperationRequest request) {
-        log.info("Releasing blocked amount from wallet: {} amount: {}", walletNumber, request.getAmount());
+    @Transactional
+    public WalletDTO releaseBlockedAmount(Long  walletId, BalanceOperationRequest request) {
+        log.info("Releasing blocked amount from wallet: {} amount: {}", walletId, request.getAmount());
 
-        Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
-
+        Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
+                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+        );
         wallet.releaseBlockedAmount(request.getAmount());
 
         Wallet savedWallet = walletRepository.save(wallet);
@@ -491,6 +558,16 @@ public class WalletServiceImpl implements WalletService{
         return wallet.hasAvailableBalance(amount);
     }
 
+//    @Override
+//    public Long getWalletIdByWalletNumber(String walletNumber) {
+//
+//        Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+//        log.info("Wallet id for wallet: {}", wallet.getId());
+//        return wallet.getId();
+//    }
+
+
+    
     @Override
     public void recalculateBalance(String walletNumber) {
 
@@ -549,13 +626,25 @@ public class WalletServiceImpl implements WalletService{
 //    }
 
     private CreateWalletResponse toDTO(Wallet wallet) {
-        return CreateWalletResponse.builder()
+
+        CreateWalletResponse.CreateWalletResponseBuilder builder = CreateWalletResponse.builder()
                 .id(wallet.getId())
                 .userId(wallet.getUserId())
                 .walletNumber(wallet.getWalletNumber())
                 .type(wallet.getType())
-                .status(wallet.getStatus())
-                .build();
+                .status(wallet.getStatus());
+
+        // ajout conditionnel
+        if (wallet.getMerchantCode() != null) {
+            builder.merchantCode(wallet.getMerchantCode());
+        }
+        if (wallet.getMerchantName() != null) {
+            builder.merchantName(wallet.getMerchantName());
+        }
+
+        return builder.build();
+
+
     }
 
     private void checkLimits(Wallet wallet, BigDecimal amount) {
@@ -588,6 +677,11 @@ public class WalletServiceImpl implements WalletService{
 
     //Utilities functions
 
+
+    private String generateMerchantCode() {
+        int value = ThreadLocalRandom.current().nextInt(0, 1_000_000);
+        return String.format("%06d", value);
+    }
 
 }
 

@@ -1,6 +1,13 @@
 server:
   port: 8083
 
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+
 spring:
   application:
     name: wallet-service
@@ -8,10 +15,17 @@ spring:
     url: jdbc:postgresql://192.168.0.122:5432/wallet_db
     username: postgres
     password: 1234
+
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
   kafka:
     bootstrap-servers: 192.168.0.122:9092
     consumer:

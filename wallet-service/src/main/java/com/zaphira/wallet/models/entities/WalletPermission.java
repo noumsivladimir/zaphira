@@ -1,11 +1,10 @@
 package com.zaphira.wallet.models.entities;
 
-import com.zaphira.wallet.models.enums.PermissionLevel;
+import com.zaphira.wallet.models.enums.PermissionType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,74 +29,22 @@ public class WalletPermission {
     @JoinColumn(name = "wallet_id", nullable = false)
     private Wallet wallet;
 
-    // Utilisateur ayant la permission
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
-    // Niveau de permission
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private PermissionLevel level;
+    @Column(name = "permission_type", nullable = false)
+    private PermissionType permissionType;
 
-    // Permissions spécifiques
-    @Column(name = "can_view")
-    @Builder.Default
-    private Boolean canView = true;
+    @Column(name = "enabled", nullable = false)
+    private Boolean enabled = true;
 
-    @Column(name = "can_transact")
-    @Builder.Default
-    private Boolean canTransact = false;
+    @Column(name = "max_amount")
+    private BigDecimal maxAmount; // Limite pour cette opération
 
-    @Column(name = "can_manage_accounts")
-    @Builder.Default
-    private Boolean canManageAccounts = false;
+    @Column(name = "daily_limit")
+    private BigDecimal dailyLimit;
 
-    @Column(name = "can_manage_permissions")
-    @Builder.Default
-    private Boolean canManagePermissions = false;
+    @Column(name = "requires_approval")
+    private Boolean requiresApproval = false;
 
-    @Column(name = "can_manage_sub_wallets")
-    @Builder.Default
-    private Boolean canManageSubWallets = false;
-
-    // Limites spécifiques pour ce gestionnaire
-    @Column(name = "max_transaction_amount", precision = 19, scale = 4)
-    private java.math.BigDecimal maxTransactionAmount;
-
-    // Accordé par (user_id de l'accordeur)
-    @Column(name = "granted_by")
-    private Long grantedBy;
-
-    @CreationTimestamp
-    @Column(name = "granted_at", nullable = false, updatable = false)
-    private LocalDateTime grantedAt;
-
-    // Date d'expiration (optionnel)
-    @Column(name = "expires_at")
-    private LocalDateTime expiresAt;
-
-    @Column(name = "is_active")
-    @Builder.Default
-    private Boolean isActive = true;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    // Méthodes utilitaires
-
-    public boolean isExpired() {
-        return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
-    }
-
-    public boolean isValid() {
-        return isActive && !isExpired();
-    }
-
-    public boolean hasFullAccess() {
-        return PermissionLevel.OWNER.equals(level) || PermissionLevel.FULL_MANAGER.equals(level);
-    }
 }

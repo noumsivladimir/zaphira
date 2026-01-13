@@ -1,11 +1,8 @@
 package com.zaphira.wallet.controller;
 
+import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.WalletDTO;
-import com.zaphira.wallet.dto.WalletSummaryDTO;
-import com.zaphira.wallet.dto.request.BalanceOperationRequest;
-import com.zaphira.wallet.dto.request.CreateWalletRequest;
-import com.zaphira.wallet.dto.request.FreezeWalletRequest;
-import com.zaphira.wallet.dto.request.TransactionValidationRequest;
+import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import com.zaphira.wallet.service.WalletQueryService;
@@ -15,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -27,13 +25,13 @@ public class WalletController {
 
     private final WalletService walletService;
     private final WalletQueryService walletQueryService;
-
-    /**
-     * Crée un wallet pour un utilisateur donné.
-     * @param userId ID de l'utilisateur
-     * @param currency Devise du wallet (XOF par défaut)
-     * @return WalletDTO avec l'ID et le numéro du wallet
-     */
+//
+//    /**
+//     * Crée un wallet pour un utilisateur donné.
+//     * @param userId ID de l'utilisateur
+//     * @param currency Devise du wallet (XOF par défaut)
+//     * @return WalletDTO avec l'ID et le numéro du wallet
+//     */
     @PostMapping
     public ResponseEntity<?> createWallet(@RequestBody CreateWalletRequest request) {
         try {
@@ -47,6 +45,27 @@ public class WalletController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating wallet: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/merchant")
+    public ResponseEntity<?> createMerchantWallet(@Validated @RequestBody CreateMerchantWalletRequest request) {
+        try {
+            CreateWalletResponse merchantWallet = walletService.createWalletForMerchant(request);
+            log.info("Creating wallet for merchant {}: {}", request.getWalletNumber(), merchantWallet.getWalletNumber());
+            return ResponseEntity.status(HttpStatus.CREATED).body(merchantWallet);
+        } catch (Exception e) {
+            log.error("Failed to create wallet for merchant {}: {}", request.getMerchantName(), e.getMessage(), e);
+            return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating wallet: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{walletNumber}")
+    public ResponseEntity <WalletSummaryDTO> getWalletSummaryByWalletNumber(@PathVariable String walletNumber) {
+        log.info("Fetching wallet summary for wallet {}", walletNumber);
+        WalletSummaryDTO walletSummaryDTO = walletService.getWalletSummaryByWalletNumber(walletNumber);
+        log.info("Fetching wallet id for wallet {}", walletSummaryDTO.getWalletId());
+        return ResponseEntity.ok(walletSummaryDTO);
     }
 
 
@@ -134,48 +153,48 @@ public class WalletController {
 
     // ========== Gestion des soldes ==========
 
-    @PostMapping("/{walletNumber}/credit")
+    @PostMapping("/{walletId}/credit")
     public ResponseEntity<WalletDTO> creditWallet(
-            @PathVariable String walletNumber,
+            @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
-        log.info("Crediting wallet: {} with amount: {}", walletNumber, request.getAmount());
-        WalletDTO wallet = walletService.creditWallet(walletNumber, request);
+        log.info("Crediting wallet: {} with amount: {}", walletId, request.getAmount());
+        WalletDTO wallet = walletService.creditWallet(walletId, request);
         return ResponseEntity.ok(wallet);
     }
 
-    @PostMapping("/{walletNumber}/debit")
+    @PostMapping("/{walletId}/debit")
     public ResponseEntity<WalletDTO> debitWallet(
-            @PathVariable String walletNumber,
+            @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
-        log.info("Debiting wallet: {} with amount: {}", walletNumber, request.getAmount());
-        WalletDTO wallet = walletService.debitWallet(walletNumber, request);
+        log.info("Debiting wallet: {} with amount: {}", walletId, request.getAmount());
+        WalletDTO wallet = walletService.debitWallet(walletId, request);
         return ResponseEntity.ok(wallet);
     }
 
-    @PostMapping("/{walletNumber}/block")
+    @PostMapping("/{walletId}/block")
     public ResponseEntity<WalletDTO> blockAmount(
-            @PathVariable String walletNumber,
+            @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
-        log.info("Blocking amount in wallet: {}", walletNumber);
-        WalletDTO wallet = walletService.blockAmount(walletNumber, request);
+        log.info("Blocking amount in wallet: {}", walletId);
+        WalletDTO wallet = walletService.blockAmount(walletId, request);
         return ResponseEntity.ok(wallet);
     }
 
-    @PostMapping("/{walletNumber}/unblock")
+    @PostMapping("/{walletId}/unblock")
     public ResponseEntity<WalletDTO> unblockAmount(
-            @PathVariable String walletNumber,
+            @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
-        log.info("Unblocking amount in wallet: {}", walletNumber);
-        WalletDTO wallet = walletService.unblockAmount(walletNumber, request);
+        log.info("Unblocking amount in wallet: {}", walletId);
+        WalletDTO wallet = walletService.unblockAmount(walletId, request);
         return ResponseEntity.ok(wallet);
     }
 
-    @PostMapping("/{walletNumber}/release-blocked")
+    @PostMapping("/{walletId}/release-blocked")
     public ResponseEntity<WalletDTO> releaseBlockedAmount(
-            @PathVariable String walletNumber,
+            @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
-        log.info("Releasing blocked amount from wallet: {}", walletNumber);
-        WalletDTO wallet = walletService.releaseBlockedAmount(walletNumber, request);
+        log.info("Releasing blocked amount from wallet: {}", walletId);
+        WalletDTO wallet = walletService.releaseBlockedAmount(walletId, request);
         return ResponseEntity.ok(wallet);
     }
 

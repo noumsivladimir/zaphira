@@ -1,7 +1,7 @@
 package com.zaphira.transaction.service.limit;
 
 import com.zaphira.transaction.config.LimitProperties;
-import com.zaphira.transaction.dto.TransactionRequest;
+import com.zaphira.transaction.dto.requests.TransactionRequest;
 import com.zaphira.transaction.integration.wallet.FeignWalletClient;
 import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.transaction.model.enums.AuthorizationMethod;

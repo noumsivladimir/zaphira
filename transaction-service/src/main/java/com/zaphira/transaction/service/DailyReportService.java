@@ -1,6 +1,7 @@
 package com.zaphira.transaction.service;
 
 import com.zaphira.transaction.model.*;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.repository.DailyReportRepository;
 import com.zaphira.transaction.repository.TransactionRepository;
 import com.zaphira.transaction.repository.DisputeRepository;

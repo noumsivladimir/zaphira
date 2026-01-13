@@ -1,6 +1,7 @@
 package com.zaphira.wallet.dto;
 
 import com.zaphira.wallet.models.enums.PermissionLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
+@AllArgsConstructor
 public class WalletPermissionDTO {
     private Long id;
     private String walletNumber;

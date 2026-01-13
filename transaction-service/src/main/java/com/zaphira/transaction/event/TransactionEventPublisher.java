@@ -1,49 +1,78 @@
 package com.zaphira.transaction.event;
 
-import com.zaphira.common.event.TransactionCreatedEvent;
+import com.zaphira.transaction.model.entities.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-//import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 /**
  * Service pour publier les événements de transaction sur Kafka.
  */
-@Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionEventPublisher {
 
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
     private static final String TRANSACTION_CREATED_TOPIC = "transaction-created";
+    private static final String TRANSACTION_COMPLETED_TOPIC = "transaction-completed";
+    private static final String TRANSACTION_FAILED_TOPIC = "transaction-failed";
+    private static final String TRANSACTION_CANCELLED_TOPIC = "transaction-cancelled";
 
-    private final KafkaTemplate<String, TransactionCreatedEvent> kafkaTemplate;
+    public void publishTransactionCreated(Transaction transaction) {
+        log.info("Publishing TRANSACTION_CREATED event for: {}", transaction.getReference());
 
-    /**
-     * Publie un événement TransactionCreatedEvent sur Kafka.
-     *
-     * @param event L'événement à publier
-     */
-    public void publishTransactionCreated(TransactionCreatedEvent event) {
-        try {
-            log.info("Publishing TransactionCreatedEvent for transaction {}", event.getTransactionId());
-            
-                kafkaTemplate.send(TRANSACTION_CREATED_TOPIC, event.getTransactionId().toString(), event)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("Failed to publish TransactionCreatedEvent for transaction {}: {}",
-                                    event.getTransactionId(), ex.getMessage(), ex);
-                        } else {
-                            log.info("Successfully published TransactionCreatedEvent for transaction {} to offset {}",
-                                    event.getTransactionId(),
-                                    result.getRecordMetadata().offset());
-                        }
-                    });
-            
-        } catch (Exception e) {
-            log.error("Error publishing TransactionCreatedEvent for transaction {}: {}",
-                    event.getTransactionId(), e.getMessage(), e);
-            throw new RuntimeException("Failed to publish TransactionCreatedEvent", e);
-        }
+        TransactionEvent event = buildEvent(transaction, "CREATED");
+
+        kafkaTemplate.send(TRANSACTION_CREATED_TOPIC,
+                transaction.getReference(), event);
+    }
+
+    public void publishTransactionCompleted(Transaction transaction) {
+        log.info("Publishing TRANSACTION_COMPLETED event for: {}", transaction.getReference());
+
+        TransactionEvent event = buildEvent(transaction, "COMPLETED");
+
+        kafkaTemplate.send(TRANSACTION_COMPLETED_TOPIC,
+                transaction.getReference(), event);
+    }
+
+    public void publishTransactionFailed(Transaction transaction) {
+        log.info("Publishing TRANSACTION_FAILED event for: {}", transaction.getReference());
+
+        TransactionEvent event = buildEvent(transaction, "FAILED");
+        event.setFailureReason(transaction.getFailureReason());
+
+        kafkaTemplate.send(TRANSACTION_FAILED_TOPIC,
+                transaction.getReference(), event);
+    }
+
+    public void publishTransactionCancelled(Transaction transaction) {
+        log.info("Publishing TRANSACTION_CANCELLED event for: {}", transaction.getReference());
+
+        TransactionEvent event = buildEvent(transaction, "CANCELLED");
+
+        kafkaTemplate.send(TRANSACTION_CANCELLED_TOPIC,
+                transaction.getReference(), event);
+    }
+
+    private TransactionEvent buildEvent(Transaction transaction, String eventType) {
+        return TransactionEvent.builder()
+                .eventType(eventType)
+                .transactionReference(transaction.getReference())
+                .type(transaction.getType())
+                .status(transaction.getStatus())
+                .senderWalletId(transaction.getSenderWalletId())
+                .receiverWalletId(transaction.getReceiverWalletId())
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency())
+                .feeAmount(transaction.getFeeAmount())
+                .totalAmount(transaction.getAmount())
+                .timestamp(LocalDateTime.now())
+                .build();
     }
 }

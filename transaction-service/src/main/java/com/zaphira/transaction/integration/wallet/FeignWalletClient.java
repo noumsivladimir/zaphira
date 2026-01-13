@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.math.BigDecimal;
 
-@FeignClient(name = "wallet-service")
+@FeignClient(name = "wallet-servicew")
 public interface FeignWalletClient {
 
     @GetMapping("/api/wallets/{walletNumber}")

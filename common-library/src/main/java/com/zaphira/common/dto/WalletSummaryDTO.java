@@ -15,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class WalletSummaryDTO {
     private Long userId;
+    private Long walletId;
     private Integer totalWallets;
     private String walletNumber;
     private List <String> subWalletsName;

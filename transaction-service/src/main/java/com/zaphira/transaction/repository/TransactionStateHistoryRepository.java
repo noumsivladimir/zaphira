@@ -1,7 +1,7 @@
 package com.zaphira.transaction.repository;
 
-import com.zaphira.transaction.model.Transaction;
-import com.zaphira.transaction.model.TransactionStateHistory;
+import com.zaphira.transaction.model.entities.Transaction;
+import com.zaphira.transaction.model.entities.TransactionStateHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

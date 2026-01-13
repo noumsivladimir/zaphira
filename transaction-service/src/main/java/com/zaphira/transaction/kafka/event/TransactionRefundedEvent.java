@@ -1,6 +1,6 @@
 package com.zaphira.transaction.kafka.event;
 
-import com.zaphira.transaction.dto.TransactionRefundRequest.RefundType;
+import com.zaphira.transaction.dto.requests.TransactionRefundRequest.RefundType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

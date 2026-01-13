@@ -1,5 +1,6 @@
 package com.zaphira.transaction.model;
 
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.AuthorizationStatus;
 import jakarta.persistence.*;

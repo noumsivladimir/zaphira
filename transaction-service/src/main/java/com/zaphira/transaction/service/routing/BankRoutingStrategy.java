@@ -1,6 +1,6 @@
 package com.zaphira.transaction.service.routing;
 
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.PaymentMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -54,7 +54,7 @@ public class BankRoutingStrategy implements RoutingStrategy {
         }
 
         // Check receiver bank account exists
-        if (transaction.getReceiverWallet() == null) {
+        if (transaction.getReceiverWalletId() == null) {
             return RoutingValidationResult.failure("NO_RECEIVER_ACCOUNT", "Receiver bank account not configured");
         }
 

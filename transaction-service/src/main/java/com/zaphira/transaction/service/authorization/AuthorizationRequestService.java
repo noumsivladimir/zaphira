@@ -2,7 +2,7 @@ package com.zaphira.transaction.service.authorization;
 
 import com.zaphira.transaction.config.LimitProperties;
 import com.zaphira.transaction.model.AuthorizationRequest;
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.AuthorizationStatus;
 import com.zaphira.transaction.repository.AuthorizationRequestRepository;

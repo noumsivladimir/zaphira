@@ -1,7 +1,7 @@
 package com.zaphira.transaction.controller;
 
-import com.zaphira.transaction.dto.ScheduledTransactionRequest;
-import com.zaphira.transaction.dto.ScheduledTransactionResponse;
+import com.zaphira.transaction.dto.requests.ScheduledTransactionRequest;
+import com.zaphira.transaction.dto.response.ScheduledTransactionResponse;
 import com.zaphira.transaction.service.ScheduledTransactionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

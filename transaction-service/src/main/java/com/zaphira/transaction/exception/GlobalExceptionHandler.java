@@ -1,7 +1,7 @@
 package com.zaphira.transaction.exception;
 
+import com.zaphira.transaction.exception.TransactionExceptions.TransactionNotFoundException;
 import com.zaphira.transaction.service.ScheduledTransactionNotFoundException;
-import com.zaphira.transaction.service.TransactionNotFoundException;
 import com.zaphira.transaction.service.authorization.AuthorizationException;
 import com.zaphira.transaction.service.compliance.ComplianceException;
 import com.zaphira.transaction.service.exception.WalletOperationException;

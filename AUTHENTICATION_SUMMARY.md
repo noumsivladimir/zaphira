@@ -185,7 +185,7 @@ WARN com.zaphira.transaction.security.JwtAuthenticationFilter - Invalid JWT toke
 
 ### Authorization Failure (Ownership Check)
 ```
-ERROR com.zaphira.transaction.service.TransactionService - User does not own the sender wallet
+ERROR com.zaphira.transaction.service.TransactionServiceImpl - User does not own the sender wallet
 ```
 
 ## Backward Compatibility

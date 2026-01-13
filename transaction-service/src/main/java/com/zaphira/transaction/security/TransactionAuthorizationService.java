@@ -1,6 +1,6 @@
 package com.zaphira.transaction.security;
 
-import com.zaphira.transaction.model.Transaction;
+import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.exception.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
@@ -126,7 +126,7 @@ public class TransactionAuthorizationService {
         
         // 6. Vérifier si la transaction n'a pas déjà été reversée/remboursée
         if (TransactionStatus.REVERSED.equals(transaction.getStatus()) ||
-            TransactionStatus.REFUNDED.equals(transaction.getStatus())) {
+            TransactionStatus.REVERSED.equals(transaction.getStatus())) {
             log.warn("Transaction {} is already {} and cannot be reversed again", 
                 transaction.getId(), transaction.getStatus());
             throw new AccessDeniedException(
@@ -230,7 +230,7 @@ public class TransactionAuthorizationService {
         
         // 8. Vérifier si la transaction n'a pas déjà été reversée/remboursée
         if (TransactionStatus.REVERSED.equals(transaction.getStatus()) ||
-            TransactionStatus.REFUNDED.equals(transaction.getStatus())) {
+            TransactionStatus.REVERSED.equals(transaction.getStatus())) {
             log.warn("Transaction {} is already {} and cannot be refunded", 
                 transaction.getId(), transaction.getStatus());
             throw new AccessDeniedException(
@@ -246,17 +246,17 @@ public class TransactionAuthorizationService {
      */
     private void verifyMerchantOwnership(AuthenticatedUser user, Transaction transaction) {
         // Récupérer l'ID du merchant depuis la transaction
-        // (supposé être stocké dans senderWallet ou une autre relation)
-        Long transactionOwnerId = transaction.getSenderWallet() != null ? 
-            transaction.getSenderWallet().getUserId() : null;
-        
-        if (transactionOwnerId == null || !transactionOwnerId.equals(user.getId())) {
-            log.warn("Merchant {} attempted to refund transaction {} they don't own", 
-                user.getId(), transaction.getId());
-            throw new AccessDeniedException(
-                "You can only refund transactions you initiated"
-            );
-        }
+//        // (supposé être stocké dans senderWallet ou une autre relation)
+//        Long transactionOwnerId = transaction.getSenderWallet() != null ?
+//            transaction.getSenderWallet().getUserId() : null;
+//
+//        if (transactionOwnerId == null || !transactionOwnerId.equals(user.getId())) {
+//            log.warn("Merchant {} attempted to refund transaction {} they don't own",
+//                user.getId(), transaction.getId());
+//            throw new AccessDeniedException(
+//                "You can only refund transactions you initiated"
+//            );
+//        }
     }
     
     /**
