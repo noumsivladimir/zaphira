@@ -8,20 +8,17 @@ import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Random;
-
-import java.time.LocalDateTime;
-import java.math.BigDecimal;
 
 public interface WalletService {
 
    // WalletDTO createUserWallet(CreateWalletRequest request);
    CreateWalletResponse createWalletForUser(CreateWalletRequest request);
 
-    public WalletDTO createWallet(Long userId) {
-        // Générer un numéro de portefeuille unique à 8 chiffres
-        String walletNumber = generateUniqueWalletNumber();
+    CreateWalletResponse createWalletForMerchant(CreateMerchantWalletRequest request);
+//    WalletDTO createWalletForUser(Long userId);
+
+    // Consultation
+    WalletDTO getWalletByNumber(String walletNumber);
 
    //
    @Transactional(readOnly = true)
@@ -31,35 +28,7 @@ public interface WalletService {
 
    com.zaphira.common.dto.WalletSummaryDTO getWalletSummaryByWalletNumber(String walletNumber);
 
-    /**
-     * Génère un numéro de portefeuille unique à 8 chiffres
-     * Utilise une approche aléatoire avec vérification d'unicité en base
-     */
-    private String generateUniqueWalletNumber() {
-        Random random = new Random();
-        String walletNumber;
-        int maxAttempts = 100; // Éviter une boucle infinie
-        int attempts = 0;
-
-        do {
-            // Générer un nombre aléatoire entre 10000000 et 99999999
-            int number = 10000000 + random.nextInt(90000000);
-            walletNumber = String.format("%08d", number);
-            attempts++;
-
-            if (attempts >= maxAttempts) {
-                throw new RuntimeException("Impossible de générer un numéro de portefeuille unique après " + maxAttempts + " tentatives");
-            }
-        } while (walletRepository.existsByWalletNumber(walletNumber));
-
-        return walletNumber;
-    }
-
-    public WalletDTO getWalletByUserId(Long userId) {
-        Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Wallet", userId));
-        return toDTO(wallet);
-    }
+    WalletDTO freezeWallet(String walletNumber, FreezeWalletRequest request);
 
     WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes);
 

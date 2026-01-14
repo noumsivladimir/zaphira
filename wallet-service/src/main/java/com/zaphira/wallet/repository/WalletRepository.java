@@ -18,6 +18,35 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
 
     Optional<Wallet> findByWalletNumber(String walletNumber);
-    boolean existsByWalletNumber(String walletNumber);
-}
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT w FROM Wallet w WHERE w.walletNumber = :walletNumber")
+    Optional<Wallet> findByWalletNumberWithLock(@Param("walletNumber") String walletNumber);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT w FROM Wallet w WHERE w.id = :id")
+    Optional <Wallet> findByWalletIdWithLock(@Param("id") Long walletId);
+
+//    @Lock(LockModeType.PESSIMISTIC_WRITE)
+//    @Query("SELECT w FROM Wallet w WHERE w.id = :id")
+//    Wallet loadWalletForUpdateByIdWithLock(@Param("id") Long id);
+
+
+
+    List<Wallet> findByUserIdAndStatus(Long userId, WalletStatus status);
+
+    List<Wallet> findAllById(Iterable<Long> ids);
+
+    Optional<Wallet> findByUserIdAndIsPrimaryTrue(Long userId);
+
+    boolean existsByWalletNumber(String walletNumber);
+
+//    @Query("SELECT w FROM Wallet w WHERE w.userId = :userId AND w.type = :type AND w.status != 'CLOSED'")
+//    Optional<Wallet> findActiveWalletByUserIdAndType(@Param("userId") Long userId, @Param("type") WalletType type);
+
+//    @Query("SELECT COUNT(w) FROM Wallet w WHERE w.userId = :userId AND w.status != 'CLOSED'")
+//    long countActiveWalletsByUserId(@Param("userId") Long userId);
+//
+    @Query("SELECT w FROM Wallet w WHERE w.status = :status")
+    List<Wallet> findAllByStatus(@Param("status") WalletStatus status);
+}

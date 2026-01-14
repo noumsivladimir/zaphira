@@ -1,0 +1,40 @@
+                                                 List of relations
+ Schema |             Name              | Type  |  Owner   | Persistence | Access method |    Size    | Description 
+--------+-------------------------------+-------+----------+-------------+---------------+------------+-------------
+ public | activity_log                  | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | ariel                         | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | daily_reports                 | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | dispute_evidence              | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | dispute_timeline              | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | disputes                      | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | exchange_rates                | table | postgres | permanent   | heap          | 16 kB      | 
+ public | kyc                           | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | merchant_analytics            | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | otp_codes                     | table | postgres | permanent   | heap          | 16 kB      | 
+ public | otp_tokens                    | table | postgres | permanent   | heap          | 16 kB      | 
+ public | predefined_security_questions | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | refresh_token                 | table | postgres | permanent   | heap          | 24 kB      | 
+ public | scheduled_transactions        | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | security_question             | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | security_questions            | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | sub_wallets                   | table | postgres | permanent   | heap          | 16 kB      | 
+ public | tokens                        | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | transaction_audit_log         | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | transaction_authorizations    | table | postgres | permanent   | heap          | 48 kB      | 
+ public | transaction_refunds           | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | transaction_settlements       | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | transaction_states            | table | postgres | permanent   | heap          | 72 kB      | 
+ public | transaction_status_history    | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | transactions                  | table | postgres | permanent   | heap          | 72 kB      | 
+ public | user_analytics                | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | user_security_answers         | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | user_sessions                 | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | users                         | table | postgres | permanent   | heap          | 64 kB      | 
+ public | validation_requests           | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | verification_tokens           | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | wallet_permissions            | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | wallet_status_history         | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | wallet_subwallet              | table | postgres | permanent   | heap          | 8192 bytes | 
+ public | wallets                       | table | postgres | permanent   | heap          | 56 kB      | 
+(35 rows)
+
