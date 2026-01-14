@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -12,6 +14,9 @@ import lombok.NoArgsConstructor;
 public class UserRegisteredEvent {
     private Long userId;
     private String phoneNumber;
+    private String email;
     private String firstName;
     private String lastName;
+    private String roleType;
+    private LocalDateTime registeredAt;
 }

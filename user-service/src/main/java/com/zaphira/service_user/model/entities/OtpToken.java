@@ -28,6 +28,8 @@ public class OtpToken {
     @Column(nullable = false)
     private String phoneNumber;
 
+    private String email;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OtpPurpose purpose;

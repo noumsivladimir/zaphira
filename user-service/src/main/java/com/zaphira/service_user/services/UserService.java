@@ -13,6 +13,7 @@ import java.util.List;
 public interface UserService {
 
     // User Registration
+    UserResponse registerUser(UserRegistrationRequest request);
     UserResponse registerAdmin(UserRegistrationRequest request);
     UserResponse registerMerchant(UserRegistrationRequest request);
 
@@ -60,6 +61,9 @@ public interface UserService {
     // Verification
     void verifyEmail(Long userId);
     void verifyPhone(Long userId);
+
+    // Notification Info
+    UserNotificationInfoResponse getUserNotificationInfo(Long userId);
 
     // Account Status Checks
     boolean isEmailExists(String email);

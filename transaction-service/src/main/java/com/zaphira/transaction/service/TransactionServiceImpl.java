@@ -143,6 +143,33 @@ public class TransactionServiceImpl implements TransactionService {
 
             return processTransaction(transaction.getReference());
 
+        } else if (request.getType() == TransactionType.DEBIT) {
+            Transaction transaction = Transaction.builder()
+
+                    .reference(referenceGenerator.generate())
+                    .senderWalletId(senderWalletIds)
+                    .senderWalletNumber(senderWalletIdSummary.getWalletNumber())
+                    .receiverWalletNumber(receiverWalletSummary.getWalletNumber())
+                    .receiverWalletId(receiverWalletIds)
+                    .type(TransactionType.DEBIT)
+                    .category(request.getCategory())
+                    .channel(request.getChannel())
+                    .status(TransactionStatus.PENDING)
+                    .amount(request.getAmount())
+                    .feeAmount(BigDecimal.ZERO)
+                    .currency(Currency.XAF)
+                    .description(request.getDescription())
+                    .build();
+
+            Transaction saved = transactionRepository.save(transaction);
+
+            log.info("Created transaction with id {}", transaction.getId());
+            changeStatus(transaction, TransactionStatus.PENDING, "Transaction créée");
+
+            eventPublisher.publishTransactionCreated(transaction);
+
+            return processTransaction(transaction.getReference());
+
         }
 
         return null;

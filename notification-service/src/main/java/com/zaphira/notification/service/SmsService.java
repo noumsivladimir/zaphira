@@ -1,23 +1,17 @@
 package com.zaphira.notification.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+public interface SmsService {
 
-@Slf4j
-@Service
-public class SmsService {
+	/**
+	 * Envoie un SMS contenant un OTP au numéro donné.
+	 * @param phoneNumber numéro destinataire en format E.164
+	 * @param code code OTP (ex: "123456")
+	 */
+	void sendOtpSms(String phoneNumber, String code);
 
-    public void sendSms(String phoneNumber, String message) {
-        // TODO: Integrate with SMS provider (Twilio, AWS SNS, etc.)
-        log.info("SMS sent to {}: {}", phoneNumber, message);
-    }
+	/**
+	 * Envoie un message SMS générique.
+	 */
+	void sendSms(String phoneNumber, String message);
 
-    public void sendTransactionSms(String phoneNumber, String transactionReference, String amount, String status) {
-        String message = String.format(
-            "Transaction %s: %s %s. Status: %s",
-            transactionReference, amount, status
-        );
-        sendSms(phoneNumber, message);
-    }
 }
-

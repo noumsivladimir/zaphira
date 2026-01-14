@@ -50,4 +50,3 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     @Query("SELECT w FROM Wallet w WHERE w.status = :status")
     List<Wallet> findAllByStatus(@Param("status") WalletStatus status);
 }
-

@@ -1,5 +1,7 @@
 package com.zaphira.transaction.event;
 
+import com.zaphira.common.event.TransactionCompletedEvent;
+import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.transaction.model.entities.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +28,16 @@ public class TransactionEventPublisher {
     public void publishTransactionCreated(Transaction transaction) {
         log.info("Publishing TRANSACTION_CREATED event for: {}", transaction.getReference());
 
-        TransactionEvent event = buildEvent(transaction, "CREATED");
+        TransactionCreatedEvent event = TransactionCreatedEvent.builder()
+                .transactionId(transaction.getId())
+                .reference(transaction.getReference())
+                .senderWalletNumber(transaction.getSenderWalletNumber())
+                .receiverWalletNumber(transaction.getReceiverWalletNumber())
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency().name())
+                .status(transaction.getStatus().name())
+                .createdAt(transaction.getCreatedAt())
+                .build();
 
         kafkaTemplate.send(TRANSACTION_CREATED_TOPIC,
                 transaction.getReference(), event);
@@ -35,7 +46,16 @@ public class TransactionEventPublisher {
     public void publishTransactionCompleted(Transaction transaction) {
         log.info("Publishing TRANSACTION_COMPLETED event for: {}", transaction.getReference());
 
-        TransactionEvent event = buildEvent(transaction, "COMPLETED");
+        TransactionCompletedEvent event = TransactionCompletedEvent.builder()
+                .transactionId(transaction.getId())
+                .reference(transaction.getReference())
+                .senderWalletNumber(transaction.getSenderWalletNumber())
+                .receiverWalletNumber(transaction.getReceiverWalletNumber())
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency().name())
+                .status("COMPLETED")
+                .completedAt(LocalDateTime.now())
+                .build();
 
         kafkaTemplate.send(TRANSACTION_COMPLETED_TOPIC,
                 transaction.getReference(), event);
