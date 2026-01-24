@@ -1,0 +1,83 @@
+twilio:
+  account-sid: "AC4ee2203ca9ee74fe8df3010675a03cd2"
+  auth-token: "bdcb3d5837baeb970cf750ea691ebdc2"
+  from-number: "+17177897813"
+
+otp:
+  ttl-minutes: 10
+  max-tokens-per-user: 5  # Limite le nombre de tokens actifs par utilisateur
+  cleanup:
+    enabled: true
+    interval-minutes: 5    # Nettoyage toutes les 5 minutes
+    deep-cleanup-hours: 1  # Nettoyage profond toutes les heures
+
+server:
+  port: 8089
+
+spring:
+  kafka:
+    enabled: true
+    bootstrap-servers: 192.168.0.122:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+  # PostgreSQL configuration (same as user-service)
+  datasource:
+    url: jdbc:postgresql://192.168.0.122:5432/wallet_db
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  
+  application:
+    name: notification-service
+
+# ==========================================
+# EUREKA CLIENT CONFIGURATION
+# ==========================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# ==========================================
+# ACTUATOR & HEALTH ENDPOINTS
+# ==========================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+

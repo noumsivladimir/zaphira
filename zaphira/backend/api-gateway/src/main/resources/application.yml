@@ -1,0 +1,274 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  
+  cloud:
+    gateway:
+      # ==========================================
+      # GLOBAL CORS CONFIGURATION
+      # ==========================================
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:3000"        # React dev server
+              - "http://localhost:5173"        # Vite dev server
+              - "http://localhost:4200"        # Angular dev server
+              - "https://zaphira.com"          # Production domain
+              - "https://app.zaphira.com"      # Production app subdomain
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowed-headers:
+              - "*"
+            exposed-headers:
+              - Authorization
+              - Content-Type
+              - X-Total-Count
+              - X-Page-Number
+            allow-credentials: true
+            max-age: 3600
+      
+      # ==========================================
+      # DEFAULT FILTERS (Applied to all routes)
+      # ==========================================
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+      
+      # ==========================================
+      # API V1 ROUTES - Spring Cloud Gateway Configuration
+      # ==========================================
+      # Pattern: /api/v1/{service}/{resource}
+      # Controllers remain at: /api/{resource}
+      # RewritePath transforms: /api/v1/... → /api/...
+      # ==========================================
+      
+      routes:
+        # ==========================================
+        # AUTH-SERVICE: Authentication & JWT Management
+        # ==========================================
+        # Endpoints: /api/v1/auth/login, /api/v1/auth/refresh, etc.
+        # Target Controller: @RequestMapping("/api/auth")
+        # ==========================================
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+          metadata:
+            response-timeout: 5000
+            connect-timeout: 3000
+        
+        # ==========================================
+        # AUTH-SERVICE: Activity Logs
+        # ==========================================
+        # Endpoints: /api/v1/logs/activity
+        # Target Controller: @RequestMapping("/api/logs")
+        # ==========================================
+        - id: auth-service-logs
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/logs/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+        
+        # ==========================================
+        # USER-SERVICE: User Management & Registration
+        # ==========================================
+        # Endpoints: /api/v1/users/register, /api/v1/users/profile, etc.
+        # Target Controller: @RequestMapping("/api/users")
+        # ==========================================
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
+                fallbackUri: forward:/fallback/users
+          metadata:
+            response-timeout: 8000
+            connect-timeout: 3000
+        
+        # ==========================================
+        # USER-SERVICE: PIN Reset Management
+        # ==========================================
+        # Endpoints: /api/v1/pin-reset/request, /api/v1/pin-reset/verify
+        # Target Controller: @RequestMapping("/api/pin-reset")
+        # ==========================================
+        - id: user-service-pin-reset
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/pin-reset/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+        
+        # ==========================================
+        # USER-SERVICE: Security Questions
+        # ==========================================
+        # Endpoints: /api/v1/security-questions
+        # Target Controller: @RequestMapping("/api/security-questions")
+        # ==========================================
+        - id: user-service-security-questions
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/security-questions/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+        
+        # ==========================================
+        # WALLET-SERVICE: Primary Wallet Management
+        # ==========================================
+        # Endpoints: /api/v1/wallets/user/{id}, /api/v1/wallets/{number}
+        # Target Controller: @RequestMapping("/api/wallets")
+        # ==========================================
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallets/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: walletServiceCircuitBreaker
+                fallbackUri: forward:/fallback/wallets
+          metadata:
+            response-timeout: 6000
+            connect-timeout: 3000
+        
+        # ==========================================
+        # WALLET-SERVICE: Permissions & SubWallets
+        # ==========================================
+        # Endpoints: /api/v1/wallet/permission/grant, /api/v1/wallet/subWallet/create
+        # Target Controllers: @RequestMapping("/api/wallet/permission"), @RequestMapping("/api/wallet/subWallet")
+        # ==========================================
+        - id: wallet-service-extended
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+        
+        # ==========================================
+        # NOTIFICATION-SERVICE: SMS & Email Notifications
+        # ==========================================
+        # Endpoints: /api/v1/notifications/send, /api/v1/notifications/{id}
+        # Target Controller: @RequestMapping("/api/notifications")
+        # ==========================================
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/$\{segment}
+          metadata:
+            response-timeout: 10000
+            connect-timeout: 3000
+
+# ==========================================
+# EUREKA CLIENT CONFIGURATION
+# ==========================================
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+    healthcheck:
+      enabled: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+    instance-id: ${spring.application.name}:${random.value}
+
+# ==========================================
+# RESILIENCE4J - CIRCUIT BREAKER
+# ==========================================
+resilience4j:
+  circuitbreaker:
+    instances:
+      authServiceCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 100
+        slow-call-duration-threshold: 5s
+      
+      userServiceCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        wait-duration-in-open-state: 15s
+        failure-rate-threshold: 50
+      
+      walletServiceCircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        wait-duration-in-open-state: 15s
+        failure-rate-threshold: 50
+  
+  timelimiter:
+    instances:
+      authServiceCircuitBreaker:
+        timeout-duration: 5s
+      userServiceCircuitBreaker:
+        timeout-duration: 8s
+      walletServiceCircuitBreaker:
+        timeout-duration: 6s
+
+# ==========================================
+# ACTUATOR & HEALTH ENDPOINTS
+# ==========================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,routes,metrics,circuitbreakers,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    gateway:
+      enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ==========================================
+# LOGGING CONFIGURATION
+# ==========================================
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}
+    org.springframework.web: ${WEB_LOG_LEVEL:INFO}
+    reactor.netty: ${NETTY_LOG_LEVEL:INFO}
+    com.zaphira: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
