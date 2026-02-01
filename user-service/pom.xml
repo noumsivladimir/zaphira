@@ -9,12 +9,15 @@
 		<groupId>com.zaphira</groupId>
 		<artifactId>zaphira-platform</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>user-service</artifactId>
-	<name>service-user</name>
-	<description>User services</description>
+	<name>user-service</name>
+	<description>User services Manager</description>
+
+	<properties>
+		<java.version>17</java.version>
+	</properties>
 
 	<dependencies>
 		<!-- Spring Boot Starters -->
