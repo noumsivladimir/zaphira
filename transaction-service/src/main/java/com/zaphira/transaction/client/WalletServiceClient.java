@@ -3,21 +3,22 @@ package com.zaphira.transaction.client;
 import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.common.dto.request.BalanceOperationRequest;
+import com.zaphira.common.dto.response.PermissionCheckResponse;
+import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.transaction.dto.requests.TransactionValidationRequest;
 import com.zaphira.transaction.dto.response.TransactionValidationResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @FeignClient(
         name = "wallet-service",
         url = "${wallet.service.url}",
-        path = "/api/wallets",
+        path = "/api/wallet",
         fallbackFactory = WalletServiceClientFallbackFactory.class
 )
 public interface WalletServiceClient {
@@ -89,4 +90,21 @@ public interface WalletServiceClient {
     @GetMapping("/{walletId}")
     @CircuitBreaker(name = "walletService")
     WalletDTO getWallet(@PathVariable("walletId") Long walletId);
+
+    /**
+     * Checker les Permissions d'un Wallet Id
+     */
+    @GetMapping("/permission/{walletId}")
+    @CircuitBreaker(name = "walletService")
+    List<PermissionType> getPermissionTypes(@PathVariable("walletId") Long walletId);
+
+
+    /**
+     * Verifier que un wallet a une permissiond définie
+     * @Param: WalletID
+     */
+    @GetMapping("/permission/{walletId}/has-permission")
+    PermissionCheckResponse hasPermission(@PathVariable("walletId") Long walletId,
+                                          @RequestParam PermissionType permissionType);
+
 }

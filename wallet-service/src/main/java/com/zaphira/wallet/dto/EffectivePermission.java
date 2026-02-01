@@ -1,6 +1,6 @@
 package com.zaphira.wallet.dto;
 
-import com.zaphira.wallet.models.enums.PermissionType;
+import com.zaphira.common.model.enums.PermissionType;
 import lombok.Data;
 
 import java.math.BigDecimal;

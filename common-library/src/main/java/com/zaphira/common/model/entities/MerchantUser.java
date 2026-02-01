@@ -1,19 +1,17 @@
 package com.zaphira.common.model.entities;
 
-import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.common.model.enums.RoleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @DiscriminatorValue("MERCHANT")
@@ -63,25 +61,25 @@ public class MerchantUser extends User {
     public RoleType getRoleType() {
         return RoleType.MERCHANT;
     }
-
-    @Override
-    public Set<PermissionType> getPermissions() {
-        return Set.of(
-                PermissionType.VIEW_OWN_PROFILE,
-                PermissionType.UPDATE_OWN_PROFILE,
-                PermissionType.VIEW_OWN_WALLET,
-                PermissionType.ACCEPT_PAYMENTS,
-                PermissionType.DEPOSIT_FUNDS,
-                PermissionType.WITHDRAW_FUNDS,
-                PermissionType.VIEW_MERCHANT_DASHBOARD,
-                PermissionType.MANAGE_MERCHANT_SETTINGS,
-                PermissionType.VIEW_MERCHANT_TRANSACTIONS,
-                PermissionType.REQUEST_SETTLEMENT,
-                PermissionType.VIEW_OWN_TRANSACTIONS,
-                PermissionType.UPLOAD_KYC_DOCUMENTS,
-                PermissionType.VIEW_OWN_KYC_STATUS
-        );
-    }
+//
+//    @Override
+//    public Set<PermissionType> getPermissions() {
+//        return Set.of(
+//                PermissionType.VIEW_OWN_PROFILE,
+//                PermissionType.UPDATE_OWN_PROFILE,
+//                PermissionType.VIEW_OWN_WALLET,
+//                PermissionType.ACCEPT_PAYMENTS,
+//                PermissionType.DEPOSIT_FUNDS,
+//                PermissionType.WITHDRAW_FUNDS,
+//                PermissionType.VIEW_MERCHANT_DASHBOARD,
+//                PermissionType.MANAGE_MERCHANT_SETTINGS,
+//                PermissionType.VIEW_MERCHANT_TRANSACTIONS,
+//                PermissionType.REQUEST_SETTLEMENT,
+//                PermissionType.VIEW_OWN_TRANSACTIONS,
+//                PermissionType.UPLOAD_KYC_DOCUMENTS,
+//                PermissionType.VIEW_OWN_KYC_STATUS
+//        );
+//    }
 
     public boolean canAcceptPayment() {
         return isAccountActive() && isVerifiedMerchant && canAcceptPayments;

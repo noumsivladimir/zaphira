@@ -1,7 +1,6 @@
 package com.zaphira.common.model.entities;
 
 import com.zaphira.common.model.enums.AccountStatus;
-import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.common.model.enums.RoleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Past;
@@ -15,7 +14,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 
 @Entity
@@ -124,7 +122,7 @@ public abstract class User {
 
     // Abstract methods - to be implemented by subclasses
     public abstract RoleType getRoleType();
-    public abstract Set<PermissionType> getPermissions();
+//    public abstract Set<PermissionType> getPermissions();
 
     // Common business logic methods
     public boolean isAccountLocked() {
@@ -151,7 +149,7 @@ public abstract class User {
         return firstName + " " + lastName;
     }
 
-    public boolean hasPermission(PermissionType permission) {
-        return getPermissions().contains(permission);
-    }
+//    public boolean hasPermission(PermissionType permission) {
+//        return getPermissions().contains(permission);
+//    }
 }

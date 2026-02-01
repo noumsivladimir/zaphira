@@ -3,6 +3,7 @@ package com.zaphira.transaction.service;
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.common.dto.request.BalanceOperationRequest;
 import com.zaphira.common.model.enums.Currency;
+import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.transaction.client.WalletServiceClient;
 import com.zaphira.transaction.dto.TransactionDTO;
 import com.zaphira.transaction.dto.TransactionSummaryDTO;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -150,6 +152,20 @@ public class TransactionServiceImpl implements TransactionService {
 
     }
 
+    @Override
+    public Boolean hasPermissionTo(PermissionType permissionType, @PathVariable("walletId") Long walletId) {
+
+        List<PermissionType> permissionTypes = walletServiceClient.getPermissionTypes(walletId);
+
+        for (PermissionType type : permissionTypes) {
+            if (type.equals(permissionType)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /* =========================================================
        PROCESS
        ========================================================= */
@@ -170,6 +186,8 @@ public class TransactionServiceImpl implements TransactionService {
             if (requiresDebit(tx)) {
                 blockFunds(tx);
             }
+
+
 
             log.info("Processing transaction {}", tx.getId());
 

@@ -38,6 +38,7 @@ public class WalletServiceImpl implements WalletService{
     private final WalletSubWalletRepository walletSubWalletRepository;
     @Lazy
     private final WalletHierarchyService walletHierarchyService;
+    private final WalletPermissionService walletPermissionService;
    // private final UserService userServiceClient;
 
 
@@ -92,7 +93,12 @@ public class WalletServiceImpl implements WalletService{
 
         wallet.setMerchantName(request.getMerchantName());
         wallet.setMerchantCode(merchantCode);
+        wallet.setType(WalletType.MERCHANT);
         Wallet saved = walletRepository.save(wallet);
+
+        //Ajouter les permissions
+
+         walletPermissionService.initializeDefaultPermissions(wallet.getId());
 
         return toDTO(saved);
     }
@@ -682,6 +688,8 @@ public class WalletServiceImpl implements WalletService{
         int value = ThreadLocalRandom.current().nextInt(0, 1_000_000);
         return String.format("%06d", value);
     }
+
+
 
 }
 

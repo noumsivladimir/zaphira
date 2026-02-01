@@ -1,5 +1,8 @@
 package com.zaphira.transaction.controller;
 
+import com.zaphira.common.dto.response.PermissionCheckResponse;
+import com.zaphira.common.model.enums.PermissionType;
+import com.zaphira.transaction.client.WalletServiceClient;
 import com.zaphira.transaction.dto.TransactionDTO;
 import com.zaphira.transaction.dto.requests.CreateTransactionRequest;
 import com.zaphira.transaction.service.TransactionServiceImpl;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class TransactionController {
 
     private final TransactionServiceImpl transactionService;
+    private final WalletServiceClient walletServiceClient;
 
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody CreateTransactionRequest request) {
@@ -34,6 +38,26 @@ public class TransactionController {
         TransactionDTO transaction = transactionService.processTransaction(transactionReference);
         return ResponseEntity.ok(transaction);
     }
+
+//    @GetMapping("/hasPermission/{walletId}")
+//    public ResponseEntity<Boolean> hasPermission(PermissionType permissionType, @PathVariable Long walletId) {
+//        log.info("Checking permission for transaction: {}", permissionType);
+//        return ResponseEntity.ok(transactionService.hasPermission(permissionType, walletId));
+//    }
+
+
+
+        @GetMapping("/hasPermission/{walletId}")
+        public ResponseEntity<PermissionCheckResponse> hasPermission(
+                @PathVariable Long walletId,
+                @RequestParam PermissionType permissionType){
+        try {
+            log.info("Getting permissions for wallet: {}", walletId);
+            return ResponseEntity.ok(walletServiceClient.hasPermission(walletId, permissionType));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        }
 
 //    /**
 //     * Initier un transfert

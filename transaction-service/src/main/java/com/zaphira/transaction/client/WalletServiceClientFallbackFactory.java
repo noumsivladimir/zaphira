@@ -3,12 +3,16 @@ package com.zaphira.transaction.client;
 import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.common.dto.request.BalanceOperationRequest;
+import com.zaphira.common.dto.response.PermissionCheckResponse;
+import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.transaction.dto.requests.TransactionValidationRequest;
 import com.zaphira.transaction.dto.response.TransactionValidationResponse;
 import com.zaphira.transaction.exception.TransactionExceptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Slf4j
@@ -69,6 +73,18 @@ public class WalletServiceClientFallbackFactory implements FallbackFactory<Walle
             @Override
             public WalletDTO getWallet(Long walletId) {
                 log.error("Fallback: Cannot get wallet {}: {}", walletId, cause.getMessage());
+                throw new TransactionExceptions.WalletServiceException("Wallet service unavailable", cause);
+            }
+
+            @Override
+            public List<PermissionType> getPermissionTypes(Long walletId) {
+                log.error("Fallback: Cannot get permission types {}: {}", walletId, cause.getMessage());
+                throw new TransactionExceptions.WalletServiceException("Wallet service unavailable", cause);
+            }
+
+            @Override
+            public PermissionCheckResponse hasPermission(Long walletId, PermissionType permissionType) {
+                log.error("Fallback: Cannot load ");
                 throw new TransactionExceptions.WalletServiceException("Wallet service unavailable", cause);
             }
         };

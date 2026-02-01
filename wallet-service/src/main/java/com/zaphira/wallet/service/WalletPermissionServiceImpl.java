@@ -1,17 +1,19 @@
 package com.zaphira.wallet.service;
 
+import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.wallet.dto.EffectivePermission;
 import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.wallet.dto.WalletPermissionDTO;
+import com.zaphira.wallet.dto.request.GrantPermissionRequest;
 import com.zaphira.wallet.dto.request.UpdatePermissionRequest;
 import com.zaphira.wallet.exception.WalletNotFoundException;
 import com.zaphira.wallet.models.entities.Wallet;
 import com.zaphira.wallet.models.entities.WalletPermission;
-import com.zaphira.wallet.models.enums.PermissionType;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import com.zaphira.wallet.models.enums.WalletType;
 import com.zaphira.wallet.repository.WalletPermissionRepository;
 import com.zaphira.wallet.repository.WalletRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import java.util.*;
 
 @Service
 @Transactional
+@Slf4j
 public class WalletPermissionServiceImpl implements WalletPermissionService {
 
     private final WalletPermissionRepository permissionRepository;
@@ -110,6 +113,20 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
         permissionRepository.save(permission);
     }
 
+//    public void grantPermission(Long walletId, PermissionType type) {
+//
+//        Wallet wallet = walletRepository.findById(walletId).orElseThrow(
+//                () -> new WalletNotFoundException("Wallet with id: " + walletId));
+//
+//        WalletPermission permission = new WalletPermission();
+//        permission.setWallet(wallet);
+//        permission.setPermissionType(type);
+//        permission.setEnabled(true);
+//        permission.setCreatedAt(LocalDateTime.now());
+//        permissionRepository.save(permission);
+//    }
+
+
     @Override
     public void revokePermission(Wallet wallet, PermissionType type) {
 
@@ -158,23 +175,56 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
     }
 
     @Override
-    public void customizePermission(Wallet wallet, PermissionType type, BigDecimal maxAmount,
-                                    BigDecimal dailyLimit, Boolean requiresApproval) {
+    public WalletPermissionDTO grantPermission(GrantPermissionRequest request) {
 
-        WalletPermission permission = permissionRepository
-                .findByWalletAndPermissionType(wallet, type)
-                .orElse(new WalletPermission());
+        Wallet wallet = walletRepository.findById(request.getWalletId()).orElseThrow(
+                () -> new WalletNotFoundException("Wallet with id: " + request.getWalletId())
+        );
+
+        // Vérifier si la permission existe déjà
+        Optional<WalletPermission> existingPermission =
+                permissionRepository.findByWalletIdAndPermissionType(wallet.getId(), request.getPermissionType());
+
+        if (existingPermission.isPresent()) {
+
+            WalletPermission permission = existingPermission.get();
+
+            if (permission.getEnabled() != true){
+
+                permission.setEnabled(true);
+                permissionRepository.save(permission);
+                log.info("Re-enabled permission {} for wallet {}", permission.getPermissionType(), wallet.getWalletNumber());
+                return WalletPermissionDTO.builder()
+                        .walletId(request.getWalletId())
+                        .walletPermission(permissionRepository.findPermissionTypesByWalletId(request.getWalletId()))
+                        .build();
+            } else {
+                log.error("Permission {} already enabled  for wallet {}", permission.getPermissionType(), request.getWalletId());
+            }
+
+        }
+
+
+        WalletPermission permission = existingPermission.get();
 
         permission.setWallet(wallet);
-        permission.setPermissionType(type);
+        permission.setPermissionType(request.getPermissionType());
         permission.setEnabled(true);
-        permission.setMaxAmount(maxAmount);
-        permission.setDailyLimit(dailyLimit);
-        permission.setRequiresApproval(requiresApproval);
+        permission.setMaxAmount(request.getMaxAmount());
+        permission.setDailyLimit(request.getDailyLimit());
+        permission.setRequiresApproval(request.getRequiresApproval());
         permission.setUpdatedAt(LocalDateTime.now());
 
         permissionRepository.save(permission);
+
+        return WalletPermissionDTO.builder()
+                .walletId(request.getWalletId())
+                .walletNumber(wallet.getWalletNumber())
+                .walletPermission(permissionRepository.findPermissionTypesByWalletId(request.getWalletId()))
+                .build();
     }
+
+
 
     @Override
     public BigDecimal getTodayTotal(Wallet wallet, PermissionType operation) {
@@ -187,13 +237,25 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
     }
 
     @Override
-    public List<WalletPermissionDTO> getWalletPermissions(String walletNumber) {
-        return List.of();
+    public WalletPermissionDTO getWalletPermissions(String walletNumber) {
+
+        Wallet wallet = walletRepository.findByWalletNumber(walletNumber).orElseThrow(
+                () -> new WalletNotFoundException("Wallet with id: " + walletNumber)
+        );
+
+        WalletPermissionDTO dtos = WalletPermissionDTO.builder()
+                .walletId(wallet.getId())
+                .walletNumber(walletNumber)
+                .walletPermission(permissionRepository.findPermissionTypesByWalletId(wallet.getId()))
+                .build();
+
+        return dtos;
     }
 
     @Override
     public List<WalletDTO> getWalletsAccessibleByUser(Long userId) {
         return List.of();
+
     }
 
     @Override
@@ -232,8 +294,22 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
     }
 
     @Override
-    public boolean hasPermission(Long userId, String walletNumber, String action) {
-        return false;
+    public List<PermissionType> getPermissionTypes(Long walletId) {
+        return permissionRepository.findPermissionTypesByWalletId(walletId);
+    }
+
+
+    @Override
+//    @Cacheable(value = "walletPermissions", key = "#walletId + '-' + #permissionType")
+    public boolean hasPermission(Long walletId, PermissionType permissionType) {
+        log.debug("Checking if wallet {} has permission {}", walletId, permissionType);
+
+        // Vérifier que le wallet existe
+        Wallet wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found: " + walletId));
+
+        // Vérifier la permission (requête DB optimisée)
+        return permissionRepository.hasActivePermission(walletId, permissionType);
     }
 
     @Override
@@ -269,5 +345,6 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
         }
 
         return true;
+
     }
 }

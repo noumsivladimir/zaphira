@@ -1,6 +1,6 @@
 package com.zaphira.wallet.models.entities;
 
-import com.zaphira.wallet.models.enums.PermissionType;
+import com.zaphira.common.model.enums.PermissionType;
 import jakarta.persistence.*;
 import lombok.*;
 

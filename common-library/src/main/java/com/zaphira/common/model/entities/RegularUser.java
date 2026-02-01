@@ -1,19 +1,17 @@
 package com.zaphira.common.model.entities;
 
 
-import com.zaphira.common.model.enums.PermissionType;
 import com.zaphira.common.model.enums.RoleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.Builder;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 
 @Entity
@@ -69,22 +67,22 @@ public class RegularUser extends User {
         return RoleType.USER;
     }
 
-    @Override
-    public Set<PermissionType> getPermissions() {
-        return Set.of(
-                PermissionType.VIEW_OWN_PROFILE,
-                PermissionType.UPDATE_OWN_PROFILE,
-                PermissionType.DELETE_OWN_ACCOUNT,
-                PermissionType.VIEW_OWN_WALLET,
-                PermissionType.CREATE_WALLET,
-            //    PermissionType.TOPUP_WALLET,
-                PermissionType.CREATE_TRANSACTION,
-                PermissionType.VIEW_OWN_TRANSACTIONS,
-         //       PermissionType.CANCEL_OWN_TRANSACTION,
-                PermissionType.UPLOAD_KYC_DOCUMENTS,
-                PermissionType.VIEW_OWN_KYC_STATUS
-        );
-    }
+//    @Override
+//    public Set<PermissionType> getPermissions() {
+//        return Set.of(
+//                PermissionType.VIEW_OWN_PROFILE,
+//                PermissionType.UPDATE_OWN_PROFILE,
+//                PermissionType.DELETE_OWN_ACCOUNT,
+//                PermissionType.VIEW_OWN_WALLET,
+//                PermissionType.CREATE_WALLET,
+//            //    PermissionType.TOPUP_WALLET,
+//                PermissionType.CREATE_TRANSACTION,
+//                PermissionType.VIEW_OWN_TRANSACTIONS,
+//         //       PermissionType.CANCEL_OWN_TRANSACTION,
+//                PermissionType.UPLOAD_KYC_DOCUMENTS,
+//                PermissionType.VIEW_OWN_KYC_STATUS
+//        );
+//    }
 
     public Boolean isKycVerified() {
         return Boolean.TRUE;
