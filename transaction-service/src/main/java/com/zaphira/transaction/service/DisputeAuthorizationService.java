@@ -1,5 +1,7 @@
 package com.zaphira.transaction.service;
 
+import com.zaphira.transaction.dto.TransactionDTO;
+import com.zaphira.transaction.dto.requests.DisputeRequest;
 import com.zaphira.transaction.exception.AccessDeniedException;
 import com.zaphira.transaction.model.Dispute;
 import com.zaphira.transaction.model.enums.DisputeStatus;
@@ -55,66 +57,66 @@ public class DisputeAuthorizationService {
      * @param request DisputeRequest with dispute details
      * @throws AccessDeniedException if not authorized
      */
-//    public void authorizeDisputeCreation(AuthenticatedUser user, TransactionDTO transactionDTO, DisputeRequest request) {
-//        log.debug(
-//            "[AUTH_DISPUTE_CREATE] User: {}, TransactionId: {}",
-//            user.getEmail(), transactionDTO.getId()
-//        );
-//
-//        // Check if customer is creating dispute for their own transaction
-//        // For now, we check the sender wallet (the customer initiating transaction)
-//        if (transactionDTO.getSenderWalletNumber() != null) {
-//            Long senderUserId = transactionDTO.getUserId();
-//            if (!senderUserId.equals(user.getId())) {
-//                log.warn(
-//                    "[AUTH_DISPUTE_CREATE_FAIL] Customer attempting to create dispute for different customer. " +
-//                    "RequestBy: {}, TransactionSender: {}, TransactionId: {}",
-//                    user.getEmail(), senderUserId, transactionDTO.getId()
-//                );
-//                throw new AccessDeniedException(
-//                    "You can only create disputes for your own transactions"
-//                );
-//            }
-//        }
-//
-//        // Check transaction status (must be completed)
-//        if (transactionDTO.getStatus() != com.zaphira.transaction.model.enums.TransactionStatus.COMPLETED &&
-//                transactionDTO.getStatus() != com.zaphira.transaction.model.enums.TransactionStatus.PROCESSING) {
-//            log.warn(
-//                "[AUTH_DISPUTE_CREATE_FAIL] Invalid transaction status for dispute. " +
-//                "Status: {}, TransactionId: {}, User: {}",
-//                    transactionDTO.getStatus(), transactionDTO.getId(), user.getEmail()
-//            );
-//            throw new AccessDeniedException(
-//                "Can only create disputes for completed transactions. Current status: " + transactionDTO.getStatus()
-//            );
-//        }
-//
-//        // Check time window: Transaction must be recent (within 180 days)
-//        LocalDateTime maxAge = LocalDateTime.now().minusDays(180);
-//        if (transactionDTO.getCreatedAt().isBefore(maxAge)) {
-//            log.warn(
-//                "[AUTH_DISPUTE_CREATE_FAIL] Transaction too old for dispute. " +
-//                "TransactionDate: {}, MaxDate: {}, TransactionId: {}, User: {}",
-//                    transactionDTO.getCreatedAt(), maxAge, transactionDTO.getId(), user.getEmail()
-//            );
-//            throw new AccessDeniedException(
-//                "Disputes can only be created for transactions within 180 days of transaction date"
-//            );
-//        }
-//
-//        // Check minimum dispute amount (no disputes for less than $1)
-//        if (request.getClaimedAmount().compareTo(java.math.BigDecimal.valueOf(1.0)) < 0) {
-//            throw new AccessDeniedException(
-//                "Minimum dispute amount is $1.00"
-//            );
-//        }
-//
-//        log.info(
-//            "[AUTH_DISPUTE_CREATE_APPROVED] User: {}, TransactionId: {}, Amount: {}",
-//            user.getEmail(), transactionDTO.getId(), request.getClaimedAmount()
-//        );
-//    }
+    public void authorizeDisputeCreation(AuthenticatedUser user, TransactionDTO transactionDTO, DisputeRequest request) {
+        log.debug(
+            "[AUTH_DISPUTE_CREATE] User: {}, TransactionId: {}",
+            user.getEmail(), transactionDTO.getId()
+        );
+
+        // Check if customer is creating dispute for their own transaction
+        // For now, we check the sender wallet (the customer initiating transaction)
+        if (transactionDTO.getSenderWalletNumber() != null) {
+            Long senderUserId = transactionDTO.getUserId();
+            if (!senderUserId.equals(user.getId())) {
+                log.warn(
+                    "[AUTH_DISPUTE_CREATE_FAIL] Customer attempting to create dispute for different customer. " +
+                    "RequestBy: {}, TransactionSender: {}, TransactionId: {}",
+                    user.getEmail(), senderUserId, transactionDTO.getId()
+                );
+                throw new AccessDeniedException(
+                    "You can only create disputes for your own transactions"
+                );
+            }
+        }
+
+        // Check transaction status (must be completed)
+        if (transactionDTO.getStatus() != com.zaphira.transaction.model.enums.TransactionStatus.COMPLETED &&
+                transactionDTO.getStatus() != com.zaphira.transaction.model.enums.TransactionStatus.PROCESSING) {
+            log.warn(
+                "[AUTH_DISPUTE_CREATE_FAIL] Invalid transaction status for dispute. " +
+                "Status: {}, TransactionId: {}, User: {}",
+                    transactionDTO.getStatus(), transactionDTO.getId(), user.getEmail()
+            );
+            throw new AccessDeniedException(
+                "Can only create disputes for completed transactions. Current status: " + transactionDTO.getStatus()
+            );
+        }
+
+        // Check time window: Transaction must be recent (within 180 days)
+        LocalDateTime maxAge = LocalDateTime.now().minusDays(180);
+        if (transactionDTO.getCreatedAt().isBefore(maxAge)) {
+            log.warn(
+                "[AUTH_DISPUTE_CREATE_FAIL] Transaction too old for dispute. " +
+                "TransactionDate: {}, MaxDate: {}, TransactionId: {}, User: {}",
+                    transactionDTO.getCreatedAt(), maxAge, transactionDTO.getId(), user.getEmail()
+            );
+            throw new AccessDeniedException(
+                "Disputes can only be created for transactions within 180 days of transaction date"
+            );
+        }
+
+        // Check minimum dispute amount (no disputes for less than $1)
+        if (request.getClaimedAmount().compareTo(java.math.BigDecimal.valueOf(1.0)) < 0) {
+            throw new AccessDeniedException(
+                "Minimum dispute amount is $1.00"
+            );
+        }
+
+        log.info(
+            "[AUTH_DISPUTE_CREATE_APPROVED] User: {}, TransactionId: {}, Amount: {}",
+            user.getEmail(), transactionDTO.getId(), request.getClaimedAmount()
+        );
+    }
     
     // ============================================================
     // EVIDENCE SUBMISSION AUTHORIZATION

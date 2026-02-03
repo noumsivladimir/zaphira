@@ -21,6 +21,7 @@ public class CreateWalletRequest {
     private Long userId;
     private BigDecimal availableBalance ;
     private WalletType type ;
+    @Builder.Default
     private WalletStatus status = WalletStatus.ACTIVE;
 
 //

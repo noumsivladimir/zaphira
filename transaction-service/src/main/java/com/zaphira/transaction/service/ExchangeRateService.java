@@ -16,8 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+
 
 /**
  * ExchangeRateService - FX rate management with caching.

@@ -37,7 +37,6 @@ public class ScheduledTransactionRequest {
 
     private String description;
 
-    @NotBlank
     private String requestedBy;
 
     @NotNull

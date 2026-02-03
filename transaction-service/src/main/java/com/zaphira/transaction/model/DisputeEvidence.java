@@ -127,6 +127,7 @@ public class DisputeEvidence {
     /**
      * Whether this evidence has been verified/reviewed by admin
      */
+    @Builder.Default
     @Column(name = "verified", nullable = false)
     private Boolean verified = false;
     

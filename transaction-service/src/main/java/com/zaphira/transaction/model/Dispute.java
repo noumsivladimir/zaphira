@@ -255,6 +255,7 @@ public class Dispute {
      * All evidence submitted for this dispute
      * One-to-many relationship with DisputeEvidence
      */
+    @Builder.Default
     @OneToMany(mappedBy = "dispute", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<DisputeEvidence> evidences = new HashSet<>();
     
@@ -262,6 +263,7 @@ public class Dispute {
      * Timeline events for this dispute
      * One-to-many relationship with DisputeTimeline
      */
+    @Builder.Default
     @OneToMany(mappedBy = "dispute", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<DisputeTimeline> timeline = new HashSet<>();
     

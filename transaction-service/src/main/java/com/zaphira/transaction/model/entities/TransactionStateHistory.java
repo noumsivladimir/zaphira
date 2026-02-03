@@ -11,7 +11,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "transaction_states")
+@Table(name = "transaction_status_history")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,20 +28,21 @@ public class TransactionStateHistory {
     private Transaction transaction;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "previous_status")
     private TransactionStatus previousStatus;
 
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "new_status", nullable = false)
+    private TransactionStatus newStatus;
+
+    @Column(name = "changed_by")
     private String changedBy;
 
-    @Column(nullable = false)
     private String reason;
 
-    @Column(nullable = false)
+    private String notes;
+
+    @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
     @PrePersist

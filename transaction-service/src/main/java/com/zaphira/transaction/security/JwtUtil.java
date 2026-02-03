@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.Collections;
+import java.util.List;
 
 
 @Component
@@ -57,6 +59,27 @@ public class JwtUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public List<String> extractRoles(String token) {
+        try {
+            var claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            Object roles = claims.get("roles");
+            if (roles instanceof List<?> list) {
+                return list.stream().map(Object::toString).toList();
+            }
+            if (roles instanceof String single) {
+                return List.of(single);
+            }
+        } catch (Exception ignored) {
+            // return empty list on parsing issues to preserve backward compatibility
+        }
+        return Collections.emptyList();
     }
 
     public String getEmailFromToken(String token) {

@@ -97,87 +97,86 @@ public class DisputeService {
      * @throws OptimisticLockException if concurrent modification detected
      */
     @Transactional
-//    public Dispute createDispute(DisputeRequest request) {
-//        AuthenticatedUser user = getAuthenticatedUser();
-//
-//        log.info(
-//            "[DISPUTE_CREATE_START] User: {}, TransactionId: {}, Amount: {}, RequestId: {}",
-//            user.getEmail(), request.getTransactionId(), request.getClaimedAmount(),
-//            request.toString().hashCode()
-//        );
-//
-//        // Get and validate transaction
-////        Transaction transaction = transactionServiceImpl.getTransaction(Long.parseLong(request.getTransactionId()));
-//        TransactionDTO transactionDTO = transactionServiceImpl.getTransactionById(Long.parseLong(request.getTransactionId()));
-//        if (transactionDTO == null) {
-//            log.warn(
-//                "[DISPUTE_CREATE_FAIL] Transaction not found: {}, User: {}",
-//                request.getTransactionId(), user.getEmail()
-//            );
-//            throw new ResourceNotFoundException("Transaction not found: " + request.getTransactionId());
-//        }
-//
-//        // Check if dispute already exists
-//        if (disputeRepository.existsByTransactionId(Long.parseLong(request.getTransactionId()))) {
-//            log.warn(
-//                "[DISPUTE_CREATE_FAIL] Dispute already exists for transaction: {}, User: {}",
-//                request.getTransactionId(), user.getEmail()
-//            );
-//            throw new ValidationException("Dispute already exists for this transaction");
-//        }
-//
-//        // Authorize dispute creation
-//        authorizationService.authorizeDisputeCreation(user, transactionDTO, request);
-//
-//        // Validate dispute amount
-//        if (request.getClaimedAmount().compareTo(BigDecimal.ZERO) <= 0) {
-//            throw new ValidationException("Claimed amount must be greater than 0");
-//        }
-//        if (request.getClaimedAmount().compareTo(transactionDTO.getAmount()) > 0) {
-//            throw new ValidationException(
-//                "Claimed amount cannot exceed transaction amount of " + transactionDTO.getAmount()
-//            );
-//        }
-//
-//        // Create dispute entity
-//        Dispute dispute = Dispute.builder()
-//            .transactionId(transactionDTO.getId())
-//            .reference("DSP-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase())
-//            .category(DisputeCategory.valueOf(request.getCategory().toUpperCase()))
-//            .status(DisputeStatus.INITIATED)
-//            .reason(request.getReason())
-//            .description(request.getDescription())
-//            .claimedAmount(request.getClaimedAmount())
-//            .initiatedBy(user.getEmail())
-//            .initiatorRole(DisputeInitiatorRole.CUSTOMER)
-//            .deadlineAt(LocalDateTime.now().plusDays(evidenceDeadlineDays))
-//            .createdAt(LocalDateTime.now())
-//            .build();
-//
-//        // Save dispute
-//        Dispute savedDispute = disputeRepository.save(dispute);
-//
-//        // Create initial timeline event
-//        DisputeTimeline timelineEvent = DisputeTimeline.ofDisputeCreated(
-//            savedDispute,
-//            user.getEmail(),
-//            DisputeInitiatorRole.CUSTOMER.name()
-//        );
-//
-//        savedDispute.getTimeline().add(timelineEvent);
-//        savedDispute = disputeRepository.save(savedDispute);
-//
-//        // Publish event to Kafka
-//        publishDisputeCreatedEvent(savedDispute, user);
-//
-//        log.info(
-//            "[DISPUTE_CREATE_SUCCESS] DisputeId: {}, TransactionId: {}, Amount: {}, User: {}",
-//            savedDispute.getId(), savedDispute.getTransactionId(),
-//            savedDispute.getClaimedAmount(), user.getEmail()
-//        );
-//
-//        return savedDispute;
-//    }
+    public Dispute createDispute(com.zaphira.transaction.dto.requests.DisputeRequest request) {
+        AuthenticatedUser user = getAuthenticatedUser();
+
+        log.info(
+            "[DISPUTE_CREATE_START] User: {}, TransactionId: {}, Amount: {}, RequestId: {}",
+            user.getEmail(), request.getTransactionId(), request.getClaimedAmount(),
+            request.toString().hashCode()
+        );
+
+        // Get and validate transaction
+        com.zaphira.transaction.dto.TransactionDTO transactionDTO = transactionServiceImpl.getTransactionById(Long.parseLong(request.getTransactionId()));
+        if (transactionDTO == null) {
+            log.warn(
+                "[DISPUTE_CREATE_FAIL] Transaction not found: {}, User: {}",
+                request.getTransactionId(), user.getEmail()
+            );
+            throw new ResourceNotFoundException("Transaction not found: " + request.getTransactionId());
+        }
+
+        // Check if dispute already exists
+        if (disputeRepository.existsByTransactionId(Long.parseLong(request.getTransactionId()))) {
+            log.warn(
+                "[DISPUTE_CREATE_FAIL] Dispute already exists for transaction: {}, User: {}",
+                request.getTransactionId(), user.getEmail()
+            );
+            throw new ValidationException("Dispute already exists for this transaction");
+        }
+
+        // Authorize dispute creation
+        authorizationService.authorizeDisputeCreation(user, transactionDTO, request);
+
+        // Validate dispute amount
+        if (request.getClaimedAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Claimed amount must be greater than 0");
+        }
+        if (request.getClaimedAmount().compareTo(transactionDTO.getAmount()) > 0) {
+            throw new ValidationException(
+                "Claimed amount cannot exceed transaction amount of " + transactionDTO.getAmount()
+            );
+        }
+
+        // Create dispute entity
+        Dispute dispute = Dispute.builder()
+            .transactionId(transactionDTO.getId())
+            .reference("DSP-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase())
+            .category(com.zaphira.transaction.model.enums.DisputeCategory.valueOf(request.getCategory().toUpperCase()))
+            .status(DisputeStatus.INITIATED)
+            .reason(request.getReason())
+            .description(request.getDescription())
+            .claimedAmount(request.getClaimedAmount())
+            .initiatedBy(user.getEmail())
+            .initiatorRole(DisputeInitiatorRole.CUSTOMER)
+            .deadlineAt(LocalDateTime.now().plusDays(evidenceDeadlineDays))
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        // Save dispute
+        Dispute savedDispute = disputeRepository.save(dispute);
+
+        // Create initial timeline event
+        DisputeTimeline timelineEvent = DisputeTimeline.ofDisputeCreated(
+            savedDispute,
+            user.getEmail(),
+            DisputeInitiatorRole.CUSTOMER.name()
+        );
+
+        savedDispute.getTimeline().add(timelineEvent);
+        savedDispute = disputeRepository.save(savedDispute);
+
+        // Publish event to Kafka
+        publishDisputeCreatedEvent(savedDispute, user);
+
+        log.info(
+            "[DISPUTE_CREATE_SUCCESS] DisputeId: {}, TransactionId: {}, Amount: {}, User: {}",
+            savedDispute.getId(), savedDispute.getTransactionId(),
+            savedDispute.getClaimedAmount(), user.getEmail()
+        );
+
+        return savedDispute;
+    }
 
     // ============================================================
     // SUBMIT EVIDENCE

@@ -3,9 +3,6 @@ package com.zaphira.notification.listener;
 import com.zaphira.common.event.UserRegisteredEvent;
 import com.zaphira.notification.service.EmailService;
 import com.zaphira.notification.service.NotificationEventPublisher;
-import com.zaphira.notification.service.SmsService;
-import com.zaphira.notification.service.UserServiceClient;
-import com.zaphira.notification.service.VerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -19,9 +16,6 @@ import org.springframework.stereotype.Component;
 public class UserEventListener {
 
     private final EmailService emailService;
-    private final SmsService smsService;
-    private final UserServiceClient userServiceClient;
-    private final VerificationService verificationService;
     private final NotificationEventPublisher notificationEventPublisher;
 
     @KafkaListener(

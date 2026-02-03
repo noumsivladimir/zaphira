@@ -73,4 +73,34 @@ public class TransactionExceptions {
             super(String.format("Insufficient balance. Required: %s, Available: %s", required, available));
         }
     }
+
+    // ========== Static Helper Methods ==========
+
+    public static TransactionNotFoundException transactionNotFound(String reference) {
+        return new TransactionNotFoundException("Transaction not found: " + reference);
+    }
+
+    public static InsufficientBalanceException insufficientBalance() {
+        return new InsufficientBalanceException("Insufficient balance for transaction");
+    }
+
+    public static InvalidTransactionRequestException invalidAmount() {
+        return new InvalidTransactionRequestException("Transaction amount must be positive");
+    }
+
+    public static InvalidTransactionRequestException sameWalletTransfer() {
+        return new InvalidTransactionRequestException("Cannot transfer to same wallet");
+    }
+
+    public static WalletServiceException transactionFailed(String reason) {
+        return new WalletServiceException("Transaction failed: " + reason);
+    }
+
+    public static InvalidTransactionStatusException cannotCancelTransaction(com.zaphira.transaction.model.enums.TransactionStatus status) {
+        return new InvalidTransactionStatusException("Cannot cancel transaction with status: " + status + ". Only PENDING transactions can be cancelled.");
+    }
+
+    public static InvalidTransactionStatusException cannotRetryTransaction(com.zaphira.transaction.model.enums.TransactionStatus status) {
+        return new InvalidTransactionStatusException("Cannot retry transaction with status: " + status + ". Only FAILED transactions can be retried.");
+    }
 }

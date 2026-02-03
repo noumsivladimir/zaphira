@@ -20,6 +20,8 @@ public class TransactionDTO {
 
     private Long id;
 
+    private Long userId;
+
     //    private String sourceAccountNumber;
     private String senderWalletNumber;
     private Long senderWalletId;

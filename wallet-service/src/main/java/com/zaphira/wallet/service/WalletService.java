@@ -2,6 +2,7 @@ package com.zaphira.wallet.service;
 
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.TransferRequest;
 import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
@@ -47,6 +48,8 @@ public interface WalletService {
     WalletDTO unblockAmount(Long walletId, BalanceOperationRequest request);
 
     WalletDTO releaseBlockedAmount(Long walletId, BalanceOperationRequest request);
+
+    void transfer(TransferRequest request);
 
     TransactionValidationResponse validateTransaction(TransactionValidationRequest request);
 

@@ -33,11 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         // Skip JWT filter for public auth endpoints
         boolean shouldSkip = path.startsWith("/api/auth") 
-                || path.startsWith("/register") 
-                || path.startsWith("/login")
-                || path.startsWith("/refresh")
-                || path.startsWith("/logout")
-                || path.startsWith("/me")
+                || ROOT_AUTH_ENDPOINTS.stream().anyMatch(path::startsWith)
                 || path.equals("/")
                 || path.equals("/error");
         

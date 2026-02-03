@@ -31,7 +31,7 @@ public class AuthController {
         }
 
         // Génération du JWT
-        String accessToken = jwtUtil.generateAccessToken(user.getUserId(), user.getPhoneNumber());
+        String accessToken = jwtUtil.generateAccessToken(user.getUserId(), user.getPhoneNumber(), user.getRoleType());
 
         // Création de UserResponse via constructeur
         UserResponse userResponse = new UserResponse(

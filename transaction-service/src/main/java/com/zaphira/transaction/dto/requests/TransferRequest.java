@@ -1,6 +1,7 @@
 package com.zaphira.transaction.dto.requests;
 
 import com.zaphira.transaction.model.enums.TransactionCategory;
+import com.zaphira.transaction.model.enums.TransactionChannel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -39,9 +40,8 @@ public class TransferRequest {
     @NotNull(message = "Category is required")
     private TransactionCategory category;
 
+    @NotNull(message = "Channel is required")
+    private TransactionChannel channel;
+
     private String description;
-
-    private String ipAddress;
-
-    private String deviceInfo;
 }

@@ -1,6 +1,19 @@
 server:
   port: 8083
 
+infra:
+  db:
+    host: ${DB_HOST:192.168.100.4}
+    port: ${DB_PORT:5432}
+  kafka:
+    bootstrap: ${KAFKA_BOOTSTRAP:192.168.100.4:9092}
+
+wallet:
+  db:
+    name: ${WALLET_DB_NAME:zaphira_wallets_db}
+    user: ${WALLET_DB_USER:zaphira_wallet_service}
+    password: ${WALLET_DB_PASSWORD:WalletService2026!Secure}
+
 
 logging:
   level:
@@ -8,13 +21,17 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
 
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:change-me-demo-secret-change-me}
+
 spring:
   application:
     name: wallet-service
   datasource:
-    url: jdbc:postgresql://192.168.0.122:5432/wallet_db
-    username: postgres
-    password: 1234
+    url: jdbc:postgresql://${infra.db.host}:${infra.db.port}/${wallet.db.name}
+    username: ${wallet.db.user}
+    password: ${wallet.db.password}
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -27,7 +44,7 @@ spring:
         use_sql_comments: true
 
   kafka:
-    bootstrap-servers: 192.168.0.122:9092
+    bootstrap-servers: ${infra.kafka.bootstrap}
     consumer:
       group-id: wallet-service-group
       auto-offset-reset: earliest

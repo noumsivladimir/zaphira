@@ -38,15 +38,12 @@ public class KYCSubmissionRequest {
     @Size(max = 500)
     private String addressOnDocument;
 
-    @NotBlank(message = "Document front image is required")
-    private String documentFrontImage;
-
-    private String documentBackImage;
+    
 
     @NotBlank(message = "Selfie image is required")
     private String selfieImage;
 
-    private String proofOfAddressDocument;
+    
 
     @Size(max = 1000)
     private String notes;

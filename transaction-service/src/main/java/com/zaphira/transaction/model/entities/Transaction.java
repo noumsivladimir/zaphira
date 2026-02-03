@@ -39,8 +39,8 @@ public class Transaction {
 
     /** Acteurs */
 
-//    @Column(name = "user_id", nullable = false)
-//    private Long userId;
+    @Column(name = "user_id")
+    private Long userId;
 
 
     @Column(name = "sender_wallet_id", updatable = false)
@@ -93,8 +93,35 @@ public class Transaction {
     @Column(name = "related_transaction_id")
     private Long relatedTransactionId;
 
-    @Column(name = "failure_reason")
-    private String failureReason;
+    /** Additional references */
+    @Column(name = "transaction_reference", length = 100)
+    private String transactionReference;
+
+    /** Flags */
+    @Column(name = "scheduled")
+    @Builder.Default
+    private Boolean scheduled = false;
+
+    @Column(name = "scheduled_for")
+    private LocalDateTime scheduledFor;
+
+    @Column(name = "is_refunded")
+    @Builder.Default
+    private Boolean isRefunded = false;
+
+    @Column(name = "is_reversed")
+    @Builder.Default
+    private Boolean isReversed = false;
+
+    /** Optimistic locking */
+    @Version
+    @Column(name = "version")
+    @Builder.Default
+    private Long version = 0L;
+
+    /** Timestamps - kept for backward compatibility */
+    @Column(name = "last_updated_at")
+    private LocalDateTime lastUpdatedAt;
 
     /** Audit */
     @CreationTimestamp
@@ -103,6 +130,42 @@ public class Transaction {
 
     private LocalDateTime updatedAt;
 
+    /** Relationships to normalized tables */
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionFees fees;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionTimeline timeline;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionMetadata metadata;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionRisk risk;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionRetry retry;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TransactionAuthorizationInfo authorizationInfo;
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+        this.lastUpdatedAt = LocalDateTime.now();
+    }
+
+    // Helper methods for accessing nested metadata
+    public String getFailureReason() {
+        return metadata != null ? metadata.getFailureReason() : null;
+    }
+
+    public void setFailureReason(String failureReason) {
+        if (metadata == null) {
+            metadata = new TransactionMetadata();
+            metadata.setTransaction(this);
+            metadata.setTransactionId(this.id);
+        }
+        metadata.setFailureReason(failureReason);
+    }
 }
-
-

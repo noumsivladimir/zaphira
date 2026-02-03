@@ -2,10 +2,11 @@ package com.zaphira.wallet.controller;
 
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.TransferRequest;
 import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
-import com.zaphira.wallet.service.WalletQueryService;
+
 import com.zaphira.wallet.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 
 import java.math.BigDecimal;
 
@@ -24,7 +27,7 @@ import java.math.BigDecimal;
 public class WalletController {
 
     private final WalletService walletService;
-    private final WalletQueryService walletQueryService;
+   
 //
 //    /**
 //     * Crée un wallet pour un utilisateur donné.
@@ -32,7 +35,9 @@ public class WalletController {
 //     * @param currency Devise du wallet (XOF par défaut)
 //     * @return WalletDTO avec l'ID et le numéro du wallet
 //     */
+    // LOT 1: Create Wallet - REGULAR + MERCHANT + ADMIN
     @PostMapping
+    @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT', 'ADMIN')")
     public ResponseEntity<?> createWallet(@RequestBody CreateWalletRequest request) {
         try {
             // ✅ Passer directement le request complet
@@ -47,7 +52,9 @@ public class WalletController {
         }
     }
 
+    // LOT 1: Create Merchant Wallet - MERCHANT only
     @PostMapping("/merchant")
+    @PreAuthorize("hasRole('MERCHANT')")
     public ResponseEntity<?> createMerchantWallet(@Validated @RequestBody CreateMerchantWalletRequest request) {
         try {
             CreateWalletResponse merchantWallet = walletService.createWalletForMerchant(request);
@@ -60,7 +67,9 @@ public class WalletController {
         }
     }
 
+    // Internal endpoint - used by transaction-service
     @PostMapping("/{walletNumber}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity <WalletSummaryDTO> getWalletSummaryByWalletNumber(@PathVariable String walletNumber) {
         log.info("Fetching wallet summary for wallet {}", walletNumber);
         WalletSummaryDTO walletSummaryDTO = walletService.getWalletSummaryByWalletNumber(walletNumber);
@@ -68,18 +77,18 @@ public class WalletController {
         return ResponseEntity.ok(walletSummaryDTO);
     }
 
-
-
-
-
+    // LOT 1: Get Wallet Details - Owner or ADMIN
     @GetMapping("/{walletNumber}")
+    @PreAuthorize("@walletSecurity.canView(#walletNumber)")
     public ResponseEntity<WalletDTO> getWallet(@PathVariable String walletNumber) {
         log.info("Fetching wallet: {}", walletNumber);
         WalletDTO wallet = walletService.getWalletByNumber(walletNumber);
         return ResponseEntity.ok(wallet);
     }
 
+    // Get Wallet by ID - ADMIN only (internal ID exposure)
     @GetMapping("/id/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> getWalletById(@PathVariable Long id) {
         log.info("Fetching wallet by ID: {}", id);
         WalletDTO wallet = walletService.getWalletById(id);
@@ -94,16 +103,20 @@ public class WalletController {
 //    }
 
 
+    // LOT 1: Get Wallet Summary - Owner or ADMIN
     @GetMapping("/user/{userId}/summary")
+    @PreAuthorize("hasRole('ADMIN') or #userId == principal")
     public ResponseEntity<WalletSummaryDTO> getWalletSummary(@PathVariable Long userId) {
         log.info("Fetching wallet summary for user: {}", userId);
         WalletSummaryDTO summary = walletService.getWalletSummary(userId);
         return ResponseEntity.ok(summary);
     }
 
-    // ========== Gestion du statut ==========
+    // ========== Gestion du statut (ADMIN only) ==========
 
+    // LOT 1: Freeze Wallet - ADMIN only
     @PutMapping("/{walletNumber}/freeze")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> freezeWallet(
             @PathVariable String walletNumber,
             @Valid @RequestBody FreezeWalletRequest request) {
@@ -112,7 +125,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // LOT 1: Unfreeze Wallet - ADMIN only
     @PutMapping("/{walletNumber}/unfreeze")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> unfreezeWallet(
             @PathVariable String walletNumber,
             @RequestParam String unfrozenBy,
@@ -122,7 +137,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // LOT 1: Suspend Wallet - ADMIN only
     @PutMapping("/{walletNumber}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> suspendWallet(
             @PathVariable String walletNumber,
             @RequestParam String reason,
@@ -132,7 +149,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // LOT 1: Activate Wallet - ADMIN only
     @PutMapping("/{walletNumber}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> activateWallet(
             @PathVariable String walletNumber,
             @RequestParam String activatedBy) {
@@ -141,7 +160,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // LOT 1: Close Wallet - ADMIN only
     @PutMapping("/{walletNumber}/close")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> closeWallet(
             @PathVariable String walletNumber,
             @RequestParam String closedBy,
@@ -151,9 +172,11 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
-    // ========== Gestion des soldes ==========
+    // ========== Gestion des soldes (Internal - ADMIN only) ==========
 
+    // Internal: Credit Wallet - ADMIN only
     @PostMapping("/{walletId}/credit")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> creditWallet(
             @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
@@ -162,7 +185,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // Internal: Debit Wallet - ADMIN only
     @PostMapping("/{walletId}/debit")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> debitWallet(
             @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
@@ -171,7 +196,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // Internal: Block Amount - ADMIN only
     @PostMapping("/{walletId}/block")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> blockAmount(
             @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
@@ -180,7 +207,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // Internal: Unblock Amount - ADMIN only
     @PostMapping("/{walletId}/unblock")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> unblockAmount(
             @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
@@ -189,7 +218,9 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    // Internal: Release Blocked Amount - ADMIN only
     @PostMapping("/{walletId}/release-blocked")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> releaseBlockedAmount(
             @PathVariable Long walletId,
             @Valid @RequestBody BalanceOperationRequest request) {
@@ -199,9 +230,11 @@ public class WalletController {
     }
 
 
-    // ========== Validation de transaction ==========
+    // ========== Validation de transaction (Internal) ==========
 
+    // Internal: Validate Transaction - Used by transaction-service
     @PostMapping("/validate-transaction")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TransactionValidationResponse> validateTransaction(
             @Valid @RequestBody TransactionValidationRequest request) {
         log.info("Validating transaction for wallet: {}", request.getWalletNumber());
@@ -211,7 +244,9 @@ public class WalletController {
 
     // ========== Gestion des limites ==========
 
+    // LOT 3: Update Wallet Limits - ADMIN only (can force limits on any wallet)
     @PutMapping("/{walletNumber}/limits")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WalletDTO> updateLimits(
             @PathVariable String walletNumber,
             @RequestParam(required = false) BigDecimal dailyLimit,
@@ -220,6 +255,9 @@ public class WalletController {
         WalletDTO wallet = walletService.updateLimits(walletNumber, dailyLimit, monthlyLimit);
         return ResponseEntity.ok(wallet);
     }
+
+    // LOT 3: Get Wallet Limits - Owner or ADMIN
+    
 
     // ========== Utilitaires ==========
     @GetMapping("/{walletNumber}/has-balance")
@@ -301,4 +339,20 @@ public class WalletController {
 //                    .body("Transfer failed: " + e.getMessage());
 //        }
 //    }
+
+    /**
+     * Transfert d'argent entre deux wallets (Lot 2).
+     */
+    @PostMapping("/transfer")
+    @PreAuthorize("hasAnyRole('USER','MERCHANT','ADMIN')")
+    public ResponseEntity<Void> transfer(@Valid @RequestBody TransferRequest request) {
+        try {
+            walletService.transfer(request);
+            log.info("Transfer successful from {} to {} amount {}", request.getSenderWalletNumber(), request.getReceiverWalletNumber(), request.getAmount());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Transfer failed from {} to {}: {}", request.getSenderWalletNumber(), request.getReceiverWalletNumber(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
 }

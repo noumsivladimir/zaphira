@@ -15,7 +15,6 @@ public class UserEventPublisher {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private static final String USER_EVENTS_TOPIC = "user-registered";
-    private static final String KYC_EVENTS_TOPIC = "kyc-events";
 
     public void publishUserRegisteredEvent(User user) {
         try {

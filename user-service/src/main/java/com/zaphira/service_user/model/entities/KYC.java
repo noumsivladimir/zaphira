@@ -38,6 +38,7 @@ public class KYC {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private KYCStatus kycStatus = KYCStatus.NOT_SUBMITTED;
 
     @Enumerated(EnumType.STRING)
@@ -96,7 +97,8 @@ public class KYC {
     private String rejectedBy;
 
     @Column(nullable = false)
-    private Integer resubmissionCount = (Integer) 0;
+    @Builder.Default
+    private Integer resubmissionCount = 0;
 
     @Column
     private LocalDateTime lastResubmittedAt;

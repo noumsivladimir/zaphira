@@ -34,6 +34,7 @@ public class WalletPermission {
     private PermissionType permissionType;
 
     @Column(name = "enabled", nullable = false)
+    @Builder.Default
     private Boolean enabled = true;
 
     @Column(name = "max_amount")
@@ -43,6 +44,7 @@ public class WalletPermission {
     private BigDecimal dailyLimit;
 
     @Column(name = "requires_approval")
+    @Builder.Default
     private Boolean requiresApproval = false;
 
     private LocalDateTime createdAt;

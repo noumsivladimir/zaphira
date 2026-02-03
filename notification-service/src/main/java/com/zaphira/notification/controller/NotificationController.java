@@ -6,11 +6,9 @@ import com.zaphira.notification.service.UserServiceClient;
 import com.zaphira.notification.service.TransactionServiceClient;
 import com.zaphira.notification.service.VerificationService;
 import com.zaphira.notification.service.NotificationEventPublisher;
-import com.zaphira.notification.service.OtpService;
 import com.zaphira.notification.service.SmsService;
 import com.zaphira.notification.repository.VerificationTokenRepository;
-import com.zaphira.notification.repository.VerificationTokenRepository;
-import com.zaphira.common.model.enums.OtpPurpose;
+
 import com.zaphira.common.dto.TransactionDTO;
 import com.zaphira.common.model.enums.AccountStatus;
 
@@ -37,7 +35,6 @@ public class NotificationController {
     private final Optional<NotificationEventPublisher> notificationEventPublisher;
     private final SmsService smsService;
     private final VerificationTokenRepository tokenRepository;
-    private final OtpService otpService;
 
     /**
      * Envoie une notification de transaction par email
@@ -212,7 +209,6 @@ public class NotificationController {
         try {
             String phoneNumber = (String) payload.get("phoneNumber");
             String otp = (String) payload.get("otp");
-            String purpose = (String) payload.get("purpose");
             Integer expiresInMinutes = (Integer) payload.get("expiresInMinutes");
 
             if (phoneNumber == null || otp == null) {
@@ -345,25 +341,5 @@ public class NotificationController {
             return "****";
         }
         return "*".repeat(Math.max(0, phoneNumber.length() - 4)) + phoneNumber.substring(phoneNumber.length() - 4);
-    }
-
-    /**
-     * Masque un email pour les logs (garde seulement le domaine)
-     */
-    private String maskEmail(String email) {
-        if (email == null || !email.contains("@")) {
-            return "****";
-        }
-        String[] parts = email.split("@");
-        if (parts.length != 2) {
-            return "****";
-        }
-        String username = parts[0];
-        String domain = parts[1];
-
-        if (username.length() <= 2) {
-            return "**@" + domain;
-        }
-        return username.charAt(0) + "*".repeat(username.length() - 2) + username.charAt(username.length() - 1) + "@" + domain;
     }
 }

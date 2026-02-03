@@ -10,29 +10,51 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transaction_authorizations")
-@Getter @Setter
+@Getter
+@Setter
 public class TransactionAuthorization {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @OneToOne(optional = false)
     @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 
-    private boolean required;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "method", nullable = false)
+    private AuthorizationMethod method;
 
-    private Integer requiredLevel;
+    @Column(name = "challenge_code")
+    private String challengeCode;
 
     @Enumerated(EnumType.STRING)
-    private AuthorizationMethod requestedMethod;
-
-    @Enumerated(EnumType.STRING)
-    private AuthorizationMethod actualMethod;
-
-    private LocalDateTime authorizedAt;
-
-    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private AuthorizationStatus status;
+
+    @Column(name = "requested_at", nullable = false)
+    private LocalDateTime requestedAt;
+
+    @Column(name = "requested_by")
+    private String requestedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "approved_by")
+    private String approvedBy;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
+
+    @PrePersist
+    void onCreate() {
+        if (requestedAt == null) {
+            requestedAt = LocalDateTime.now();
+        }
+    }
 }

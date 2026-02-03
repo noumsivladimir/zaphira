@@ -419,7 +419,7 @@ public class UserRegistrationServiceImpl implements UsersRegistrationService{
 
         // 4. Send email verification OTP automatically after account activation
         try {
-            String emailVerificationCode = otpService.generateAndSendOtp(
+            otpService.generateAndSendOtp(
                 null, // no phone number for email
                 activatedUser.getEmail(), // email address
                 OtpPurpose.REGISTRATION
@@ -475,7 +475,7 @@ public class UserRegistrationServiceImpl implements UsersRegistrationService{
         }
 
         // 3. Generate and send OTP via OtpService (which uses NotificationService)
-        String generatedOtp = otpService.generateAndSendOtp(
+        otpService.generateAndSendOtp(
             user.getPhoneNumber(),
             null,
             OtpPurpose.REGISTRATION
@@ -510,7 +510,7 @@ public class UserRegistrationServiceImpl implements UsersRegistrationService{
         }
 
         // 3. Generate OTP for email verification
-        String generatedOtp = otpService.generateAndSendOtp(
+        otpService.generateAndSendOtp(
             null, // no phone number
             user.getEmail(), // email address
             OtpPurpose.REGISTRATION

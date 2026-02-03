@@ -43,6 +43,9 @@ public class AdminPermissionService {
         switch (admin.getAdminLevel()) {
             case SUPER_ADMIN -> permissions.addAll(superAdminPermissions());
             case SENIOR -> permissions.addAll(seniorPermissions());
+            case STANDARD -> {
+                // Standard admins only have base permissions
+            }
         }
 
         return permissions;

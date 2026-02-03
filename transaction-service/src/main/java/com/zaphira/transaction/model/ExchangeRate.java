@@ -1,7 +1,6 @@
 package com.zaphira.transaction.model;
 
 import com.zaphira.transaction.model.enums.CurrencyCode;
-import com.zaphira.transaction.model.enums.SettlementStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

@@ -2,7 +2,7 @@ package com.zaphira.wallet.controller;
 
 
 import com.zaphira.wallet.models.entities.WalletPermission;
-import com.zaphira.wallet.repository.WalletPermissionRepository;
+
 import com.zaphira.wallet.service.WalletPermissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class WalletPermissionController {
     private final WalletPermissionService walletPermissionService;
-    private final WalletPermissionRepository walletPermissionRepository;
+    
 
     @PostMapping("/id/{id}")
     public ResponseEntity<WalletPermission> addWalletPermission(@PathVariable Long id  ) {

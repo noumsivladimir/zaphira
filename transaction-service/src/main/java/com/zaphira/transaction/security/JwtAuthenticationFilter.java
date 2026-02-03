@@ -8,11 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             AuthenticatedUser au = (AuthenticatedUser) existingAuth.getPrincipal();
             request.setAttribute("userId", au.getId());
             request.setAttribute("userEmail", au.getEmail());
+            request.setAttribute("userRoles", au.getRoles());
             log.info("SecurityContext pre-populated for request {} userId={}", request.getRequestURI(), au.getId());
             filterChain.doFilter(request, response);
             return;
@@ -43,6 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.extractEmail(token);
                 Long userId = jwtUtil.extractUserId(token);
+                List<String> roles = jwtUtil.extractRoles(token);
 
                 // Require userId claim to be present in the token.
                 if (userId == null) {
@@ -52,15 +57,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         return;
                     }
                 } else {
-                    AuthenticatedUser principal = new AuthenticatedUser(userId, email);
+                    List<SimpleGrantedAuthority> authorities = roles == null
+                            ? Collections.emptyList()
+                            : roles.stream()
+                                    .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                                    .map(SimpleGrantedAuthority::new)
+                                    .collect(Collectors.toList());
+
+                    AuthenticatedUser principal = new AuthenticatedUser(userId, email, roles);
 
                     UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList());
+                            new UsernamePasswordAuthenticationToken(principal, null, authorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
                     request.setAttribute("userId", userId);
                     request.setAttribute("userEmail", email);
+                    request.setAttribute("userRoles", roles);
                     log.info("Authenticated request to {} for userId={} email={}", request.getRequestURI(), userId, email);
                 }
             } else {

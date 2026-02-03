@@ -37,6 +37,7 @@ public enum TransactionType {
     TRANSFER("Transfert", "Transfert entre comptes"),
     WITHDRAWAL("Retrait", "Retrait d'argent"),
     DEPOSIT("Dépôt", "Dépôt d'argent"),
+    MERCHANT_PAYMENT("Paiement Marchand", "Paiement chez un commerçant"),
     REFUND("Remboursement", "Remboursement d'une transaction"),
     FEE("Frais", "Frais de service"),
     PAYMENT("Paiement", "Paiement d'un service"),

@@ -2,7 +2,7 @@ package com.zaphira.service_user.services;
 
 import com.zaphira.common.event.UserRegisteredEvent;
 import com.zaphira.common.event.WalletCreatedEvent;
-import com.zaphira.service_user.dto.event.UserEventPublisher;
+
 import com.zaphira.service_user.dto.request.*;
 import com.zaphira.service_user.dto.response.*;
 import com.zaphira.service_user.exception.UserAlreadyExistsException;
@@ -15,8 +15,8 @@ import com.zaphira.service_user.model.enums.AccountStatus;
 import com.zaphira.service_user.model.enums.AdminLevel;
 import com.zaphira.service_user.model.enums.OtpPurpose;
 import com.zaphira.service_user.repository.*;
-import com.zaphira.service_user.util.IpUtils;
-import jakarta.servlet.http.HttpServletRequest;
+
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
     private final MerchantUserRepository merchantUserRepository;
     private final WalletResponseListener walletResponseListener;
     private final PinService pinService;
-    private final IpUtils ipUtils;
+    
     private final OtpService otpService;
     private final OtpCodeRepository otpCodeRepository;
 
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
 
         validateUserDoesNotExist(request.getPhoneNumber(), request.getEmail());
 
-        HttpServletRequest httpServletRequest = null;
+        
 
         RegularUser user = RegularUser.builder()
                 .email(request.getEmail())
@@ -231,7 +231,7 @@ public class UserServiceImpl implements UserService {
         log.debug("Fetching user by Wallet Number: {}", walletId);
         User user = findUserEntityByWalletId(walletId);
         List <UserSecurityQuestionResponse > userSecurityQuestionResponses = findSecurityQuestionByWalletId(walletId);
-        List <UserSecurityQuestionResponse > answers ;
+        
 //        answers.stream()
 //                .map( userSecurityAnswers -> UserSecurityQuestionResponse.builder()
 //                        .walletId(user.getWalletId())
@@ -486,7 +486,7 @@ public class UserServiceImpl implements UserService {
             }
 
             // Générer et envoyer l'OTP pour le reset PIN
-            String otpCode = otpService.generateAndSendOtp(request.getPhoneNumber(), OtpPurpose.PIN_RESET);
+            
 
             log.info("PIN reset OTP sent successfully for wallet: {}", request.getWalletId());
 
@@ -847,26 +847,6 @@ private String maskPhoneNumber(String phoneNumber) {
         return "****";
     }
     return "*".repeat(Math.max(0, phoneNumber.length() - 4)) + phoneNumber.substring(phoneNumber.length() - 4);
-}
-
-/**
- * Masque un email pour les logs (garde seulement le domaine)
- */
-private String maskEmail(String email) {
-    if (email == null || !email.contains("@")) {
-        return "****";
-    }
-    String[] parts = email.split("@");
-    if (parts.length != 2) {
-        return "****";
-    }
-    String username = parts[0];
-    String domain = parts[1];
-    
-    if (username.length() <= 2) {
-        return "**@" + domain;
-    }
-    return username.charAt(0) + "*".repeat(username.length() - 2) + username.charAt(username.length() - 1) + "@" + domain;
 }
 
 }

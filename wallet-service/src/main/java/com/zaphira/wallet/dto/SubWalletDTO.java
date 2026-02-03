@@ -5,10 +5,51 @@ import com.zaphira.common.model.enums.Currency;
 import java.math.BigDecimal;
 
 public class SubWalletDTO {
-    private String subWalletId;
-    private String subWalletName;
-    //private Integer totalSubWallets;
-    //private List<SubWallet> wallets;
-    private BigDecimal balance;
-    private Currency primaryCurrency;
+    private Long id;
+    private Currency currency;
+    private BigDecimal availableBalance;
+    private BigDecimal blockedBalance;
+    private BigDecimal totalBalance;
+
+    // Getters and Setters
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
+    }
+
+    public BigDecimal getAvailableBalance() {
+        return availableBalance;
+    }
+
+    public void setAvailableBalance(BigDecimal availableBalance) {
+        this.availableBalance = availableBalance;
+    }
+
+    public BigDecimal getBlockedBalance() {
+        return blockedBalance;
+    }
+
+    public void setBlockedBalance(BigDecimal blockedBalance) {
+        this.blockedBalance = blockedBalance;
+    }
+
+    public BigDecimal getTotalBalance() {
+        return totalBalance;
+    }
+
+    public void setTotalBalance(BigDecimal totalBalance) {
+        this.totalBalance = totalBalance;
+    }
 }

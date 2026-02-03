@@ -141,4 +141,11 @@ public class TransactionAuditLog {
      */
     @Column(name = "request_id")
     private String requestId;
+
+    @PrePersist
+    void onCreate() {
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();
+        }
+    }
 }

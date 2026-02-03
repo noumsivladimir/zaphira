@@ -1,6 +1,5 @@
 package com.zaphira.notification.listener;
 
-import com.zaphira.common.event.EmailSendEvent;
 import com.zaphira.notification.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

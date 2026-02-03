@@ -51,6 +51,12 @@ public class ScheduledTransaction {
     @Column(nullable = false)
     private String requestedBy;
 
+    @Column(name = "requester_user_id")
+    private Long requesterUserId;
+
+    @Column(name = "requester_roles")
+    private String requesterRoles;
+
     @Column(nullable = false)
     private LocalDateTime scheduledFor;
 

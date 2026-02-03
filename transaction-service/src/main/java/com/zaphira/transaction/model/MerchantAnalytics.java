@@ -46,21 +46,27 @@ public class MerchantAnalytics {
     // ============================================================
     
     @Column(name = "total_transaction_count", nullable = false)
+    @Builder.Default
     private Long totalTransactionCount = 0L;
     
     @Column(name = "total_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal totalVolume = BigDecimal.ZERO;
     
     @Column(name = "net_revenue", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal netRevenue = BigDecimal.ZERO;
     
     @Column(name = "gross_revenue", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal grossRevenue = BigDecimal.ZERO;
     
     @Column(name = "total_fees_paid", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal totalFeesPaid = BigDecimal.ZERO;
     
     @Column(name = "average_transaction_value", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal averageTransactionValue = BigDecimal.ZERO;
     
     // ============================================================
@@ -68,21 +74,27 @@ public class MerchantAnalytics {
     // ============================================================
     
     @Column(name = "settlement_count", nullable = false)
+    @Builder.Default
     private Long settlementCount = 0L;
     
     @Column(name = "settlement_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal settlementVolume = BigDecimal.ZERO;
     
     @Column(name = "successful_settlements", nullable = false)
+    @Builder.Default
     private Long successfulSettlements = 0L;
     
     @Column(name = "failed_settlements", nullable = false)
+    @Builder.Default
     private Long failedSettlements = 0L;
     
     @Column(name = "settlement_success_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal settlementSuccessRate = BigDecimal.ZERO;
     
     @Column(name = "settlement_delay_average", nullable = false)
+    @Builder.Default
     private Long settlementDelayAverageHours = 0L;
     
     // ============================================================
@@ -90,21 +102,27 @@ public class MerchantAnalytics {
     // ============================================================
     
     @Column(name = "dispute_count", nullable = false)
+    @Builder.Default
     private Long disputeCount = 0L;
     
     @Column(name = "dispute_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal disputeVolume = BigDecimal.ZERO;
     
     @Column(name = "dispute_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal disputeRate = BigDecimal.ZERO;
     
     @Column(name = "resolved_disputes", nullable = false)
+    @Builder.Default
     private Long resolvedDisputes = 0L;
     
     @Column(name = "merchant_won_disputes", nullable = false)
+    @Builder.Default
     private Long merchantWonDisputes = 0L;
     
     @Column(name = "chargeback_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal chargebackRate = BigDecimal.ZERO;
     
     // ============================================================
@@ -112,12 +130,15 @@ public class MerchantAnalytics {
     // ============================================================
     
     @Column(name = "transaction_success_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal transactionSuccessRate = BigDecimal.ZERO;
     
     @Column(name = "reversal_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal reversalRate = BigDecimal.ZERO;
     
     @Column(name = "average_response_time_ms", nullable = false)
+    @Builder.Default
     private Long averageResponseTimeMs = 0L;
     
     // ============================================================
@@ -128,6 +149,7 @@ public class MerchantAnalytics {
     private String merchantTier; // BRONZE, SILVER, GOLD, PLATINUM
     
     @Column(name = "risk_score", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal riskScore = BigDecimal.ZERO;
     
     @Column(name = "compliance_status", length = 20)
@@ -141,9 +163,11 @@ public class MerchantAnalytics {
     private String primaryCurrency;
     
     @Column(name = "currency_count", nullable = false)
+    @Builder.Default
     private Integer currencyCount = 0;
     
     @Column(name = "country_count", nullable = false)
+    @Builder.Default
     private Integer countryCount = 0;
     
     // ============================================================

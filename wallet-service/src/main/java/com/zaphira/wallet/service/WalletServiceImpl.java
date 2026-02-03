@@ -3,6 +3,7 @@ package com.zaphira.wallet.service;
 import com.zaphira.common.dto.WalletSummaryDTO;
 import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.dto.WalletDTO;
+import com.zaphira.wallet.dto.TransferRequest;
 import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
@@ -13,18 +14,21 @@ import com.zaphira.wallet.models.entities.WalletStatusHistory;
 import com.zaphira.wallet.models.enums.WalletStatus;
 import com.zaphira.wallet.models.enums.WalletType;
 import com.zaphira.wallet.repository.WalletRepository;
-import com.zaphira.wallet.repository.WalletSubWalletRepository;
+
+import com.zaphira.wallet.security.AuthenticatedUser;
+import com.zaphira.wallet.exception.UnauthorizedWalletAccessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+
 
 
 @Slf4j
@@ -35,7 +39,7 @@ public class WalletServiceImpl implements WalletService{
     private final WalletRepository walletRepository;
     private final WalletQueryService walletQueryService;
     private final WalletMapper walletMapper;
-    private final WalletSubWalletRepository walletSubWalletRepository;
+    
     @Lazy
     private final WalletHierarchyService walletHierarchyService;
    // private final UserService userServiceClient;
@@ -135,13 +139,6 @@ public class WalletServiceImpl implements WalletService{
         int totalWallets = walletHierarchyService.managingWallet(wallet.getId()).size() + 1;
 
 
-        WalletSummaryDTO walletSummaryDTO = WalletSummaryDTO.builder()
-                .walletId(walletId)
-
-                .build();
-
-
-
 //        List<Wallet> wallets = walletRepository.findByUserId(userId);
 //
 //        BigDecimal totalBalance = wallets.stream()
@@ -154,16 +151,19 @@ public class WalletServiceImpl implements WalletService{
                 .totalBalanceAllWallets(BigDecimal.ZERO)
                 .totalWallets(totalWallets)
                 .currency(Currency.XAF)
+            .merchant(wallet.getMerchantCode() != null)
                 .build();
     }
 
     @Override
     public WalletSummaryDTO getWalletSummaryByWalletNumber(String walletNumber) {
+        Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
         return WalletSummaryDTO.builder()
                 .walletNumber(walletNumber)
-                .userId(walletQueryService.findWalletByNumber(walletNumber).getUserId())
-                .walletId(walletQueryService.findWalletByNumber(walletNumber).getId())
+            .userId(wallet.getUserId())
+            .walletId(wallet.getId())
                 .currency(Currency.XAF)
+            .merchant(wallet.getMerchantCode() != null)
                 .build();
     }
 
@@ -172,7 +172,10 @@ public class WalletServiceImpl implements WalletService{
 
         log.info("Freezing wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         if (WalletStatus.FROZEN.equals(wallet.getStatus())) {
             throw new InvalidOperationException("Le wallet est déjà gelé");
@@ -208,7 +211,10 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO unfreezeWallet(String walletNumber, String unfrozenBy, String notes) {
         log.info("Unfreezing wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         if (!WalletStatus.FROZEN.equals(wallet.getStatus())) {
             throw new InvalidOperationException("Le wallet n'est pas gelé");
@@ -239,7 +245,10 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO suspendWallet(String walletNumber, String reason, String suspendedBy) {
         log.info("Suspending wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         if (WalletStatus.CLOSED.equals(wallet.getStatus())) {
             throw new InvalidOperationException("Impossible de suspendre un wallet fermé");
@@ -266,7 +275,10 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO activateWallet(String walletNumber, String activatedBy) {
         log.info("Activating wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         if (WalletStatus.CLOSED.equals(wallet.getStatus())) {
             throw new InvalidOperationException("Impossible d'activer un wallet fermé");
@@ -294,7 +306,10 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO closeWallet(String walletNumber, String closedBy, String reason) {
         log.info("Closing wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         // Vérifier que le solde est à zéro
         if (wallet.getTotalBalance().compareTo(BigDecimal.ZERO) != 0) {
@@ -323,14 +338,13 @@ public class WalletServiceImpl implements WalletService{
     @Transactional
     public WalletDTO creditWallet(Long walletId, BalanceOperationRequest request) {
         log.info("Crediting wallet: {} with amount: {}", walletId, request.getAmount());
-
+        AuthenticatedUser user = requireUser();
 
         Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
-                () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
+            () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
         );
+        enforceWalletOwnership(wallet, user);
         log.info("Crediting wallet number : {} with amount: {}", wallet.getWalletNumber(), request.getAmount());
-
-        log.info("Test");
 
         // Vérifier que le wallet peut recevoir des fonds
         if (!wallet.getStatus().canReceive()) {
@@ -353,9 +367,12 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO debitWallet(Long walletId, BalanceOperationRequest request) {
         log.info("Debiting wallet: {} with amount: {}", walletId, request.getAmount());
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
                 () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
         );
+        enforceWalletOwnership(wallet, user);
 
         // Vérifications
         if (!wallet.canTransact()) {
@@ -387,9 +404,11 @@ public class WalletServiceImpl implements WalletService{
         log.info("Blocking amount in wallet: {} amount: {}", walletId, request.getAmount());
 
         try {
+            AuthenticatedUser user = requireUser();
             Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
                     () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
             );
+            enforceWalletOwnership(wallet, user);
 
             if (!wallet.canTransact()) {
                 throw new WalletInactiveException("Le wallet ne peut pas effectuer de transactions");
@@ -420,9 +439,11 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO unblockAmount(Long walletId, BalanceOperationRequest request) {
         log.info("Unblocking amount in wallet: {} amount: {}", walletId, request.getAmount());
 
+        AuthenticatedUser user = requireUser();
         Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
                 () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
         );
+        enforceWalletOwnership(wallet, user);
 
         wallet.unblockAmount(request.getAmount());
 
@@ -438,9 +459,11 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO releaseBlockedAmount(Long  walletId, BalanceOperationRequest request) {
         log.info("Releasing blocked amount from wallet: {} amount: {}", walletId, request.getAmount());
 
+        AuthenticatedUser user = requireUser();
         Wallet wallet = walletRepository.findByWalletIdWithLock(walletId).orElseThrow(
                 () -> new WalletNotFoundException("Wallet not found with id: " + walletId)
         );
+        enforceWalletOwnership(wallet, user);
         wallet.releaseBlockedAmount(request.getAmount());
 
         Wallet savedWallet = walletRepository.save(wallet);
@@ -448,6 +471,77 @@ public class WalletServiceImpl implements WalletService{
                 savedWallet.getAvailableBalance(), savedWallet.getBlockedBalance());
 
         return walletMapper.toDTO(savedWallet);
+    }
+
+    @Override
+    @Transactional
+    public void transfer(TransferRequest request) {
+        log.info("Transferring from {} to {} amount {}", request.getSenderWalletNumber(), request.getReceiverWalletNumber(), request.getAmount());
+
+        AuthenticatedUser user = requireUser();
+
+        if (request.getSenderWalletNumber().equals(request.getReceiverWalletNumber())) {
+            throw new InvalidOperationException("Sender and receiver wallets must differ");
+        }
+
+        Wallet sender = walletQueryService.findWalletByNumberWithLock(request.getSenderWalletNumber());
+        Wallet receiver = walletQueryService.findWalletByNumberWithLock(request.getReceiverWalletNumber());
+
+        if (!hasRole(user, "ADMIN")) {
+            enforceWalletOwnership(sender, user);
+        }
+
+        if (!sender.canTransact()) {
+            throw new WalletInactiveException("Sender wallet cannot transact. Status: " + sender.getStatus());
+        }
+        if (!receiver.getStatus().canReceive()) {
+            throw new WalletInactiveException("Receiver wallet cannot receive funds. Status: " + receiver.getStatus());
+        }
+
+        if (!sender.hasAvailableBalance(request.getAmount())) {
+            throw new InsufficientBalanceException("Solde insuffisant. Disponible: " + sender.getAvailableBalance());
+        }
+
+        checkLimits(sender, request.getAmount());
+
+        sender.debit(request.getAmount());
+        sender.setDailySpent(sender.getDailySpent().add(request.getAmount()));
+        sender.setMonthlySpent(sender.getMonthlySpent().add(request.getAmount()));
+
+        receiver.credit(request.getAmount());
+
+        walletRepository.save(sender);
+        walletRepository.save(receiver);
+
+        log.info("Transfer completed. Sender balance: {}, Receiver balance: {}", sender.getAvailableBalance(), receiver.getAvailableBalance());
+    }
+
+    private AuthenticatedUser requireUser() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser au) {
+            return au;
+        }
+        throw new UnauthorizedWalletAccessException("Unauthenticated request");
+    }
+
+    private boolean hasRole(AuthenticatedUser user, String role) {
+        if (user.getRoles() == null) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .anyMatch(r -> r.equalsIgnoreCase(role) || r.equalsIgnoreCase("ROLE_" + role));
+    }
+
+    private void enforceWalletOwnership(Wallet wallet, AuthenticatedUser user) {
+        if (wallet.getUserId() == null) {
+            throw new UnauthorizedWalletAccessException("Wallet ownership cannot be verified");
+        }
+        if (hasRole(user, "ADMIN")) {
+            return;
+        }
+        if (!wallet.getUserId().equals(user.getId())) {
+            throw new UnauthorizedWalletAccessException("Forbidden: wallet not owned by requester");
+        }
     }
 
     @Override
@@ -535,7 +629,10 @@ public class WalletServiceImpl implements WalletService{
     public WalletDTO updateLimits(String walletNumber, BigDecimal dailyLimit, BigDecimal monthlyLimit) {
         log.info("Updating limits for wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
+
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
 
         if (dailyLimit != null) {
             wallet.setDailyLimit(dailyLimit);
@@ -554,7 +651,9 @@ public class WalletServiceImpl implements WalletService{
     @Transactional(readOnly = true)
     @Override
     public boolean hasAvailableBalance(String walletNumber, BigDecimal amount) {
+        AuthenticatedUser user = requireUser();
         Wallet wallet = walletQueryService.findWalletByNumber(walletNumber);
+        enforceWalletOwnership(wallet, user);
         return wallet.hasAvailableBalance(amount);
     }
 
@@ -573,7 +672,9 @@ public class WalletServiceImpl implements WalletService{
 
         log.info("Recalculating balance for wallet: {}", walletNumber);
 
+        AuthenticatedUser user = requireUser();
         Wallet wallet = walletQueryService.findWalletByNumberWithLock(walletNumber);
+        enforceWalletOwnership(wallet, user);
         wallet.calculateTotalBalance();
 
         walletRepository.save(wallet);
@@ -678,9 +779,6 @@ public class WalletServiceImpl implements WalletService{
     //Utilities functions
 
 
-    private String generateMerchantCode() {
-        int value = ThreadLocalRandom.current().nextInt(0, 1_000_000);
-        return String.format("%06d", value);
-    }
+  
 
 }

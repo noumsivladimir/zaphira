@@ -21,4 +21,5 @@ public class WalletSummaryDTO {
     private List <String> subWalletsName;
     private BigDecimal totalBalanceAllWallets;
     private Currency currency;
+    private Boolean merchant;
 }

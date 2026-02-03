@@ -69,12 +69,12 @@ public class AuthorizationRequestService {
 
     private String generateChallengeCode(AuthorizationMethod method) {
         if (method == AuthorizationMethod.OTP) {
-            return RandomStringUtils.randomNumeric(6);
+            return RandomStringUtils.secure().nextNumeric(6);
         }
         if (method == AuthorizationMethod.PIN) {
-            return RandomStringUtils.randomNumeric(4);
+            return RandomStringUtils.secure().nextNumeric(4);
         }
-        return RandomStringUtils.randomAlphanumeric(8).toUpperCase();
+        return RandomStringUtils.secure().nextAlphanumeric(8).toUpperCase();
     }
 }
 

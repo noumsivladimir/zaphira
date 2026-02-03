@@ -2,14 +2,13 @@ package com.zaphira.transaction.service.routing;
 
 import com.zaphira.transaction.dto.requests.TransactionRequest;
 import com.zaphira.transaction.model.enums.TransactionChannel;
-import com.zaphira.transaction.model.enums.TransactionType;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RoutingService {
 
     public String determineRoute(TransactionRequest request) {
-        TransactionType type = request.getType();
+        
         TransactionChannel channel = request.getChannel();
 //
 //        if (type == TransactionType.BANK_TRANSFER) {

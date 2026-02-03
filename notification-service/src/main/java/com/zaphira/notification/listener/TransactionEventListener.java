@@ -2,7 +2,6 @@ package com.zaphira.notification.listener;
 
 import com.zaphira.common.event.TransactionCreatedEvent;
 import com.zaphira.notification.service.EmailService;
-import com.zaphira.notification.service.SmsService;
 //import com.zaphira.notification.service.TelegramService;
 import com.zaphira.notification.service.UserServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 public class TransactionEventListener {
 
     private final EmailService emailService;
-    private final SmsService smsService;
     //private final TelegramService telegramService;
     private final UserServiceClient userServiceClient;
 

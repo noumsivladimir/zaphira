@@ -22,6 +22,7 @@ public class PredefinedSecurityQuestion {
     private String question;
 
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 

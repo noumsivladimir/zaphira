@@ -91,4 +91,6 @@ public class CreateTransactionRequest {
        ========================================================= */
 
     private String metadata;                   // JSON string (risk, geo, tags…)
+    @NotBlank(message = "Currency is required")
+    private String currency;
 }

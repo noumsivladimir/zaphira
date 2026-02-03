@@ -37,9 +37,11 @@ public class OtpCode {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private int attempts = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean consumed = false;
 
@@ -52,6 +54,7 @@ public class OtpCode {
     @Column(name = "phone_number", nullable = true, length = 255)
     private String phoneNumber;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean used = false;
 

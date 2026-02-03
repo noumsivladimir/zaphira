@@ -49,10 +49,11 @@ public class TransactionSettlement {
     
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    private SettlementStatus status;
+    @Builder.Default
+    private SettlementStatus status = SettlementStatus.PENDING;
     
     // Original transaction amount (in original currency)
-    @Column(name = "original_amount", nullable = false, precision = 19, scale = 2)
+    @Column(name = "original_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal originalAmount;
     
     @Column(name = "original_currency", nullable = false)
@@ -60,7 +61,7 @@ public class TransactionSettlement {
     private CurrencyCode originalCurrency;
     
     // Settled amount (in settlement currency - may differ if FX conversion)
-    @Column(name = "settled_amount", nullable = false, precision = 19, scale = 2)
+    @Column(name = "settled_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal settledAmount;
     
     @Column(name = "settlement_currency", nullable = false)
@@ -68,24 +69,24 @@ public class TransactionSettlement {
     private CurrencyCode settlementCurrency;
     
     // FX conversion details
-    @Column(name = "fx_rate", precision = 19, scale = 8)
+    @Column(name = "fx_rate", precision = 19, scale = 6)
     private BigDecimal fxRate;
     
     @Column(name = "fx_rate_provider")
     private String fxRateProvider; // "ECB", "OPENEXCHANGERATES", etc.
     
     // Fee breakdown
-    @Column(name = "fx_fee", precision = 19, scale = 2)
+    @Column(name = "fx_fee", precision = 19, scale = 4)
     private BigDecimal fxFee; // Currency conversion fee
     
-    @Column(name = "service_fee", precision = 19, scale = 2)
+    @Column(name = "service_fee", precision = 19, scale = 4)
     private BigDecimal serviceFee; // Platform service fee
     
-    @Column(name = "total_fees", precision = 19, scale = 2)
+    @Column(name = "total_fees", precision = 19, scale = 4)
     private BigDecimal totalFees;
     
     // Net amount after all deductions
-    @Column(name = "net_amount", precision = 19, scale = 2)
+    @Column(name = "net_amount", precision = 19, scale = 4)
     private BigDecimal netAmount;
     
     @Column(name = "settlement_date")
@@ -118,6 +119,13 @@ public class TransactionSettlement {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = SettlementStatus.PENDING;
+        }
+        if (totalFees == null) {
+            totalFees = (fxFee == null ? BigDecimal.ZERO : fxFee)
+                    .add(serviceFee == null ? BigDecimal.ZERO : serviceFee);
+        }
         if (this.netAmount == null) {
             this.netAmount = calculateNetAmount();
         }

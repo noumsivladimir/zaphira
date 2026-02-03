@@ -161,4 +161,199 @@ public interface TransactionRepository
        ========================= */
 
 	List<Transaction> findByType(TransactionType type);
+
+    /* =========================
+       LOT 4: USER-SCOPED QUERIES
+       ========================= */
+
+    // Find all transactions where user is sender or receiver
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.senderId = :userId OR t.receiverId = :userId
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    // Find user transactions by status
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+          AND t.status = :status
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("status") TransactionStatus status,
+            Pageable pageable
+    );
+
+    // Find user transactions by type
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+          AND t.type = :type
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByUserIdAndType(
+            @Param("userId") Long userId,
+            @Param("type") TransactionType type,
+            Pageable pageable
+    );
+
+    // Find user transactions by status and type
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+          AND t.status = :status
+          AND t.type = :type
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByUserIdAndStatusAndType(
+            @Param("userId") Long userId,
+            @Param("status") TransactionStatus status,
+            @Param("type") TransactionType type,
+            Pageable pageable
+    );
+
+    // Find user transactions by date range, status, and type
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+          AND t.status = :status
+          AND t.type = :type
+          AND t.createdAt BETWEEN :from AND :to
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByUserIdAndStatusAndTypeAndDateRange(
+            @Param("userId") Long userId,
+            @Param("status") TransactionStatus status,
+            @Param("type") TransactionType type,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
+
+    // Find transactions sent by user
+    Page<Transaction> findBySenderId(Long senderId, Pageable pageable);
+
+    // Find transactions sent by user with status
+    Page<Transaction> findBySenderIdAndStatus(Long senderId, TransactionStatus status, Pageable pageable);
+
+    // Find transactions received by user
+    Page<Transaction> findByReceiverId(Long receiverId, Pageable pageable);
+
+    // Find transactions received by user with status
+    Page<Transaction> findByReceiverIdAndStatus(Long receiverId, TransactionStatus status, Pageable pageable);
+
+    /* =========================
+       LOT 4: MERCHANT REPORT QUERIES
+       ========================= */
+
+    // Find merchant transactions by date range
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.createdAt BETWEEN :from AND :to
+        ORDER BY t.createdAt DESC
+    """)
+    List<Transaction> findByReceiverIdAndCreatedAtBetween(
+            @Param("receiverId") Long receiverId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    // Find merchant transactions by date range paginated
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.createdAt BETWEEN :from AND :to
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByReceiverIdAndCreatedAtBetween(
+            @Param("receiverId") Long receiverId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
+
+    // Find merchant transactions by status and date range
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.status = :status
+          AND t.createdAt BETWEEN :from AND :to
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByReceiverIdAndStatusAndCreatedAtBetween(
+            @Param("receiverId") Long receiverId,
+            @Param("status") TransactionStatus status,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
+
+    // Find merchant transactions by status list
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.status IN :statuses
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findByReceiverIdAndStatusIn(
+            @Param("receiverId") Long receiverId,
+            @Param("statuses") List<TransactionStatus> statuses,
+            Pageable pageable
+    );
+
+    // Find merchant transactions by status list (non-paginated)
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.status IN :statuses
+        ORDER BY t.createdAt DESC
+    """)
+    List<Transaction> findByReceiverIdAndStatusIn(
+            @Param("receiverId") Long receiverId,
+            @Param("statuses") List<TransactionStatus> statuses
+    );
+
+    // Find refunds issued by merchant
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        WHERE t.senderId = :senderId
+          AND t.type = :type
+          AND t.createdAt BETWEEN :from AND :to
+        ORDER BY t.createdAt DESC
+    """)
+    Page<Transaction> findBySenderIdAndTypeAndCreatedAtBetween(
+            @Param("senderId") Long senderId,
+            @Param("type") TransactionType type,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
+
+    // Count transactions by receiver and date range
+    @Query("""
+        SELECT COUNT(t)
+        FROM Transaction t
+        WHERE t.receiverId = :receiverId
+          AND t.createdAt BETWEEN :from AND :to
+    """)
+    Long countByReceiverIdAndCreatedAtBetween(
+            @Param("receiverId") Long receiverId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
 }

@@ -32,6 +32,11 @@ spring:
           filters:
             - StripPrefix=1
 
+# JWT Configuration for API Gateway
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:7pBJFFNs9RzeTwTz/NHFY1e1QyFVnDoZbBTG8zsdGHeAsAzmqcxLneWASllVgTbAdgdrS+XhAR9nfg1hPglA3Q==}
+
 eureka:
   client:
     service-url:

@@ -50,24 +50,31 @@ public class UserAnalytics {
     // ============================================================
     
     @Column(name = "transaction_count", nullable = false)
+    @Builder.Default
     private Long transactionCount = 0L;
     
     @Column(name = "transaction_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal transactionVolume = BigDecimal.ZERO;
     
     @Column(name = "successful_transactions", nullable = false)
+    @Builder.Default
     private Long successfulTransactions = 0L;
     
     @Column(name = "failed_transactions", nullable = false)
+    @Builder.Default
     private Long failedTransactions = 0L;
     
     @Column(name = "average_transaction_amount", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal averageTransactionAmount = BigDecimal.ZERO;
     
     @Column(name = "max_transaction_amount", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal maxTransactionAmount = BigDecimal.ZERO;
     
     @Column(name = "min_transaction_amount", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal minTransactionAmount = BigDecimal.ZERO;
     
     // ============================================================
@@ -75,12 +82,15 @@ public class UserAnalytics {
     // ============================================================
     
     @Column(name = "reversal_count", nullable = false)
+    @Builder.Default
     private Long reversalCount = 0L;
     
     @Column(name = "reversal_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal reversalVolume = BigDecimal.ZERO;
     
     @Column(name = "reversal_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal reversalRate = BigDecimal.ZERO;
     
     // ============================================================
@@ -88,12 +98,15 @@ public class UserAnalytics {
     // ============================================================
     
     @Column(name = "dispute_count", nullable = false)
+    @Builder.Default
     private Long disputeCount = 0L;
     
     @Column(name = "dispute_volume", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal disputeVolume = BigDecimal.ZERO;
     
     @Column(name = "dispute_rate", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal disputeRate = BigDecimal.ZERO;
     
     // ============================================================
@@ -101,9 +114,11 @@ public class UserAnalytics {
     // ============================================================
     
     @Column(name = "total_fees_paid", precision = 19, scale = 2)
+    @Builder.Default
     private BigDecimal totalFeesPaid = BigDecimal.ZERO;
     
     @Column(name = "average_fee_percentage", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal averageFeePercentage = BigDecimal.ZERO;
     
     // ============================================================
@@ -114,6 +129,7 @@ public class UserAnalytics {
     private String primaryCurrency;
     
     @Column(name = "currency_count", nullable = false)
+    @Builder.Default
     private Integer currencyCount = 0;
     
     // ============================================================
@@ -121,6 +137,7 @@ public class UserAnalytics {
     // ============================================================
     
     @Column(name = "risk_score", precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal riskScore = BigDecimal.ZERO;
     
     @Column(name = "compliance_status", length = 20)

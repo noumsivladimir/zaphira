@@ -6,7 +6,6 @@ import com.zaphira.common.dto.WalletDTO;
 import com.zaphira.common.model.entities.RegularUser;
 import com.zaphira.common.model.entities.User;
 import com.zaphira.common.model.enums.AccountStatus;
-import com.zaphira.common.model.enums.RoleType;
 import com.zaphira.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

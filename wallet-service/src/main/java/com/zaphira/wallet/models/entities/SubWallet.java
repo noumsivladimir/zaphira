@@ -35,12 +35,16 @@ public class SubWallet {
 //    private Wallet wallet;
 
     @ManyToMany(mappedBy = "subWallets")
+    @Builder.Default
     private List<Wallet> managingWallets = new ArrayList<>();
 
     @OneToMany(mappedBy = "subWallet", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<WalletSubWallet> walletSubWallets = new ArrayList<>();
 
+
+    @Column(name = "account_number", unique = true, length = 20)
+    private String accountNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

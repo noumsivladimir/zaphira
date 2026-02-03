@@ -103,10 +103,6 @@ public class SubWalletMapper {
 
 
     static class SubWalletSummaryDTO{
-
-        private Long id;
-        private String subWalletName;
-        private BigDecimal availableBalance;
-        private List<WalletSummaryDTO> managingWallets;
+   
     }
 }

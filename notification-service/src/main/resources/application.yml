@@ -14,12 +14,23 @@ otp:
 server:
   port: 8089
 
+infra:
+  db:
+    host: ${DB_HOST:192.168.100.4}
+    port: ${DB_PORT:5432}
+
+notification:
+  db:
+    name: ${NOTIFICATION_DB_NAME:zaphira_notifications_db}
+    user: ${NOTIFICATION_DB_USER:zaphira_notification_service}
+    password: ${NOTIFICATION_DB_PASSWORD:NotificationService2026!Secure}
+
 spring:
   # PostgreSQL configuration (same as user-service)
   datasource:
-    url: jdbc:postgresql://192.168.0.122:5432/wallet_db
-    username: postgres
-    password: 1234
+    url: jdbc:postgresql://${infra.db.host}:${infra.db.port}/${notification.db.name}
+    username: ${notification.db.user}
+    password: ${notification.db.password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

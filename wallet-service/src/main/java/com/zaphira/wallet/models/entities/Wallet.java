@@ -73,6 +73,7 @@ public class Wallet {
                     referencedColumnName = "id"
             )
     )
+    @Builder.Default
     private List<SubWallet> subWallets = new ArrayList<>();
 
     // Solde bloqué pour (transactions en attente)
@@ -88,6 +89,7 @@ public class Wallet {
 
     //Permissions en fonction du type de wallet
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private Set<WalletPermission> permissions = new HashSet<>();
 
 
@@ -118,6 +120,7 @@ public class Wallet {
     private Boolean isPrimary = true;
 
     @Version
+    @Builder.Default
     private Long version = 0L;
 
     @Column(name = "frozen_reason")

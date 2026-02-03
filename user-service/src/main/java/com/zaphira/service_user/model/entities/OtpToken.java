@@ -38,9 +38,11 @@ public class OtpToken {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean used = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private int attempts = 0;
 
     private LocalDateTime verifiedAt;

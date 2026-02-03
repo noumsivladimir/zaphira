@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ public class MerchantUser extends User {
     private String businessAddress;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isVerifiedMerchant = false;
 
     @Column
@@ -42,15 +44,19 @@ public class MerchantUser extends User {
     private String verifiedBy;
 
     @Column(precision = 5, scale = 2)
+    @Builder.Default
     private BigDecimal commissionRate = BigDecimal.valueOf(2.5);
 
     @Column(precision = 15, scale = 2)
+    @Builder.Default
     private BigDecimal totalTransactionVolume = BigDecimal.ZERO;
 
     @Column
+    @Builder.Default
     private Integer totalTransactions = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean canAcceptPayments = false;
 
     @Override
