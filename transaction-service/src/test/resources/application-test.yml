@@ -1,0 +1,47 @@
+# Configuration pour les tests
+spring:
+  application:
+    name: transaction-service-test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  h2:
+    console:
+      enabled: true
+      
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        
+  kafka:
+    enabled: false
+    
+  cloud:
+    discovery:
+      enabled: false
+
+# JWT Config for tests
+jwt:
+  secret: test-secret-key-for-unit-tests-must-be-long-enough-for-hmac-sha256
+  expiration: 3600000
+
+# Disable Eureka for tests
+eureka:
+  client:
+    enabled: false
+    
+# Logging
+logging:
+  level:
+    com.zaphira: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.test: DEBUG

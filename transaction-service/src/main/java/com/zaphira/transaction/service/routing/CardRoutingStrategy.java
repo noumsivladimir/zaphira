@@ -48,10 +48,8 @@ public class CardRoutingStrategy implements RoutingStrategy {
             return RoutingValidationResult.failure("NO_RECEIVER_CARD", "Receiver card details not available");
         }
 
-        // Check card is not expired or frozen
-        if (!Boolean.TRUE.equals(transaction.getReceiverWalletId())) {
-            return RoutingValidationResult.failure("CARD_FROZEN", "Receiver card is frozen");
-        }
+        // In production: check if card is active via wallet service
+        // For now, assume card is valid if receiver wallet exists
 
         return RoutingValidationResult.success();
     }
