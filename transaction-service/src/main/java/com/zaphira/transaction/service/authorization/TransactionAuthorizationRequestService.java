@@ -1,7 +1,8 @@
 package com.zaphira.transaction.service.authorization;
 
 import com.zaphira.transaction.config.LimitProperties;
-import com.zaphira.transaction.model.AuthorizationRequest;
+import com.zaphira.transaction.dto.AuthorizationRequest;
+import com.zaphira.transaction.model.entities.TransactionAuthorization;
 import com.zaphira.transaction.model.entities.Transaction;
 import com.zaphira.transaction.model.enums.AuthorizationMethod;
 import com.zaphira.transaction.model.enums.AuthorizationStatus;
@@ -26,45 +27,63 @@ public class TransactionAuthorizationRequestService {
     public AuthorizationRequest createAuthorization(Transaction transaction,
                                                     AuthorizationMethod method,
                                                     String requestedBy) {
-        AuthorizationRequest request = AuthorizationRequest.builder()
-                .transaction(transaction)
-                .method(method)
-                .requestedBy(requestedBy)
-                .status(AuthorizationStatus.PENDING)
-                .challengeCode(generateChallengeCode(method))
-                .expiresAt(LocalDateTime.now().plus(limitProperties.getAuthorization().getExpiry()))
-                .build();
-        return repository.save(request);
+        TransactionAuthorization entity = new TransactionAuthorization();
+        entity.setTransaction(transaction);
+        entity.setMethod(method);
+        entity.setRequestedBy(requestedBy);
+        entity.setStatus(AuthorizationStatus.PENDING);
+        entity.setChallengeCode(generateChallengeCode(method));
+        entity.setExpiresAt(LocalDateTime.now().plus(limitProperties.getAuthorization().getExpiry()));
+        TransactionAuthorization saved = repository.save(entity);
+        return toDto(saved);
     }
 
     public AuthorizationRequest approveAuthorization(Long transactionId,
                                                      AuthorizationMethod method,
                                                      String providedCode,
                                                      String actor) {
-        AuthorizationRequest request = repository
+        TransactionAuthorization entity = repository
                 .findTopByTransactionIdAndStatusOrderByRequestedAtDesc(transactionId, AuthorizationStatus.PENDING)
                 .orElseThrow(() -> new AuthorizationException("No pending authorization request for transaction"));
 
-        if (!request.getMethod().equals(method)) {
+        if (!entity.getMethod().equals(method)) {
             throw new AuthorizationException("Authorization method mismatch");
         }
-        if (request.isExpired()) {
-            request.setStatus(AuthorizationStatus.EXPIRED);
-            repository.save(request);
+        if (entity.getExpiresAt() != null && entity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            entity.setStatus(AuthorizationStatus.EXPIRED);
+            repository.save(entity);
             throw new AuthorizationException("Authorization request expired");
         }
-        if (!request.getChallengeCode().equals(providedCode)) {
+        if (!entity.getChallengeCode().equals(providedCode)) {
             throw new AuthorizationException("Invalid authorization code");
         }
-        request.setStatus(AuthorizationStatus.APPROVED);
-        request.setApprovedAt(LocalDateTime.now());
-        request.setApprovedBy(actor);
-        return repository.save(request);
+        entity.setStatus(AuthorizationStatus.APPROVED);
+        entity.setApprovedAt(LocalDateTime.now());
+        entity.setApprovedBy(actor);
+        TransactionAuthorization saved = repository.save(entity);
+        return toDto(saved);
     }
 
     public AuthorizationRequest getLatestAuthorization(Long transactionId) {
         return repository.findTopByTransactionIdOrderByRequestedAtDesc(transactionId)
+                .map(this::toDto)
                 .orElse(null);
+    }
+    private AuthorizationRequest toDto(TransactionAuthorization entity) {
+        if (entity == null) return null;
+        return AuthorizationRequest.builder()
+                .id(entity.getId())
+                .transaction(entity.getTransaction())
+                .method(entity.getMethod())
+                .status(entity.getStatus())
+                .requestedBy(entity.getRequestedBy())
+                .approvedBy(entity.getApprovedBy())
+                .requestedAt(entity.getRequestedAt())
+                .approvedAt(entity.getApprovedAt())
+                .expiresAt(entity.getExpiresAt())
+                .challengeCode(entity.getChallengeCode())
+                .rejectionReason(entity.getRejectionReason())
+                .build();
     }
 
     private String generateChallengeCode(AuthorizationMethod method) {

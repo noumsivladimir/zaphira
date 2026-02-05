@@ -2,14 +2,17 @@ package com.zaphira.transaction.controller;
 
 import com.zaphira.common.exception.ResourceNotFoundException;
 import com.zaphira.common.exception.BusinessException;
+import com.zaphira.transaction.dto.requests.DisputeEscalationRequest;
 import com.zaphira.transaction.dto.requests.DisputeRequest;
 import com.zaphira.transaction.dto.requests.DisputeResolutionRequest;
 import com.zaphira.transaction.dto.requests.EvidenceRequest;
+import com.zaphira.transaction.dto.response.DisputeMessageDTO;
 import com.zaphira.transaction.dto.response.DisputeResponse;
 import com.zaphira.transaction.exception.AccessDeniedException;
 import com.zaphira.transaction.exception.ValidationException;
 import com.zaphira.transaction.model.Dispute;
 import com.zaphira.transaction.model.DisputeEvidence;
+import com.zaphira.transaction.model.DisputeTimeline;
 import com.zaphira.transaction.service.DisputeService;
 import com.zaphira.transaction.service.DisputeResolutionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +32,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 //
 /**
  * DisputeController - REST API endpoints for dispute management.
@@ -429,5 +434,225 @@ public class DisputeController {
             .deadlineAt(dispute.getDeadlineAt())
             .resolvedAt(dispute.getResolvedAt())
             .build();
+    }
+    
+    // ============================================================
+    // LIST ALL DISPUTES
+    // ============================================================
+    
+    /**
+     * Get all disputes (filtered by user role).
+     * 
+     * GET /api/disputes
+     * 
+     * Authorization:
+     * - ADMIN: Can see all disputes
+     * - REGULAR/MERCHANT: Can only see disputes they initiated
+     * 
+     * Response: List of disputes
+     * [
+     *   {
+     *     "disputeId": "123",
+     *     "transactionId": "456",
+     *     "status": "UNDER_INVESTIGATION",
+     *     "category": "FRAUD",
+     *     "reason": "Unauthorized transaction",
+     *     "claimedAmount": 100.00,
+     *     "initiatedBy": "customer@example.com",
+     *     "createdAt": "2026-02-04T10:00:00",
+     *     "deadlineAt": "2026-02-18T10:00:00"
+     *   }
+     * ]
+     * 
+     * @return List of disputes user is authorized to view
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('REGULAR', 'MERCHANT', 'ADMIN')")
+    @Operation(summary = "Get all disputes", 
+               description = "List all disputes (filtered by user role)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Disputes retrieved successfully",
+            content = @Content(mediaType = "application/json", 
+                schema = @Schema(implementation = DisputeResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid/missing JWT"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions")
+    })
+    public ResponseEntity<List<DisputeResponse>> getAllDisputes() {
+        try {
+            log.info("[DISPUTE_LIST_API] Fetching all disputes");
+            
+            List<Dispute> disputes = disputeService.getAllDisputes();
+            List<DisputeResponse> response = disputes.stream()
+                .map(this::mapToDisputeResponse)
+                .collect(Collectors.toList());
+            
+            log.info("[DISPUTE_LIST_API_SUCCESS] Retrieved {} disputes", response.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("[DISPUTE_LIST_API_ERROR] {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    // ============================================================
+    // GET DISPUTE MESSAGES/TIMELINE
+    // ============================================================
+    
+    /**
+     * Get dispute timeline/message history.
+     * 
+     * GET /api/disputes/{disputeId}/messages
+     * 
+     * Returns chronological list of all events in dispute lifecycle:
+     * - Dispute creation
+     * - Evidence submissions
+     * - Status changes
+     * - Merchant responses
+     * - Admin actions
+     * - Resolution
+     * 
+     * Response: List of timeline events
+     * [
+     *   {
+     *     "id": 1,
+     *     "eventType": "CREATED",
+     *     "message": "Dispute created by customer",
+     *     "actor": "customer@example.com",
+     *     "actorRole": "CUSTOMER",
+     *     "timestamp": "2026-02-04T10:00:00"
+     *   },
+     *   {
+     *     "id": 2,
+     *     "eventType": "EVIDENCE_ADDED",
+     *     "message": "Customer submitted receipt as evidence",
+     *     "actor": "customer@example.com",
+     *     "actorRole": "CUSTOMER",
+     *     "timestamp": "2026-02-04T11:30:00"
+     *   }
+     * ]
+     * 
+     * @param disputeId Dispute ID
+     * @return List of timeline events ordered by timestamp
+     */
+    @GetMapping("/{disputeId}/messages")
+    @PreAuthorize("hasAnyAuthority('REGULAR', 'MERCHANT', 'ADMIN')")
+    @Operation(summary = "Get dispute message history", 
+               description = "Returns chronological list of all events in dispute lifecycle")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Messages retrieved successfully",
+            content = @Content(mediaType = "application/json", 
+                schema = @Schema(implementation = DisputeMessageDTO.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid/missing JWT"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not authorized to view this dispute"),
+        @ApiResponse(responseCode = "404", description = "Dispute not found")
+    })
+    public ResponseEntity<List<DisputeMessageDTO>> getDisputeMessages(
+            @PathVariable Long disputeId) {
+        try {
+            log.info("[DISPUTE_MESSAGES_API] Fetching messages for dispute: {}", disputeId);
+            
+            List<DisputeTimeline> timeline = disputeService.getDisputeMessages(disputeId);
+            
+            List<DisputeMessageDTO> messages = timeline.stream()
+                .map(event -> DisputeMessageDTO.builder()
+                    .id(event.getId())
+                    .eventType(event.getEventType())
+                    .message(event.getEventDescription())
+                    .actor(event.getActor())
+                    .actorRole(event.getActorRole())
+                    .oldStatus(event.getOldStatus() != null ? event.getOldStatus().toString() : null)
+                    .newStatus(event.getNewStatus() != null ? event.getNewStatus().toString() : null)
+                    .timestamp(event.getEventTimestamp())
+                    .build())
+                .collect(Collectors.toList());
+            
+            log.info("[DISPUTE_MESSAGES_API_SUCCESS] Retrieved {} messages", messages.size());
+            return ResponseEntity.ok(messages);
+        } catch (ResourceNotFoundException e) {
+            log.warn("[DISPUTE_MESSAGES_NOT_FOUND] {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (AccessDeniedException e) {
+            log.warn("[DISPUTE_MESSAGES_FORBIDDEN] {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            log.error("[DISPUTE_MESSAGES_ERROR] {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    // ============================================================
+    // ESCALATE DISPUTE
+    // ============================================================
+    
+    /**
+     * Escalate dispute to higher authority.
+     * 
+     * POST /api/disputes/{disputeId}/escalate
+     * 
+     * Request Body:
+     * {
+     *   "reason": "Customer unsatisfied with initial resolution",
+     *   "priority": "HIGH",
+     *   "additionalNotes": "Case involves significant amount"
+     * }
+     * 
+     * Escalation occurs when:
+     * - Customer unsatisfied with resolution
+     * - Merchant disputes the decision
+     * - Complex case requiring senior review
+     * - Legal/compliance escalation needed
+     * 
+     * Changes status to ESCALATED and adds timeline event.
+     * 
+     * Authorization:
+     * - CUSTOMER: Can escalate own disputes
+     * - MERCHANT: Can escalate disputes for their transactions
+     * - ADMIN: Can escalate any dispute
+     * 
+     * Response: Updated dispute with ESCALATED status
+     * 
+     * @param disputeId Dispute ID
+     * @param request Escalation request with reason
+     * @return Updated dispute
+     */
+    @PostMapping("/{disputeId}/escalate")
+    @PreAuthorize("hasAnyAuthority('REGULAR', 'MERCHANT', 'ADMIN')")
+    @Operation(summary = "Escalate dispute", 
+               description = "Escalate dispute to higher authority when standard resolution is insufficient")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Dispute escalated successfully",
+            content = @Content(mediaType = "application/json", 
+                schema = @Schema(implementation = DisputeResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request - Missing reason or invalid status"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid/missing JWT"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not authorized to escalate this dispute"),
+        @ApiResponse(responseCode = "404", description = "Dispute not found")
+    })
+    public ResponseEntity<DisputeResponse> escalateDispute(
+            @PathVariable Long disputeId,
+            @Valid @RequestBody DisputeEscalationRequest request) {
+        try {
+            log.info("[DISPUTE_ESCALATE_API] Escalating dispute: {} with reason: {}", 
+                    disputeId, request.getReason());
+            
+            Dispute escalatedDispute = disputeService.escalateDispute(disputeId, request.getReason());
+            DisputeResponse response = mapToDisputeResponse(escalatedDispute);
+            
+            log.info("[DISPUTE_ESCALATE_API_SUCCESS] Dispute {} escalated to ESCALATED status", 
+                    disputeId);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            log.warn("[DISPUTE_ESCALATE_NOT_FOUND] {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (ValidationException | IllegalArgumentException e) {
+            log.warn("[DISPUTE_ESCALATE_INVALID] {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (AccessDeniedException e) {
+            log.warn("[DISPUTE_ESCALATE_FORBIDDEN] {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            log.error("[DISPUTE_ESCALATE_ERROR] {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

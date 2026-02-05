@@ -1,5 +1,9 @@
 version: '3.8'
 
+# Load environment variables from .env file
+env_file:
+  - ../.env
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -115,6 +119,35 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      KAFKA_BOOTSTRAP: kafka:29092
+    networks:
+      - zaphira-network
+
+  notification-service:
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+    container_name: zaphira-notification
+    ports:
+      - "8089:8089"
+    depends_on:
+      - postgres
+      - eureka-server
+      - config-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/zaphira_notifications_db
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      KAFKA_BOOTSTRAP: kafka:29092
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     networks:
       - zaphira-network
 

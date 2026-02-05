@@ -1,7 +1,7 @@
 # Test des fonctionnalités OTP avec Twilio
 # Utilisez ce script pour tester facilement les fonctionnalités OTP
 
-$baseUrl = "http://localhost:8089/api/notifications"
+$baseUrl = "http://localhost:8080/api/notifications"
 
 Write-Host "=== Test des fonctionnalités OTP avec Twilio ===" -ForegroundColor Cyan
 Write-Host "Base URL: $baseUrl" -ForegroundColor Yellow

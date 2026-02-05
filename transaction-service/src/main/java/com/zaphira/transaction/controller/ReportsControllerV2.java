@@ -1,0 +1,204 @@
+package com.zaphira.transaction.controller;
+
+import com.zaphira.transaction.dto.report.DailyReportDTO;
+import com.zaphira.transaction.dto.report.MerchantReportDTO;
+import com.zaphira.transaction.dto.report.UserReportDTO;
+import com.zaphira.transaction.service.ReportsService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * ReportsControllerV2 - LOT 4: Transaction Analytics & Reports
+ * 
+ * Provides aggregated transaction reports for:
+ * - Daily system-wide statistics
+ * - User-level analytics
+ * - Merchant performance metrics
+ * 
+ * Security:
+ * - ADMIN: Full access to all reports
+ * - MERCHANT: Access to own merchant reports
+ * - REGULAR: Access to own user reports
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/v2/reports")
+@RequiredArgsConstructor
+public class ReportsControllerV2 {
+
+    private final ReportsService reportsService;
+
+    /* =========================
+       DAILY REPORTS
+       ========================= */
+
+    /**
+     * Get daily report for specific date
+     * 
+     * GET /api/v2/reports/daily/{date}
+     * 
+     * Example: GET /api/v2/reports/daily/2026-02-04
+     * 
+     * Access: ADMIN only
+     * 
+     * Response: DailyReportDTO with aggregated metrics
+     */
+    @GetMapping("/daily/{date}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DailyReportDTO> getDailyReport(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        log.info("GET /api/v2/reports/daily/{} - Fetching daily report", date);
+        
+        DailyReportDTO report = reportsService.getDailyReport(date);
+        
+        return ResponseEntity.ok(report);
+    }
+
+    /**
+     * Get daily reports for date range
+     * 
+     * GET /api/v2/reports/daily?startDate=2026-02-01&endDate=2026-02-04
+     * 
+     * Query params:
+     * - startDate: Start date (YYYY-MM-DD)
+     * - endDate: End date (YYYY-MM-DD)
+     * 
+     * Access: ADMIN only
+     * 
+     * Response: List<DailyReportDTO>
+     */
+    @GetMapping("/daily")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DailyReportDTO>> getDailyReportsForRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
+        log.info("GET /api/v2/reports/daily - Fetching reports from {} to {}", startDate, endDate);
+        
+        List<DailyReportDTO> reports = reportsService.getDailyReportsForRange(startDate, endDate);
+        
+        return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * Get latest N daily reports
+     * 
+     * GET /api/v2/reports/daily/latest?limit=30
+     * 
+     * Query params:
+     * - limit: Number of days (default: 30, max: 90)
+     * 
+     * Access: ADMIN only
+     * 
+     * Response: List<DailyReportDTO>
+     */
+    @GetMapping("/daily/latest")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DailyReportDTO>> getLatestDailyReports(
+            @RequestParam(defaultValue = "30") int limit) {
+        
+        log.info("GET /api/v2/reports/daily/latest - Fetching {} latest reports", limit);
+        
+        // Cap at 90 days
+        if (limit > 90) {
+            limit = 90;
+        }
+        
+        List<DailyReportDTO> reports = reportsService.getLatestDailyReports(limit);
+        
+        return ResponseEntity.ok(reports);
+    }
+
+    /* =========================
+       USER REPORTS
+       ========================= */
+
+    /**
+     * Get user report for specific date
+     * 
+     * GET /api/v2/reports/user/{userId}?date=2026-02-04
+     * 
+     * Query params:
+     * - date: Report date (YYYY-MM-DD)
+     * 
+     * Access: ADMIN or own user
+     * 
+     * Response: UserReportDTO
+     */
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isCurrentUser(#userId)")
+    public ResponseEntity<UserReportDTO> getUserReport(
+            @PathVariable Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        log.info("GET /api/v2/reports/user/{} - Fetching report for date {}", userId, date);
+        
+        UserReportDTO report = reportsService.getUserReport(userId, date);
+        
+        return ResponseEntity.ok(report);
+    }
+
+    /**
+     * Get user report history for date range
+     * 
+     * GET /api/v2/reports/user/{userId}/history?startDate=2026-02-01&endDate=2026-02-04
+     * 
+     * Query params:
+     * - startDate: Start date (YYYY-MM-DD)
+     * - endDate: End date (YYYY-MM-DD)
+     * 
+     * Access: ADMIN or own user
+     * 
+     * Response: List<UserReportDTO>
+     */
+    @GetMapping("/user/{userId}/history")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isCurrentUser(#userId)")
+    public ResponseEntity<List<UserReportDTO>> getUserReportHistory(
+            @PathVariable Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
+        log.info("GET /api/v2/reports/user/{}/history - Fetching from {} to {}", userId, startDate, endDate);
+        
+        List<UserReportDTO> reports = reportsService.getUserReportHistory(userId, startDate, endDate);
+        
+        return ResponseEntity.ok(reports);
+    }
+
+    /* =========================
+       MERCHANT REPORTS
+       ========================= */
+
+    /**
+     * Get merchant report for specific date
+     * 
+     * GET /api/v2/reports/merchant/{merchantId}?date=2026-02-04
+     * 
+     * Query params:
+     * - date: Report date (YYYY-MM-DD)
+     * 
+     * Access: ADMIN or own merchant
+     * 
+     * Response: MerchantReportDTO
+     */
+    @GetMapping("/merchant/{merchantId}")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isCurrentMerchant(#merchantId)")
+    public ResponseEntity<MerchantReportDTO> getMerchantReport(
+            @PathVariable Long merchantId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        log.info("GET /api/v2/reports/merchant/{} - Fetching report for date {}", merchantId, date);
+        
+        MerchantReportDTO report = reportsService.getMerchantReport(merchantId, date);
+        
+        return ResponseEntity.ok(report);
+    }
+}

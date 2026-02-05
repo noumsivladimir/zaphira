@@ -13,7 +13,7 @@ public class TransactionServiceClient {
 
     private final RestTemplate restTemplate;
 
-    private static final String TRANSACTION_SERVICE_URL = "http://localhost:8083";
+    private static final String TRANSACTION_SERVICE_URL = "http://transaction-service";
 
     public TransactionDTO getTransactionById(Long transactionId) {
         try {

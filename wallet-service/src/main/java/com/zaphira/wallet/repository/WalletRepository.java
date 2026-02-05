@@ -1,7 +1,7 @@
 package com.zaphira.wallet.repository;
 
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.enums.WalletStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

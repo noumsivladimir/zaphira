@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
     indexes = {
         @Index(name = "idx_transaction_id", columnList = "transaction_id"),
         @Index(name = "idx_processed_at", columnList = "processed_at"),
-        @Index(name = "idx_correlation_id", columnList = "correlation_id", unique = true)
+        @Index(name = "idx_correlation_id", columnList = "correlation_id")
     }
 )
 @Getter

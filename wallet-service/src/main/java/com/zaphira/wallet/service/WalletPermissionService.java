@@ -5,8 +5,8 @@ import com.zaphira.wallet.dto.EffectivePermission;
 import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.wallet.dto.WalletPermissionDTO;
 import com.zaphira.wallet.dto.request.UpdatePermissionRequest;
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.enums.PermissionType;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.enums.PermissionType;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,6 +26,7 @@ public interface WalletPermissionService {
     void grantPermission(Long walletId, PermissionType type,
                          BigDecimal maxAmount, BigDecimal dailyLimit);
     void revokePermission(Wallet wallet, PermissionType type);
+    void revokePermissionById(Long permissionId);
     void updatePermissionLimit(Wallet wallet, PermissionType type,
                                BigDecimal newLimit);
     void initializeDefaultPermissions (Long walletId );
@@ -42,6 +43,7 @@ public interface WalletPermissionService {
 
     // Consultation
     List<WalletPermissionDTO> getWalletPermissions(String walletNumber);
+    List<com.zaphira.wallet.dto.response.WalletPermissionResponse> getPermissionsByWalletId(Long walletId);
     List<WalletDTO> getWalletsAccessibleByUser(Long userId);
     WalletPermissionDTO getUserPermissionForWallet(Long userId, String walletNumber);
     List<EffectivePermission> getEffectivePermissions(Wallet wallet);

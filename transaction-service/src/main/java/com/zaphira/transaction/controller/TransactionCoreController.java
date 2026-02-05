@@ -2,8 +2,14 @@ package com.zaphira.transaction.controller;
 
 import com.zaphira.transaction.dto.core.CreateTransactionCoreRequest;
 import com.zaphira.transaction.dto.core.TransactionCoreDTO;
+import com.zaphira.transaction.dto.TransactionDTO;
+import com.zaphira.transaction.dto.requests.BulkTransferRequest;
+import com.zaphira.transaction.dto.requests.SplitPaymentRequest;
+import com.zaphira.transaction.dto.response.SplitPaymentResponse;
+import com.zaphira.transaction.model.enums.TransactionStatus;
 import com.zaphira.transaction.model.enums.TransactionType;
 import com.zaphira.transaction.service.TransactionCoreService;
+import com.zaphira.transaction.service.TransactionServiceImpl;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -12,12 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * TransactionCoreController - LOT 1 + LOT 2 API Controller
@@ -46,6 +54,7 @@ import java.math.BigDecimal;
 public class TransactionCoreController {
 
     private final TransactionCoreService transactionCoreService;
+    private final TransactionServiceImpl transactionService;
 
     /* =========================
        TRANSACTION CREATION
@@ -391,5 +400,257 @@ public class TransactionCoreController {
         
         log.info("Transaction retry completed: {}", reference);
         return ResponseEntity.ok(transaction);
+    }
+
+    /**
+     * Reverse Transaction (LOT 1 - State Management)
+     * 
+     * POST /api/v1/transactions/{reference}/reverse
+     * 
+     * Only COMPLETED transactions can be reversed.
+     * Creates a new transaction in the opposite direction.
+     * ADMIN only.
+     * 
+     * Response: 200 OK with reversed TransactionCoreDTO
+     */
+    @PostMapping("/{reference}/reverse")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TransactionCoreDTO> reverseTransaction(
+            @PathVariable String reference,
+            @RequestParam(required = false) String reason) {
+        log.info("POST /api/v1/transactions/{}/reverse - Reversing transaction. Reason: {}", reference, reason);
+        
+        TransactionCoreDTO transaction = transactionCoreService.reverseTransaction(reference, reason);
+        
+        log.info("Transaction reversed successfully: {} -> New reference: {}", reference, transaction.getReference());
+        return ResponseEntity.ok(transaction);
+    }
+
+    /**
+     * Refund Transaction (LOT 1 - State Management)
+     * 
+     * POST /api/v1/transactions/{reference}/refund
+     * 
+     * Only COMPLETED transactions can be refunded.
+     * Creates a refund transaction returning funds to sender.
+     * ADMIN or merchant who received payment can refund.
+     * 
+     * Response: 200 OK with refund TransactionCoreDTO
+     */
+    @PostMapping("/{reference}/refund")
+    @PreAuthorize("hasRole('ADMIN') or @txSecurity.canRefund(#reference)")
+    public ResponseEntity<TransactionCoreDTO> refundTransaction(
+            @PathVariable String reference,
+            @RequestParam(required = false) String reason) {
+        log.info("POST /api/v1/transactions/{}/refund - Refunding transaction. Reason: {}", reference, reason);
+        
+        TransactionCoreDTO transaction = transactionCoreService.refundTransaction(reference, reason);
+        
+        log.info("Transaction refunded successfully: {} -> Refund reference: {}", reference, transaction.getReference());
+        return ResponseEntity.ok(transaction);
+    }
+
+    /* =========================
+       LOT 2: BULK & SPLIT PAYMENTS
+       ========================= */
+
+    /**
+     * Bulk Transfer (LOT 2)
+     * 
+     * POST /api/v1/transactions/bulk-transfer
+     * 
+     * Send multiple transfers in one request.
+     * MERCHANT and ADMIN only.
+     * 
+     * Response: 201 Created with Page<TransactionDTO>
+     */
+    @PostMapping("/bulk-transfer")
+    @PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+    public ResponseEntity<Page<TransactionDTO>> bulkTransfer(@Valid @RequestBody BulkTransferRequest request) {
+        log.info("POST /api/v1/transactions/bulk-transfer - Processing {} transfers", request.getItems().size());
+        
+        Page<TransactionDTO> saved = transactionService.createBulkTransfer(request);
+        
+        log.info("Bulk transfer completed: {} transactions created", saved.getTotalElements());
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    /**
+     * Split Payment (LOT 2)
+     * 
+     * POST /api/v1/transactions/split-payment
+     * 
+     * Split a payment among multiple recipients.
+     * REGULAR and MERCHANT can use this.
+     * 
+     * Response: 201 Created with SplitPaymentResponse
+     */
+    @PostMapping("/split-payment")
+    @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT')")
+    public ResponseEntity<SplitPaymentResponse> splitPayment(@Valid @RequestBody SplitPaymentRequest request) {
+        log.info("POST /api/v1/transactions/split-payment - {} recipients, total {}", 
+            request.getRecipients().size(), request.getTotalAmount());
+        
+        SplitPaymentResponse response = transactionService.createSplitPayment(request);
+        
+        log.info("Split payment completed: {} transactions created", response.getTransactions().size());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Process Transaction (LOT 1)
+     * 
+     * POST /api/v1/transactions/{reference}/process
+     * 
+     * Manually process a pending transaction.
+     * Owner or ADMIN only.
+     * 
+     * Response: 200 OK with updated TransactionDTO
+     */
+    @PostMapping("/{reference}/process")
+    @PreAuthorize("@txSecurity.isOwner(#reference) or hasRole('ADMIN')")
+    public ResponseEntity<TransactionDTO> processTransaction(@PathVariable String reference) {
+        log.info("POST /api/v1/transactions/{}/process - Processing transaction", reference);
+        
+        TransactionDTO transaction = transactionService.processTransaction(reference);
+        
+        log.info("Transaction processed successfully: {}", reference);
+        return ResponseEntity.ok(transaction);
+    }
+
+    /* =========================
+       LOT 4: SEARCH & REPORTING
+       ========================= */
+
+    /**
+     * Search Transactions (LOT 4)
+     * 
+     * GET /api/v1/transactions/search
+     * 
+     * Global search for all transactions.
+     * ADMIN only.
+     * 
+     * Query params:
+     * - status: Filter by transaction status
+     * - type: Filter by transaction type
+     * - currency: Filter by currency
+     * - minAmount: Minimum amount
+     * - maxAmount: Maximum amount
+     * - from: Start date (ISO format)
+     * - to: End date (ISO format)
+     * - reference: Search by reference
+     * - page: Page number (default: 0)
+     * - size: Page size (default: 10)
+     * 
+     * Response: 200 OK with Page<TransactionDTO>
+     */
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<TransactionDTO>> searchTransactions(
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String reference,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.debug("GET /api/v1/transactions/search - status={} type={} currency={}", status, type, currency);
+
+        Page<TransactionDTO> transactions = transactionService.searchTransactions(
+                status, type, currency, minAmount, maxAmount, from, to, reference, page, size);
+
+        log.debug("Search returned {} results", transactions.getTotalElements());
+        return ResponseEntity.ok(transactions);
+    }
+
+    /**
+     * Get My Transactions (LOT 4)
+     * 
+     * GET /api/v1/transactions/my-transactions
+     * 
+     * Get all transactions for the authenticated user.
+     * Filtered by current user's wallets.
+     * 
+     * Query params:
+     * - status: Filter by status
+     * - type: Filter by type
+     * - from: Start date
+     * - to: End date
+     * - page: Page number (default: 0)
+     * - size: Page size (default: 10)
+     * 
+     * Response: 200 OK with Page<TransactionDTO>
+     */
+    @GetMapping("/my-transactions")
+    @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT')")
+    public ResponseEntity<Page<TransactionDTO>> getMyTransactions(
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.debug("GET /api/v1/transactions/my-transactions - status={} type={}", status, type);
+
+        Page<TransactionDTO> transactions = transactionService.getMyTransactions(
+                status, type, from, to, page, size);
+        
+        log.debug("Found {} transactions for current user", transactions.getTotalElements());
+        return ResponseEntity.ok(transactions);
+    }
+
+    /**
+     * Get My Sent Transactions (LOT 4)
+     * 
+     * GET /api/v1/transactions/my-transactions/sent
+     * 
+     * Get all sent transactions for the authenticated user.
+     * 
+     * Response: 200 OK with Page<TransactionDTO>
+     */
+    @GetMapping("/my-transactions/sent")
+    @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT')")
+    public ResponseEntity<Page<TransactionDTO>> getMySentTransactions(
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.debug("GET /api/v1/transactions/my-transactions/sent - status={}", status);
+
+        Page<TransactionDTO> transactions = transactionService.getMySentTransactions(
+                status, page, size);
+        
+        log.debug("Found {} sent transactions", transactions.getTotalElements());
+        return ResponseEntity.ok(transactions);
+    }
+
+    /**
+     * Get My Received Transactions (LOT 4)
+     * 
+     * GET /api/v1/transactions/my-transactions/received
+     * 
+     * Get all received transactions for the authenticated user.
+     * 
+     * Response: 200 OK with Page<TransactionDTO>
+     */
+    @GetMapping("/my-transactions/received")
+    @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT')")
+    public ResponseEntity<Page<TransactionDTO>> getMyReceivedTransactions(
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.debug("GET /api/v1/transactions/my-transactions/received - status={}", status);
+
+        Page<TransactionDTO> transactions = transactionService.getMyReceivedTransactions(
+                status, page, size);
+        
+        log.debug("Found {} received transactions", transactions.getTotalElements());
+        return ResponseEntity.ok(transactions);
     }
 }

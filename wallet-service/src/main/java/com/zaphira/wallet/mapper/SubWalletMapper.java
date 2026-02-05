@@ -4,8 +4,8 @@ import com.zaphira.common.model.enums.Currency;
 import com.zaphira.wallet.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.request.CreateSubWalletRequest;
 import com.zaphira.wallet.dto.response.SubWalletResponse;
-import com.zaphira.wallet.models.entities.SubWallet;
-import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.model.entities.SubWallet;
+import com.zaphira.wallet.model.enums.WalletStatus;
 import lombok.Builder;
 import org.springframework.stereotype.Component;
 

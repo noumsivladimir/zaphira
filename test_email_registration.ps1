@@ -5,7 +5,7 @@ Write-Host "========================================" -ForegroundColor Green
 
 # Test user registration
 Write-Host "`nTesting user registration..." -ForegroundColor Yellow
-$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8082/api/users/register" -Method POST -ContentType "application/json" -Body '{
+$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/users/register" -Method POST -ContentType "application/json" -Body '{
     "phoneNumber": "+237690000001",
     "email": "test@example.com",
     "pin": "1234",
@@ -33,6 +33,6 @@ Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Next steps:" -ForegroundColor White
 Write-Host "1. Check the email for the verification code" -ForegroundColor White
 Write-Host "2. Use the code to verify the email:" -ForegroundColor White
-Write-Host "   POST http://localhost:8082/api/users/verify-email" -ForegroundColor White
+Write-Host "   POST http://localhost:8080/api/users/verify-email" -ForegroundColor White
 Write-Host "   Body: {`"email`": `"test@example.com`", `"verificationCode`": `"`<OTP_CODE>`"}" -ForegroundColor White
 Write-Host "========================================" -ForegroundColor Green

@@ -1,8 +1,8 @@
 # PowerShell Test Script - LOT 2 Transaction Extensions
 # Tests des 3 nouveaux endpoints: Merchant Payment, Cancel, Retry
 
-$baseUrl = "http://localhost:8084/api/v1/transactions"
-$authUrl = "http://localhost:8081/api/auth/login"
+$baseUrl = "http://localhost:8080/api/transactions"
+$authUrl = "http://localhost:8080/api/auth/login"
 
 # Configuration
 $regularUser = @{

@@ -170,7 +170,7 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.senderId = :userId OR t.receiverId = :userId
+        WHERE t.senderWalletId = :userId OR t.receiverWalletId = :userId
         ORDER BY t.createdAt DESC
     """)
     Page<Transaction> findByUserId(@Param("userId") Long userId, Pageable pageable);
@@ -179,7 +179,7 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+        WHERE (t.senderWalletId = :userId OR t.receiverWalletId = :userId)
           AND t.status = :status
         ORDER BY t.createdAt DESC
     """)
@@ -193,7 +193,7 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+        WHERE (t.senderWalletId = :userId OR t.receiverWalletId = :userId)
           AND t.type = :type
         ORDER BY t.createdAt DESC
     """)
@@ -207,7 +207,7 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+        WHERE (t.senderWalletId = :userId OR t.receiverWalletId = :userId)
           AND t.status = :status
           AND t.type = :type
         ORDER BY t.createdAt DESC
@@ -223,7 +223,7 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE (t.senderId = :userId OR t.receiverId = :userId)
+        WHERE (t.senderWalletId = :userId OR t.receiverWalletId = :userId)
           AND t.status = :status
           AND t.type = :type
           AND t.createdAt BETWEEN :from AND :to
@@ -239,16 +239,16 @@ public interface TransactionRepository
     );
 
     // Find transactions sent by user
-    Page<Transaction> findBySenderId(Long senderId, Pageable pageable);
+    Page<Transaction> findBySenderWalletId(Long senderWalletId, Pageable pageable);
 
     // Find transactions sent by user with status
-    Page<Transaction> findBySenderIdAndStatus(Long senderId, TransactionStatus status, Pageable pageable);
+    Page<Transaction> findBySenderWalletIdAndStatus(Long senderWalletId, TransactionStatus status, Pageable pageable);
 
     // Find transactions received by user
-    Page<Transaction> findByReceiverId(Long receiverId, Pageable pageable);
+    Page<Transaction> findByReceiverWalletId(Long receiverWalletId, Pageable pageable);
 
     // Find transactions received by user with status
-    Page<Transaction> findByReceiverIdAndStatus(Long receiverId, TransactionStatus status, Pageable pageable);
+    Page<Transaction> findByReceiverWalletIdAndStatus(Long receiverWalletId, TransactionStatus status, Pageable pageable);
 
     /* =========================
        LOT 4: MERCHANT REPORT QUERIES
@@ -258,12 +258,12 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.createdAt BETWEEN :from AND :to
         ORDER BY t.createdAt DESC
     """)
-    List<Transaction> findByReceiverIdAndCreatedAtBetween(
-            @Param("receiverId") Long receiverId,
+    List<Transaction> findByReceiverWalletIdAndCreatedAtBetween(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
@@ -272,12 +272,12 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.createdAt BETWEEN :from AND :to
         ORDER BY t.createdAt DESC
     """)
-    Page<Transaction> findByReceiverIdAndCreatedAtBetween(
-            @Param("receiverId") Long receiverId,
+    Page<Transaction> findByReceiverWalletIdAndCreatedAtBetween(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             Pageable pageable
@@ -287,13 +287,13 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.status = :status
           AND t.createdAt BETWEEN :from AND :to
         ORDER BY t.createdAt DESC
     """)
-    Page<Transaction> findByReceiverIdAndStatusAndCreatedAtBetween(
-            @Param("receiverId") Long receiverId,
+    Page<Transaction> findByReceiverWalletIdAndStatusAndCreatedAtBetween(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("status") TransactionStatus status,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
@@ -304,12 +304,12 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.status IN :statuses
         ORDER BY t.createdAt DESC
     """)
-    Page<Transaction> findByReceiverIdAndStatusIn(
-            @Param("receiverId") Long receiverId,
+    Page<Transaction> findByReceiverWalletIdAndStatusIn(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("statuses") List<TransactionStatus> statuses,
             Pageable pageable
     );
@@ -318,12 +318,12 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.status IN :statuses
         ORDER BY t.createdAt DESC
     """)
-    List<Transaction> findByReceiverIdAndStatusIn(
-            @Param("receiverId") Long receiverId,
+    List<Transaction> findByReceiverWalletIdAndStatusIn(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("statuses") List<TransactionStatus> statuses
     );
 
@@ -331,13 +331,13 @@ public interface TransactionRepository
     @Query("""
         SELECT t
         FROM Transaction t
-        WHERE t.senderId = :senderId
+        WHERE t.senderWalletId = :senderWalletId
           AND t.type = :type
           AND t.createdAt BETWEEN :from AND :to
         ORDER BY t.createdAt DESC
     """)
-    Page<Transaction> findBySenderIdAndTypeAndCreatedAtBetween(
-            @Param("senderId") Long senderId,
+    Page<Transaction> findBySenderWalletIdAndTypeAndCreatedAtBetween(
+            @Param("senderWalletId") Long senderWalletId,
             @Param("type") TransactionType type,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
@@ -348,11 +348,11 @@ public interface TransactionRepository
     @Query("""
         SELECT COUNT(t)
         FROM Transaction t
-        WHERE t.receiverId = :receiverId
+        WHERE t.receiverWalletId = :receiverWalletId
           AND t.createdAt BETWEEN :from AND :to
     """)
-    Long countByReceiverIdAndCreatedAtBetween(
-            @Param("receiverId") Long receiverId,
+    Long countByReceiverWalletIdAndCreatedAtBetween(
+            @Param("receiverWalletId") Long receiverWalletId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );

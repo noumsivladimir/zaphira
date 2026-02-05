@@ -53,15 +53,15 @@ public class MerchantReportService {
         Page<Transaction> sales;
         
         if (status != null && fromDateTime != null && toDateTime != null) {
-            sales = transactionRepository.findByReceiverIdAndStatusAndCreatedAtBetween(
+            sales = transactionRepository.findByReceiverWalletIdAndStatusAndCreatedAtBetween(
                     merchantId, status, fromDateTime, toDateTime, pageable);
         } else if (status != null) {
-            sales = transactionRepository.findByReceiverIdAndStatus(merchantId, status, pageable);
+            sales = transactionRepository.findByReceiverWalletIdAndStatus(merchantId, status, pageable);
         } else if (fromDateTime != null && toDateTime != null) {
-            sales = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+            sales = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                     merchantId, fromDateTime, toDateTime, pageable);
         } else {
-            sales = transactionRepository.findByReceiverId(merchantId, pageable);
+            sales = transactionRepository.findByReceiverWalletId(merchantId, pageable);
         }
         
         return sales.map(transactionMapper::toDTO);
@@ -84,7 +84,7 @@ public class MerchantReportService {
         LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : LocalDateTime.now().minusMonths(1);
         LocalDateTime toDateTime = (to != null) ? to.atTime(23, 59, 59) : LocalDateTime.now();
         
-        List<Transaction> transactions = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+        List<Transaction> transactions = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, fromDateTime, toDateTime);
         
         // Calculate metrics
@@ -117,7 +117,7 @@ public class MerchantReportService {
         
         // Pending settlements
         List<Transaction> pendingSettlements = transactionRepository
-                .findByReceiverIdAndStatusIn(merchantId, 
+                .findByReceiverWalletIdAndStatusIn(merchantId, 
                         List.of(TransactionStatus.COMPLETED, TransactionStatus.PROCESSING));
         
         BigDecimal pendingSettlementAmount = pendingSettlements.stream()
@@ -168,7 +168,7 @@ public class MerchantReportService {
                 ? List.of(status) 
                 : List.of(TransactionStatus.COMPLETED, TransactionStatus.PROCESSING);
         
-        Page<Transaction> settlements = transactionRepository.findByReceiverIdAndStatusIn(
+        Page<Transaction> settlements = transactionRepository.findByReceiverWalletIdAndStatusIn(
                 merchantId, settlementStatuses, pageable);
         
         return settlements.map(transactionMapper::toDTO);
@@ -185,7 +185,7 @@ public class MerchantReportService {
         LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : LocalDateTime.now().minusMonths(3);
         LocalDateTime toDateTime = (to != null) ? to.atTime(23, 59, 59) : LocalDateTime.now();
         
-        Page<Transaction> refunds = transactionRepository.findBySenderIdAndTypeAndCreatedAtBetween(
+        Page<Transaction> refunds = transactionRepository.findBySenderWalletIdAndTypeAndCreatedAtBetween(
                 merchantId, TransactionType.REFUND, fromDateTime, toDateTime, pageable);
         
         return refunds.map(transactionMapper::toDTO);
@@ -204,7 +204,7 @@ public class MerchantReportService {
         LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : LocalDateTime.now().minusMonths(1);
         LocalDateTime toDateTime = (to != null) ? to.atTime(23, 59, 59) : LocalDateTime.now();
         
-        List<Transaction> transactions = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+        List<Transaction> transactions = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, fromDateTime, toDateTime);
         
         long total = transactions.size();
@@ -262,7 +262,7 @@ public class MerchantReportService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
         
-        List<Transaction> todaysTx = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+        List<Transaction> todaysTx = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, startOfDay, endOfDay);
         
         return todaysTx.stream()
@@ -276,7 +276,7 @@ public class MerchantReportService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
         
-        return transactionRepository.countByReceiverIdAndCreatedAtBetween(
+        return transactionRepository.countByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, startOfDay, endOfDay);
     }
     
@@ -284,7 +284,7 @@ public class MerchantReportService {
         LocalDateTime weekAgo = LocalDateTime.now().minusWeeks(1);
         LocalDateTime now = LocalDateTime.now();
         
-        List<Transaction> weekTx = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+        List<Transaction> weekTx = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, weekAgo, now);
         
         return weekTx.stream()
@@ -298,7 +298,7 @@ public class MerchantReportService {
         LocalDateTime monthAgo = LocalDateTime.now().minusMonths(1);
         LocalDateTime now = LocalDateTime.now();
         
-        List<Transaction> monthTx = transactionRepository.findByReceiverIdAndCreatedAtBetween(
+        List<Transaction> monthTx = transactionRepository.findByReceiverWalletIdAndCreatedAtBetween(
                 merchantId, monthAgo, now);
         
         return monthTx.stream()

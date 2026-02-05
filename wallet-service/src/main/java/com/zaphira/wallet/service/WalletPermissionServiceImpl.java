@@ -5,13 +5,14 @@ import com.zaphira.wallet.dto.WalletDTO;
 import com.zaphira.wallet.dto.WalletPermissionDTO;
 import com.zaphira.wallet.dto.request.UpdatePermissionRequest;
 import com.zaphira.wallet.exception.WalletNotFoundException;
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.entities.WalletPermission;
-import com.zaphira.wallet.models.enums.PermissionType;
-import com.zaphira.wallet.models.enums.WalletStatus;
-import com.zaphira.wallet.models.enums.WalletType;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.entities.WalletPermission;
+import com.zaphira.wallet.model.enums.PermissionType;
+import com.zaphira.wallet.model.enums.WalletStatus;
+import com.zaphira.wallet.model.enums.WalletType;
 import com.zaphira.wallet.repository.WalletPermissionRepository;
 import com.zaphira.wallet.repository.WalletRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +23,19 @@ import java.util.*;
 
 @Service
 @Transactional
+@Slf4j
 public class WalletPermissionServiceImpl implements WalletPermissionService {
 
     private final WalletPermissionRepository permissionRepository;
     private final WalletRepository walletRepository;
+    private final WalletQueryService walletQueryService;
 
-    public WalletPermissionServiceImpl(WalletPermissionRepository permissionRepository, WalletRepository walletRepository) {
+    public WalletPermissionServiceImpl(WalletPermissionRepository permissionRepository, 
+                                      WalletRepository walletRepository,
+                                      WalletQueryService walletQueryService) {
         this.permissionRepository = permissionRepository;
         this.walletRepository = walletRepository;
+        this.walletQueryService = walletQueryService;
     }
 
 
@@ -121,6 +127,20 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
                 });
 
     }
+    
+    @Override
+    public void revokePermissionById(Long permissionId) {
+        log.info("[PERMISSION_REVOKE] Revoking permission with ID: {}", permissionId);
+        
+        WalletPermission permission = permissionRepository.findById(permissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Permission with ID " + permissionId + " not found"));
+        
+        permission.setEnabled(false);
+        permission.setUpdatedAt(LocalDateTime.now());
+        permissionRepository.save(permission);
+        
+        log.info("[PERMISSION_REVOKE_SUCCESS] Revoked permission ID: {}", permissionId);
+    }
 
     @Override
     public void updatePermissionLimit(Wallet wallet, PermissionType type, BigDecimal newLimit) {
@@ -189,6 +209,33 @@ public class WalletPermissionServiceImpl implements WalletPermissionService {
     @Override
     public List<WalletPermissionDTO> getWalletPermissions(String walletNumber) {
         return List.of();
+    }
+    
+    @Override
+    public List<com.zaphira.wallet.dto.response.WalletPermissionResponse> getPermissionsByWalletId(Long walletId) {
+        log.info("[PERMISSION_LIST] Fetching permissions for wallet ID: {}", walletId);
+        
+        Wallet wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet with ID " + walletId + " not found"));
+        List<WalletPermission> permissions = permissionRepository.findByWallet(wallet);
+        
+        List<com.zaphira.wallet.dto.response.WalletPermissionResponse> responses = permissions.stream()
+                .map(p -> com.zaphira.wallet.dto.response.WalletPermissionResponse.builder()
+                        .id(p.getId())
+                        .walletId(wallet.getId())
+                        .walletNumber(wallet.getWalletNumber())
+                        .permissionType(p.getPermissionType().name())
+                        .maxAmount(p.getMaxAmount())
+                        .dailyLimit(p.getDailyLimit())
+                        .enabled(p.getEnabled())
+                        .requiresApproval(p.getRequiresApproval())
+                        .createdAt(p.getCreatedAt())
+                        .updatedAt(p.getUpdatedAt())
+                        .build())
+                .toList();
+        
+        log.info("[PERMISSION_LIST_SUCCESS] Retrieved {} permissions", responses.size());
+        return responses;
     }
 
     @Override

@@ -509,4 +509,126 @@ public class TransactionCoreService {
         walletServiceClient.creditWallet(transaction.getReceiverWalletId(), creditRequest);
         log.debug("Credited merchant wallet {} amount {}", transaction.getReceiverWalletId(), merchantReceives);
     }
+
+    /* =========================
+       STATE MANAGEMENT - REVERSE & REFUND
+       ========================= */
+
+    /**
+     * Reverse a completed transaction
+     * Creates a new transaction in the opposite direction
+     * ADMIN only
+     */
+    @Transactional
+    public TransactionCoreDTO reverseTransaction(String reference, String reason) {
+        log.info("Reversing transaction: {} - Reason: {}", reference, reason);
+
+        // Find original transaction
+        TransactionCore original = transactionCoreRepository.findByReference(reference)
+                .orElseThrow(() -> TransactionExceptions.transactionNotFound(reference));
+
+        // Validate can be reversed
+        if (original.getStatus() != TransactionStatus.COMPLETED) {
+            throw TransactionExceptions.invalidTransactionState(
+                    "Only COMPLETED transactions can be reversed. Current state: " + original.getStatus());
+        }
+
+        if (original.getStatus() == TransactionStatus.REVERSED) {
+            throw TransactionExceptions.transactionAlreadyReversed(reference);
+        }
+
+        // Create reverse transaction
+        TransactionCore reverseTransaction = TransactionCore.builder()
+                .reference(referenceGenerator.generate())
+                .senderWalletId(original.getReceiverWalletId())  // Swap sender/receiver
+                .receiverWalletId(original.getSenderWalletId())
+                .amount(original.getAmount())
+                .currency(original.getCurrency())
+                .type(TransactionType.REVERSAL)
+                .status(TransactionStatus.PENDING)
+                .description("Reversal of transaction " + reference + ". Reason: " + reason)
+                .build();
+
+        reverseTransaction = transactionCoreRepository.save(reverseTransaction);
+        log.info("Reverse transaction created: {}", reverseTransaction.getReference());
+
+        // Execute reverse transfer
+        try {
+            executeTransfer(reverseTransaction);
+            reverseTransaction = markAsCompleted(reverseTransaction);
+            
+            // Update original transaction status
+            original.setStatus(TransactionStatus.REVERSED);
+            original.setUpdatedAt(LocalDateTime.now());
+            transactionCoreRepository.save(original);
+            
+            log.info("Transaction reversed successfully: {} -> Reverse: {}", 
+                    reference, reverseTransaction.getReference());
+        } catch (Exception e) {
+            reverseTransaction = markAsFailed(reverseTransaction);
+            log.error("Reverse transaction failed: {}", reverseTransaction.getReference(), e);
+            throw TransactionExceptions.transactionFailed("Reverse failed: " + e.getMessage());
+        }
+
+        return transactionCoreMapper.toDTO(reverseTransaction);
+    }
+
+    /**
+     * Refund a completed transaction
+     * Creates a refund transaction returning funds to original sender
+     * ADMIN or merchant who received payment can refund
+     */
+    @Transactional
+    public TransactionCoreDTO refundTransaction(String reference, String reason) {
+        log.info("Refunding transaction: {} - Reason: {}", reference, reason);
+
+        // Find original transaction
+        TransactionCore original = transactionCoreRepository.findByReference(reference)
+                .orElseThrow(() -> TransactionExceptions.transactionNotFound(reference));
+
+        // Validate can be refunded
+        if (original.getStatus() != TransactionStatus.COMPLETED) {
+            throw TransactionExceptions.invalidTransactionState(
+                    "Only COMPLETED transactions can be refunded. Current state: " + original.getStatus());
+        }
+
+        if (original.getStatus() == TransactionStatus.REFUNDED) {
+            throw TransactionExceptions.transactionAlreadyRefunded(reference);
+        }
+
+        // Create refund transaction
+        TransactionCore refundTransaction = TransactionCore.builder()
+                .reference(referenceGenerator.generate())
+                .senderWalletId(original.getReceiverWalletId())  // Refund from receiver
+                .receiverWalletId(original.getSenderWalletId())  // Back to original sender
+                .amount(original.getAmount())
+                .currency(original.getCurrency())
+                .type(TransactionType.REFUND)
+                .status(TransactionStatus.PENDING)
+                .description("Refund of transaction " + reference + ". Reason: " + reason)
+                .build();
+
+        refundTransaction = transactionCoreRepository.save(refundTransaction);
+        log.info("Refund transaction created: {}", refundTransaction.getReference());
+
+        // Execute refund transfer
+        try {
+            executeTransfer(refundTransaction);
+            refundTransaction = markAsCompleted(refundTransaction);
+            
+            // Update original transaction status
+            original.setStatus(TransactionStatus.REFUNDED);
+            original.setUpdatedAt(LocalDateTime.now());
+            transactionCoreRepository.save(original);
+            
+            log.info("Transaction refunded successfully: {} -> Refund: {}", 
+                    reference, refundTransaction.getReference());
+        } catch (Exception e) {
+            refundTransaction = markAsFailed(refundTransaction);
+            log.error("Refund transaction failed: {}", refundTransaction.getReference(), e);
+            throw TransactionExceptions.transactionFailed("Refund failed: " + e.getMessage());
+        }
+
+        return transactionCoreMapper.toDTO(refundTransaction);
+    }
 }

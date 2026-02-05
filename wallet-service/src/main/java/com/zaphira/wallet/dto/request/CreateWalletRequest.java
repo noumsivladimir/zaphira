@@ -1,7 +1,7 @@
 package com.zaphira.wallet.dto.request;
 
-import com.zaphira.wallet.models.enums.WalletStatus;
-import com.zaphira.wallet.models.enums.WalletType;
+import com.zaphira.wallet.model.enums.WalletStatus;
+import com.zaphira.wallet.model.enums.WalletType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

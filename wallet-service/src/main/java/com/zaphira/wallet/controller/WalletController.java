@@ -6,8 +6,18 @@ import com.zaphira.wallet.dto.TransferRequest;
 import com.zaphira.wallet.dto.request.*;
 import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
+import com.zaphira.wallet.dto.response.WalletHistoryResponse;
+import com.zaphira.wallet.dto.response.WalletStatementResponse;
+import com.zaphira.wallet.dto.response.BalanceHistoryResponse;
 
 import com.zaphira.wallet.service.WalletService;
+import com.zaphira.wallet.service.WalletHistoryService;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +29,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -27,6 +38,7 @@ import java.math.BigDecimal;
 public class WalletController {
 
     private final WalletService walletService;
+    private final WalletHistoryService walletHistoryService;
    
 //
 //    /**
@@ -39,32 +51,19 @@ public class WalletController {
     @PostMapping
     @PreAuthorize("hasAnyRole('REGULAR', 'MERCHANT', 'ADMIN')")
     public ResponseEntity<?> createWallet(@RequestBody CreateWalletRequest request) {
-        try {
-            // ✅ Passer directement le request complet
-            CreateWalletResponse wallet = walletService.createWalletForUser(request);
-
-            log.info("✅ Wallet created for user {}: {}", request.getUserId(), wallet.getWalletNumber());
-            return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
-        } catch (Exception e) {
-            log.error("❌ Failed to create wallet for user {}: {}", request.getUserId(), e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating wallet: " + e.getMessage());
-        }
+        // ✅ Passer directement le request complet
+        CreateWalletResponse wallet = walletService.createWalletForUser(request);
+        log.info("✅ Wallet created for user {}: {}", request.getUserId(), wallet.getWalletNumber());
+        return ResponseEntity.status(HttpStatus.CREATED).body(wallet);
     }
 
     // LOT 1: Create Merchant Wallet - MERCHANT only
     @PostMapping("/merchant")
     @PreAuthorize("hasRole('MERCHANT')")
     public ResponseEntity<?> createMerchantWallet(@Validated @RequestBody CreateMerchantWalletRequest request) {
-        try {
-            CreateWalletResponse merchantWallet = walletService.createWalletForMerchant(request);
-            log.info("Creating wallet for merchant {}: {}", request.getWalletNumber(), merchantWallet.getWalletNumber());
-            return ResponseEntity.status(HttpStatus.CREATED).body(merchantWallet);
-        } catch (Exception e) {
-            log.error("Failed to create wallet for merchant {}: {}", request.getMerchantName(), e.getMessage(), e);
-            return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating wallet: " + e.getMessage());
-        }
+        CreateWalletResponse merchantWallet = walletService.createWalletForMerchant(request);
+        log.info("Creating wallet for merchant {}: {}", request.getWalletNumber(), merchantWallet.getWalletNumber());
+        return ResponseEntity.status(HttpStatus.CREATED).body(merchantWallet);
     }
 
     // Internal endpoint - used by transaction-service
@@ -95,12 +94,14 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
-//    @GetMapping("/user/{userId}")
-//    public ResponseEntity<List<WalletDTO>> getUserWallets(@PathVariable Long userId) {
-//        log.info("Fetching wallets for user: {}", userId);
-//        List<WalletDTO> wallets = walletQueryService.getUserWallets(userId);
-//        return ResponseEntity.ok(wallets);
-//    }
+    // Get User Wallets - Owner or ADMIN
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == principal")
+    public ResponseEntity<List<WalletDTO>> getUserWallets(@PathVariable Long userId) {
+        log.info("Fetching wallets for user: {}", userId);
+        List<WalletDTO> wallets = walletService.getUserWallets(userId);
+        return ResponseEntity.ok(wallets);
+    }
 
 
     // LOT 1: Get Wallet Summary - Owner or ADMIN
@@ -274,71 +275,108 @@ public class WalletController {
         walletService.recalculateBalance(walletNumber);
         return ResponseEntity.ok().build();
     }
+
+    // ========== LOT 5: History & Statements ==========
+
+    /**
+     * LOT 5: Get wallet transaction history with pagination
+     * Accessible by wallet owner or ADMIN
+     */
+    @GetMapping("/{walletNumber}/history")
+    @PreAuthorize("@walletSecurity.canView(#walletNumber)")
+    public ResponseEntity<WalletHistoryResponse> getWalletHistory(
+            @PathVariable String walletNumber,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        log.info("Fetching history for wallet: {} (page: {}, size: {})", walletNumber, page, size);
+        
+        LocalDateTime start = startDate != null ? 
+                LocalDateTime.parse(startDate, DateTimeFormatter.ISO_DATE_TIME) : null;
+        LocalDateTime end = endDate != null ? 
+                LocalDateTime.parse(endDate, DateTimeFormatter.ISO_DATE_TIME) : null;
+        
+        WalletHistoryResponse history = walletHistoryService.getWalletHistory(
+                walletNumber, page, size, start, end);
+        return ResponseEntity.ok(history);
+    }
+
+    /**
+     * LOT 5: Generate account statement for a period
+     * Accessible by wallet owner or ADMIN
+     */
+    @GetMapping("/{walletNumber}/statement")
+    @PreAuthorize("@walletSecurity.canView(#walletNumber)")
+    public ResponseEntity<WalletStatementResponse> generateStatement(
+            @PathVariable String walletNumber,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("Generating statement for wallet: {} from {} to {}", walletNumber, startDate, endDate);
+        
+        LocalDateTime start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_DATE_TIME);
+        LocalDateTime end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_DATE_TIME);
+        
+        WalletStatementResponse statement = walletHistoryService.generateStatement(
+                walletNumber, start, end);
+        return ResponseEntity.ok(statement);
+    }
+
+    /**
+     * LOT 5: Download statement as PDF
+     * Accessible by wallet owner or ADMIN
+     */
+    @GetMapping("/{walletNumber}/statement/download")
+    @PreAuthorize("@walletSecurity.canView(#walletNumber)")
+    public ResponseEntity<Resource> downloadStatement(
+            @PathVariable String walletNumber,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("Downloading statement for wallet: {}", walletNumber);
+        
+        LocalDateTime start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_DATE_TIME);
+        LocalDateTime end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_DATE_TIME);
+        
+        Resource pdfResource = walletHistoryService.downloadStatementPdf(
+                walletNumber, start, end);
+        
+        String filename = "statement_" + walletNumber + "_" + 
+                startDate.replace(":", "-") + "_to_" + endDate.replace(":", "-") + ".pdf";
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdfResource);
+    }
+
+    /**
+     * LOT 5: Get balance history over time (for charts/analytics)
+     * Accessible by wallet owner or ADMIN
+     */
+    @GetMapping("/{walletNumber}/balance-history")
+    @PreAuthorize("@walletSecurity.canView(#walletNumber)")
+    public ResponseEntity<BalanceHistoryResponse> getBalanceHistory(
+            @PathVariable String walletNumber,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("Fetching balance history for wallet: {} from {} to {}", walletNumber, startDate, endDate);
+        
+        LocalDateTime start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_DATE_TIME);
+        LocalDateTime end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_DATE_TIME);
+        
+        BalanceHistoryResponse balanceHistory = walletHistoryService.getBalanceHistory(
+                walletNumber, start, end);
+        return ResponseEntity.ok(balanceHistory);
+    }
+
+    // ========== Commented Endpoints (Legacy) ==========
+    
     /**
      * Récupère le wallet d'un utilisateur via son ID.
      */
 //    @GetMapping("/user/{userId}")
 //    public ResponseEntity<?> getWalletByUserId(@PathVariable Long userId) {
 //        try {
-//            WalletDTO wallet = walletService.getWalletByUserId(userId);
-//            if (wallet == null) {
-//                log.warn("⚠️ Wallet not found for user {}", userId);
-//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//                        .body("Wallet not found for user " + userId);
-//            }
-//            return ResponseEntity.ok(wallet);
-//        } catch (Exception e) {
-//            log.error("❌ Error fetching wallet for user {}: {}", userId, e.getMessage(), e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error fetching wallet: " + e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * Récupère un wallet via son numéro.
-//     */
-//    @GetMapping("/{walletNumber}")
-//    public ResponseEntity<?> getWalletByNumber(@PathVariable String walletNumber) {
-//        try {
-//            WalletDTO wallet = walletService.getWalletByNumber(walletNumber);
-//            if (wallet == null) {
-//                log.warn("⚠️ Wallet not found with number {}", walletNumber);
-//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//                        .body("Wallet not found with number " + walletNumber);
-//            }
-//            return ResponseEntity.ok(wallet);
-//        } catch (Exception e) {
-//            log.error("❌ Error fetching wallet with number {}: {}", walletNumber, e.getMessage(), e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error fetching wallet: " + e.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * Transfert d'argent entre deux wallets.
-//     */
-//    @PostMapping("/transfer")
-//    public ResponseEntity<?> transfer(@RequestBody TransferRequest request) {
-//        try {
-//            walletService.transfer(
-//                    request.getSenderWalletNumber(),
-//                    request.getReceiverWalletNumber(),
-//                    request.getAmount()
-//            );
-//            log.info("✅ Transfer successful from {} to {} amount {}",
-//                    request.getSenderWalletNumber(),
-//                    request.getReceiverWalletNumber(),
-//                    request.getAmount());
-//            return ResponseEntity.ok().build();
-//        } catch (Exception e) {
-//            log.error("❌ Transfer failed from {} to {}: {}",
-//                    request.getSenderWalletNumber(),
-//                    request.getReceiverWalletNumber(),
-//                    e.getMessage(), e);
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-//                    .body("Transfer failed: " + e.getMessage());
-//        }
-//    }
 
     /**
      * Transfert d'argent entre deux wallets (Lot 2).

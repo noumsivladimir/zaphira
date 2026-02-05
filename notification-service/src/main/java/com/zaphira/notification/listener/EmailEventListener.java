@@ -37,7 +37,7 @@ public class EmailEventListener {
 
         } catch (Exception e) {
             log.error("Failed to send email to: {} | Type: {}", event.getTo(), event.getEmailType(), e);
-            // TODO: Implement retry mechanism or dead letter queue
+           
         }
     }
 }

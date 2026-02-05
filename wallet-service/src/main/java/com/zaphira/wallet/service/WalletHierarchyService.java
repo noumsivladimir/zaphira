@@ -11,6 +11,12 @@ public interface WalletHierarchyService {
 
     // Création de sous-wallets
     SubWalletResponse createSubWallet(CreateSubWalletRequest request);
+    
+    // Get sub-wallet details by ID
+    SubWalletResponse getSubWalletById(Long id);
+    
+    // Delete sub-wallet by ID
+    void deleteSubWallet(Long id);
 
     // Navigation hiérarchique
     WalletDTO getWalletWithSubWallets(String walletNumber, boolean recursive);

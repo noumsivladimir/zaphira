@@ -33,14 +33,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(WalletException.class)
     public ResponseEntity<ErrorResponse> handleWalletException(WalletException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        if (ex instanceof MerchantAlreadyExistsException) {
+            if ("WALLET_ALREADY_EXISTS".equals(ex.getErrorCode()) || "MERCHANT_ALREADY_EXISTS".equals(ex.getErrorCode())) {
+                status = HttpStatus.CONFLICT;
+            }
+        }
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
+                .status(status.value())
+                .error(status.getReasonPhrase())
                 .message(ex.getMessage())
                 .errorCode(ex.getErrorCode())
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return ResponseEntity.status(status).body(error);
     }
 
     @ExceptionHandler(UnauthorizedWalletAccessException.class)

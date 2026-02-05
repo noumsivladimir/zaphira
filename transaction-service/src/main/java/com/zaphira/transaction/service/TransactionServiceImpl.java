@@ -961,8 +961,8 @@ public class TransactionServiceImpl implements TransactionService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Transaction> transactions = (status != null)
-                ? transactionRepository.findBySenderIdAndStatus(currentUserId, status, pageable)
-                : transactionRepository.findBySenderId(currentUserId, pageable);
+                ? transactionRepository.findBySenderWalletIdAndStatus(currentUserId, status, pageable)
+                : transactionRepository.findBySenderWalletId(currentUserId, pageable);
 
         return transactions.map(transactionMapper::toDTO);
     }
@@ -977,8 +977,8 @@ public class TransactionServiceImpl implements TransactionService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Transaction> transactions = (status != null)
-                ? transactionRepository.findByReceiverIdAndStatus(currentUserId, status, pageable)
-                : transactionRepository.findByReceiverId(currentUserId, pageable);
+                ? transactionRepository.findByReceiverWalletIdAndStatus(currentUserId, status, pageable)
+                : transactionRepository.findByReceiverWalletId(currentUserId, pageable);
 
         return transactions.map(transactionMapper::toDTO);
     }

@@ -9,7 +9,7 @@ Write-Host "=== TEST PROCESSUS INSCRIPTION OTP ===" -ForegroundColor Cyan
 
 # Configuration
 $userServiceUrl = "http://localhost:8080"
-$notificationServiceUrl = "http://localhost:8089"
+$notificationServiceUrl = "http://localhost:8080"
 
 # Étape 1: Inscription utilisateur
 Write-Host ""

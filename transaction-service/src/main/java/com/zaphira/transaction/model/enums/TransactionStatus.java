@@ -23,6 +23,7 @@ public enum TransactionStatus {
     FAILED("Échouée", "Transaction échouée"),
     CANCELLED("Annulée", "Transaction annulée"),
     REVERSED("Inversée", "Transaction inversée/remboursée"),
+    REFUNDED("Remboursée", "Transaction remboursée"),
     BLOCKED("Bloquée", "Transaction bloquée pour vérification");
 
     private final String label;

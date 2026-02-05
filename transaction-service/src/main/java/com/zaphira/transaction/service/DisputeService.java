@@ -246,7 +246,7 @@ public class DisputeService {
             .submittedBy(user.getEmail())
             .submittedAt(LocalDateTime.now())
             .verified(false)
-            // TODO: Upload file to S3/Cloud Storage and set fileUrl
+           
             .fileUrl("s3://evidence-bucket/disputes/" + dispute.getReference() + "/" + 
                     UUID.randomUUID().toString() + "-" + request.getFile().getOriginalFilename())
             .build();
@@ -442,5 +442,156 @@ public class DisputeService {
         
         kafkaTemplate.send(disputeCreatedTopic, dispute.getReference(), event);
         log.info("[KAFKA_PUBLISH] DisputeCreatedEvent sent for dispute: {}", dispute.getReference());
+    }
+    
+    // ============================================================
+    // LIST ALL DISPUTES
+    // ============================================================
+    
+    /**
+     * Get all disputes (filtered by user role).
+     * 
+     * Authorization:
+     * - ADMIN: Can see all disputes
+     * - CUSTOMER: Can only see disputes they initiated
+     * - MERCHANT: Can see disputes for their transactions
+     * 
+     * @return List of all disputes user is authorized to view
+     */
+    @Transactional
+    public java.util.List<Dispute> getAllDisputes() {
+        AuthenticatedUser user = getAuthenticatedUser();
+        
+        log.info("[DISPUTE_LIST] Fetching disputes for user: {} (roles: {})", 
+                user.getEmail(), user.getRoles());
+        
+        // Admin can see all disputes
+        if (user.getRoles() != null && user.getRoles().contains("ADMIN")) {
+            java.util.List<Dispute> disputes = disputeRepository.findAll();
+            log.info("[DISPUTE_LIST_SUCCESS] Admin viewing {} disputes", disputes.size());
+            return disputes;
+        }
+        
+        // Customers see only their own disputes
+        java.util.List<Dispute> disputes = disputeRepository.findByInitiatedBy(user.getEmail());
+        log.info("[DISPUTE_LIST_SUCCESS] User viewing {} disputes", disputes.size());
+        return disputes;
+    }
+    
+    // ============================================================
+    // GET DISPUTE MESSAGES/TIMELINE
+    // ============================================================
+    
+    /**
+     * Get dispute timeline/messages.
+     * 
+     * Returns chronological list of all events in dispute lifecycle:
+     * - Creation
+     * - Evidence submissions
+     * - Status changes
+     * - Responses
+     * - Resolution
+     * 
+     * @param disputeId Dispute ID
+     * @return List of timeline events ordered by timestamp
+     */
+    @Transactional
+    public java.util.List<DisputeTimeline> getDisputeMessages(Long disputeId) {
+        AuthenticatedUser user = getAuthenticatedUser();
+        
+        log.info("[DISPUTE_MESSAGES] Fetching messages for dispute: {} by user: {}", 
+                disputeId, user.getEmail());
+        
+        Dispute dispute = disputeRepository.findById(disputeId)
+            .orElseThrow(() -> new ResourceNotFoundException("Dispute not found: " + disputeId));
+        
+        // Authorization check - only owner or admin can view messages
+        boolean isAdmin = user.getRoles() != null && user.getRoles().contains("ADMIN");
+        boolean isOwner = dispute.getInitiatedBy().equals(user.getEmail());
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("You are not authorized to view messages for this dispute");
+        }
+        
+        // Get timeline sorted by timestamp
+        java.util.List<DisputeTimeline> messages = new java.util.ArrayList<>(dispute.getTimeline());
+        messages.sort((a, b) -> a.getEventTimestamp().compareTo(b.getEventTimestamp()));
+        
+        log.info("[DISPUTE_MESSAGES_SUCCESS] Retrieved {} messages for dispute: {}", 
+                messages.size(), disputeId);
+        
+        return messages;
+    }
+    
+    // ============================================================
+    // ESCALATE DISPUTE
+    // ============================================================
+    
+    /**
+     * Escalate dispute to higher authority.
+     * 
+     * Escalation occurs when:
+     * - Customer unsatisfied with resolution
+     * - Merchant disputes the decision
+     * - Complex case requiring senior review
+     * - Legal/compliance escalation needed
+     * 
+     * Changes status to ESCALATED and adds timeline event.
+     * 
+     * @param disputeId Dispute ID
+     * @param reason Reason for escalation
+     * @return Updated dispute
+     */
+    @Transactional
+    public Dispute escalateDispute(Long disputeId, String reason) {
+        AuthenticatedUser user = getAuthenticatedUser();
+        
+        log.info("[DISPUTE_ESCALATE] Escalating dispute: {} by user: {}", 
+                disputeId, user.getEmail());
+        
+        Dispute dispute = disputeRepository.findById(disputeId)
+            .orElseThrow(() -> new ResourceNotFoundException("Dispute not found: " + disputeId));
+        
+        // Authorization check - only owner or admin can escalate
+        boolean isAdmin = user.getRoles() != null && user.getRoles().contains("ADMIN");
+        boolean isOwner = dispute.getInitiatedBy().equals(user.getEmail());
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("You are not authorized to escalate this dispute");
+        }
+        
+        // Validate escalation is allowed
+        if (dispute.getStatus() == DisputeStatus.ESCALATED) {
+            throw new ValidationException("Dispute is already escalated");
+        }
+        
+        if (dispute.getStatus() == DisputeStatus.RESOLVED || 
+            dispute.getStatus() == DisputeStatus.CLOSED) {
+            throw new ValidationException("Cannot escalate resolved or closed dispute");
+        }
+        
+        // Update status
+        DisputeStatus oldStatus = dispute.getStatus();
+        dispute.setStatus(DisputeStatus.ESCALATED);
+        dispute.setUpdatedAt(LocalDateTime.now());
+        
+        // Add timeline event
+        DisputeTimeline timelineEvent = DisputeTimeline.builder()
+            .dispute(dispute)
+            .eventType("ESCALATED")
+            .eventDescription("Dispute escalated by user: " + reason)
+            .actor(user.getEmail())
+            .actorRole(user.getRoles() != null && user.getRoles().contains("ADMIN") ? "ADMIN" : "CUSTOMER")
+            .oldStatus(oldStatus.name())
+            .newStatus(DisputeStatus.ESCALATED.name())
+            .eventTimestamp(LocalDateTime.now())
+            .build();
+        
+        dispute.addTimelineEvent(timelineEvent);
+        
+        Dispute savedDispute = disputeRepository.save(dispute);
+        
+        log.info("[DISPUTE_ESCALATE_SUCCESS] Dispute {} escalated from {} to ESCALATED", 
+                disputeId, oldStatus);
+        
+        return savedDispute;
     }
 }

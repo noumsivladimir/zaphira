@@ -9,6 +9,7 @@ import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface WalletService {
 
@@ -24,6 +25,9 @@ public interface WalletService {
    //
    @Transactional(readOnly = true)
    WalletDTO getWalletById(Long id);
+
+   @Transactional(readOnly = true)
+   List<WalletDTO> getUserWallets(Long userId);
 
    WalletSummaryDTO getWalletSummary(Long userId);
 

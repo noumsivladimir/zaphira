@@ -1,8 +1,8 @@
 # Script PowerShell pour tester les fonctionnalités du microservice Transaction
 # Port: 8083
-# Base URL: http://localhost:8083
+# Base URL: http://localhost:8080
 
-$baseUrl = "http://localhost:8083"
+$baseUrl = "http://localhost:8080"
 $headers = @{
     "Content-Type" = "application/json"
     "Authorization" = "Bearer YOUR_JWT_TOKEN_HERE"  # Remplacer par un token JWT valide

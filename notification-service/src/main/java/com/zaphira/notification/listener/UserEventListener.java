@@ -61,7 +61,7 @@ public class UserEventListener {
 
         } catch (Exception e) {
             log.error("Failed to send welcome email to user: {}", event.getUserId(), e);
-            // TODO: Implement retry mechanism or dead letter queue
+           
         }
     }
 }

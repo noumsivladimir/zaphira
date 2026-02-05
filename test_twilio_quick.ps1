@@ -7,7 +7,7 @@ Write-Host ""
 # Test 1: Vérifier que le service fonctionne
 Write-Host "1. Vérification du service notification..." -ForegroundColor Green
 try {
-    $health = Invoke-RestMethod -Uri "http://localhost:8083/actuator/health" -Method GET
+    $health = Invoke-RestMethod -Uri "http://localhost:8080/actuator/health" -Method GET
     Write-Host "✅ Service notification: UP" -ForegroundColor Green
 } catch {
     Write-Host "❌ Service notification: DOWN" -ForegroundColor Red
@@ -22,7 +22,7 @@ $phoneNumber = Read-Host "Entrez votre numéro (+237XXXXXXXXX)"
 $testMessage = "Test Zaphira - $(Get-Date -Format 'HH:mm:ss')"
 
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/test/send-sms?to=$phoneNumber&message=$testMessage" -Method POST
+    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/test/send-sms?to=$phoneNumber&message=$testMessage" -Method POST
     Write-Host "✅ SMS envoyé avec succès !" -ForegroundColor Green
     Write-Host "Vérifiez votre téléphone pour: '$testMessage'" -ForegroundColor Yellow
 } catch {
@@ -37,7 +37,7 @@ $userId = Read-Host "Entrez l'ID utilisateur (ex: 218)"
 try {
     # Génération OTP
     Write-Host "Génération de l'OTP..." -ForegroundColor Yellow
-    $otpResponse = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/send/otp/$userId" -Method POST
+    $otpResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/send/otp/$userId" -Method POST
     Write-Host "✅ OTP généré !" -ForegroundColor Green
     Write-Host "Réponse: $($otpResponse | ConvertTo-Json)" -ForegroundColor Cyan
 
@@ -46,7 +46,7 @@ try {
     Write-Host "Code OTP: $otpCode" -ForegroundColor Green
 
     # Vérification OTP
-    $verifyResponse = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/verify/otp?userId=$userId&code=$otpCode" -Method POST
+    $verifyResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/verify/otp?userId=$userId&code=$otpCode" -Method POST
     Write-Host "✅ OTP vérifié avec succès !" -ForegroundColor Green
 
 } catch {

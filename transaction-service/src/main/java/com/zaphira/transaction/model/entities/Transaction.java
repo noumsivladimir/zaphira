@@ -123,6 +123,10 @@ public class Transaction {
     @Column(name = "last_updated_at")
     private LocalDateTime lastUpdatedAt;
 
+    /** Failure reason for failed transactions */
+    @Column(name = "failure_reason", length = 500)
+    private String failureReason;
+
     /** Audit */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -131,15 +135,6 @@ public class Transaction {
     private LocalDateTime updatedAt;
 
     /** Relationships to normalized tables */
-    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private TransactionFees fees;
-
-    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private TransactionTimeline timeline;
-
-    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private TransactionMetadata metadata;
-
     @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private TransactionRisk risk;
 
@@ -153,19 +148,5 @@ public class Transaction {
     void onUpdate() {
         this.updatedAt = LocalDateTime.now();
         this.lastUpdatedAt = LocalDateTime.now();
-    }
-
-    // Helper methods for accessing nested metadata
-    public String getFailureReason() {
-        return metadata != null ? metadata.getFailureReason() : null;
-    }
-
-    public void setFailureReason(String failureReason) {
-        if (metadata == null) {
-            metadata = new TransactionMetadata();
-            metadata.setTransaction(this);
-            metadata.setTransactionId(this.id);
-        }
-        metadata.setFailureReason(failureReason);
     }
 }

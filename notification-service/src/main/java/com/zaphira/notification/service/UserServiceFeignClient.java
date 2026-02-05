@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.Map;
 
-@FeignClient(name = "user-service", url = "http://localhost:8082")
+@FeignClient(name = "user-service")
 public interface UserServiceFeignClient {
 
     @PostMapping("/api/users/{userId}/generate-otp")

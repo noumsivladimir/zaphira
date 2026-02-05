@@ -1,8 +1,8 @@
 package com.zaphira.wallet.repository;
 
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.entities.WalletPermission;
-import com.zaphira.wallet.models.enums.PermissionType;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.entities.WalletPermission;
+import com.zaphira.wallet.model.enums.PermissionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

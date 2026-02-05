@@ -1,6 +1,6 @@
 package com.zaphira.wallet.test;
 
-import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.model.entities.Wallet;
 import com.zaphira.wallet.repository.WalletRepository;
 import com.zaphira.wallet.repository.WalletSubWalletRepository;
 import org.springframework.boot.CommandLineRunner;

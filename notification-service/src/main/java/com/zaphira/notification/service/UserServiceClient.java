@@ -15,8 +15,8 @@ public class UserServiceClient {
     private final RestTemplate restTemplate;
 
     
-    private static final String USER_SERVICE_URL = "http://localhost:8082";
-    private static final String WALLET_SERVICE_URL = "http://localhost:8084";
+    private static final String USER_SERVICE_URL = "http://user-service";
+    private static final String WALLET_SERVICE_URL = "http://wallet-service";
 
     public UserNotificationInfo getUserNotificationInfo(Long userId) {
         try {

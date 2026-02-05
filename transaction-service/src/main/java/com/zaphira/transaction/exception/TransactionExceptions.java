@@ -103,4 +103,16 @@ public class TransactionExceptions {
     public static InvalidTransactionStatusException cannotRetryTransaction(com.zaphira.transaction.model.enums.TransactionStatus status) {
         return new InvalidTransactionStatusException("Cannot retry transaction with status: " + status + ". Only FAILED transactions can be retried.");
     }
+
+    public static InvalidTransactionStatusException invalidTransactionState(String message) {
+        return new InvalidTransactionStatusException(message);
+    }
+
+    public static InvalidTransactionStatusException transactionAlreadyReversed(String reference) {
+        return new InvalidTransactionStatusException("Transaction " + reference + " has already been reversed");
+    }
+
+    public static InvalidTransactionStatusException transactionAlreadyRefunded(String reference) {
+        return new InvalidTransactionStatusException("Transaction " + reference + " has already been refunded");
+    }
 }

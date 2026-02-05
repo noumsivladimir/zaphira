@@ -1,7 +1,7 @@
 twilio:
-  account-sid: "AC4ee2203ca9ee74fe8df3010675a03cd2"
-  auth-token: "c94f6cac374ebe85351766659a3ced4b"
-  from-number: "+17177897813"
+  account-sid: ${TWILIO_ACCOUNT_SID:AC4ee2203ca9ee74fe8df3010675a03cd2}
+  auth-token: ${TWILIO_AUTH_TOKEN:c94f6cac374ebe85351766659a3ced4b}
+  from-number: ${TWILIO_FROM_NUMBER:+17177897813}
 
 otp:
   ttl-minutes: 10
@@ -18,6 +18,8 @@ infra:
   db:
     host: ${DB_HOST:192.168.100.4}
     port: ${DB_PORT:5432}
+  kafka:
+    bootstrap: ${KAFKA_BOOTSTRAP:192.168.100.4:9092}
 
 notification:
   db:
@@ -48,4 +50,24 @@ spring:
           auth: true
           starttls:
             enable: true
+  # Kafka Configuration
+  kafka:
+    enabled: true
+    bootstrap-servers: ${infra.kafka.bootstrap}
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Kafka Topics
+kafka:
+  topics:
+    otp-sms-request: otp-sms-request
+    otp-sms-result: otp-sms-result
 

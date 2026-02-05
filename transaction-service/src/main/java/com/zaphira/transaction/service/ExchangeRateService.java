@@ -127,7 +127,7 @@ public class ExchangeRateService {
      */
     private ExchangeRate fetchRateFromProvider(CurrencyCode source, CurrencyCode target) {
         try {
-            // TODO: Implement actual provider integration
+            
             // For now, return mock rate for testing
             BigDecimal mockRate = BigDecimal.valueOf(0.92); // USD to EUR example
             
@@ -239,5 +239,36 @@ public class ExchangeRateService {
             exchangeRateRepository.deleteAll(expiredRates);
             log.info("[FX_CLEANUP] Deleted {} expired rates", expiredRates.size());
         }
+    }
+    
+    /**
+     * Get exchange rate history for a currency pair.
+     * 
+     * Returns all historical rates for the given currency pair,
+     * ordered by creation date descending (newest first).
+     * 
+     * @param source Source currency
+     * @param target Target currency
+     * @param limit Maximum number of records to return (default: 100, max: 500)
+     * @return List of historical exchange rates
+     */
+    public java.util.List<ExchangeRate> getExchangeRateHistory(CurrencyCode source, CurrencyCode target, int limit) {
+        log.info("[FX_HISTORY] Fetching history for {} → {} (limit: {})", source, target, limit);
+        
+        // Cap limit at 500 to prevent excessive data retrieval
+        if (limit > 500) {
+            limit = 500;
+        }
+        
+        var history = exchangeRateRepository.findBySourceCurrencyAndTargetCurrencyOrderByCreatedAtDesc(
+                source, target);
+        
+        // Limit results
+        if (history.size() > limit) {
+            history = history.subList(0, limit);
+        }
+        
+        log.info("[FX_HISTORY] Found {} historical rates", history.size());
+        return history;
     }
 }

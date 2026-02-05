@@ -1,7 +1,7 @@
 package com.zaphira.wallet.mapper;
 
 import com.zaphira.wallet.dto.WalletDTO;
-import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.model.entities.Wallet;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

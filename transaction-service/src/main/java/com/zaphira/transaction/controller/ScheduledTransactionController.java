@@ -51,6 +51,30 @@ public class ScheduledTransactionController {
         scheduledTransactionService.cancel(id, cancelledBy, reason);
         return ResponseEntity.noContent().build();
     }
+
+    // LOT 3: Execute Scheduled Transaction Manually - Owner or ADMIN
+    @PostMapping("/{id}/execute")
+    @PreAuthorize("@scheduledTxSecurity.isOwner(#id) or hasRole('ADMIN')")
+    public ResponseEntity<ScheduledTransactionResponse> execute(@PathVariable Long id) {
+        ScheduledTransactionResponse response = scheduledTransactionService.executeSingle(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // LOT 3: Batch Execute Scheduled Transactions - ADMIN only
+    @PostMapping("/batch-execute")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ScheduledTransactionResponse>> executeBatch(@RequestBody List<Long> ids) {
+        List<ScheduledTransactionResponse> responses = scheduledTransactionService.executeBatch(ids);
+        return ResponseEntity.ok(responses);
+    }
+
+    // LOT 3: Pause Scheduled Transaction - Owner only
+    @PostMapping("/{id}/pause")
+    @PreAuthorize("@scheduledTxSecurity.isOwner(#id)")
+    public ResponseEntity<ScheduledTransactionResponse> pause(@PathVariable Long id) {
+        ScheduledTransactionResponse response = scheduledTransactionService.pause(id);
+        return ResponseEntity.ok(response);
+    }
 }
 
 

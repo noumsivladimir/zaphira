@@ -6,7 +6,7 @@ Write-Host "========================================" -ForegroundColor Green
 
 # Test user registration
 Write-Host "`nTesting user registration..." -ForegroundColor Yellow
-$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8082/api/users/register" -Method POST -ContentType "application/json" -Body '{
+$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/users/register" -Method POST -ContentType "application/json" -Body '{
     "phoneNumber": "+237690000001",
     "email": "test@example.com",
     "pin": "1234",
@@ -47,6 +47,6 @@ Write-Host "========================================" -ForegroundColor Green
 # Optional: Test the verification link directly (if you have the code)
 # Uncomment and replace YOUR_CODE with the actual code from email
 # Write-Host "`nTesting direct verification link..." -ForegroundColor Yellow
-# $verifyResponse = Invoke-WebRequest -Uri "http://localhost:8082/api/users/verify-email-link?email=test@example.com&code=YOUR_CODE"
+# $verifyResponse = Invoke-WebRequest -Uri "http://localhost:8080/api/users/verify-email-link?email=test@example.com&code=YOUR_CODE"
 # Write-Host "Verification Response:" -ForegroundColor Cyan
 # $verifyResponse.Content

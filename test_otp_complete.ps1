@@ -37,7 +37,7 @@ if (-not $allConfigured) {
 Write-Host ""
 Write-Host "2. Vérification que le service notification fonctionne..." -ForegroundColor Green
 try {
-    $health = Invoke-RestMethod -Uri "http://localhost:8083/actuator/health" -Method GET
+    $health = Invoke-RestMethod -Uri "http://localhost:8080/actuator/health" -Method GET
     Write-Host "✅ Service notification: UP" -ForegroundColor Green
 } catch {
     Write-Host "❌ Service notification: DOWN ou non accessible" -ForegroundColor Red
@@ -51,7 +51,7 @@ $phoneNumber = Read-Host "Entrez votre numéro de téléphone (+237XXXXXXXXX)"
 $testMessage = "Test Zaphira OTP - $(Get-Date -Format 'HH:mm:ss')"
 
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/test/send-sms?to=$phoneNumber&message=$testMessage" -Method POST
+    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/test/send-sms?to=$phoneNumber&message=$testMessage" -Method POST
     Write-Host "✅ SMS de test envoyé !" -ForegroundColor Green
     Write-Host "Vérifiez votre téléphone pour: '$testMessage'" -ForegroundColor Yellow
 } catch {
@@ -66,7 +66,7 @@ $userId = Read-Host "Entrez l'ID utilisateur (ex: 218)"
 try {
     # Envoi OTP
     Write-Host "Génération de l'OTP..." -ForegroundColor Yellow
-    $otpResponse = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/send/otp/$userId" -Method POST
+    $otpResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/send/otp/$userId" -Method POST
     Write-Host "✅ OTP généré !" -ForegroundColor Green
     Write-Host "Réponse OTP: $($otpResponse | ConvertTo-Json)" -ForegroundColor Cyan
 
@@ -76,7 +76,7 @@ try {
 
     # Vérification OTP
     Write-Host "Vérification de l'OTP..." -ForegroundColor Yellow
-    $verifyResponse = Invoke-RestMethod -Uri "http://localhost:8083/api/notifications/verify/otp?userId=$userId&code=$otpCode" -Method POST
+    $verifyResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/notifications/verify/otp?userId=$userId&code=$otpCode" -Method POST
     Write-Host "✅ OTP vérifié avec succès !" -ForegroundColor Green
     Write-Host "Réponse: $($verifyResponse | ConvertTo-Json)" -ForegroundColor Gray
 

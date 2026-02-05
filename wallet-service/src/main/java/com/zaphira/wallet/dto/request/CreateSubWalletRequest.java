@@ -1,7 +1,7 @@
 package com.zaphira.wallet.dto.request;
 
 
-import com.zaphira.wallet.models.enums.SubWalletType;
+import com.zaphira.wallet.model.enums.SubWalletType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

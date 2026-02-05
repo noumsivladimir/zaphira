@@ -1,6 +1,6 @@
 package com.zaphira.wallet.dto;
 
-import com.zaphira.wallet.models.enums.PermissionLevel;
+import com.zaphira.wallet.model.enums.PermissionLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

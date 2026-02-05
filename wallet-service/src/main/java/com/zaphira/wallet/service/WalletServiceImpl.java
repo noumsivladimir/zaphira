@@ -9,10 +9,10 @@ import com.zaphira.wallet.dto.response.CreateWalletResponse;
 import com.zaphira.wallet.dto.response.TransactionValidationResponse;
 import com.zaphira.wallet.exception.*;
 import com.zaphira.wallet.mapper.WalletMapper;
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.entities.WalletStatusHistory;
-import com.zaphira.wallet.models.enums.WalletStatus;
-import com.zaphira.wallet.models.enums.WalletType;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.entities.WalletStatusHistory;
+import com.zaphira.wallet.model.enums.WalletStatus;
+import com.zaphira.wallet.model.enums.WalletType;
 import com.zaphira.wallet.repository.WalletRepository;
 
 import com.zaphira.wallet.security.AuthenticatedUser;
@@ -49,28 +49,30 @@ public class WalletServiceImpl implements WalletService{
     public CreateWalletResponse createWalletForUser(CreateWalletRequest request) {
 
         Long userId = request.getUserId();
-
-        log.info("Creating wallet for user: {}", request.getUserId());
+        log.info("Creating wallet for user: {}", userId);
 
         //Algo generation du WalletNumber Unique
         String walletNumber = String.format("%08d", (userId * 1234567) % 100_000_000);
-
         log.info("WalletNumber generated: {}", walletNumber);
-        // Créer le wallet avec walletNumber déjà défini
+
+        // Check if a wallet already exists for this user and type
+        if (walletRepository.existsByWalletNumber(walletNumber)) {
+            throw new MerchantAlreadyExistsException("A wallet already exists for this user.", "WALLET_ALREADY_EXISTS");
+        }
 
         Wallet wallet = Wallet.builder()
-                .userId(request.getUserId())
-                .availableBalance( BigDecimal.ZERO)
-                .walletNumber(walletNumber)
-                .type(WalletType.USER )
-                .status(WalletStatus.ACTIVE)
-                 // si ta colonne NOT NULL
-                .build();
+            .userId(userId)
+            .availableBalance(BigDecimal.ZERO)
+            .walletNumber(walletNumber)
+            .type(request.getType() != null ? request.getType() : WalletType.USER)
+            .status(request.getStatus() != null ? request.getStatus() : WalletStatus.ACTIVE)
+            .blockedBalance(BigDecimal.ZERO)
+            .totalBalance(BigDecimal.ZERO)
+            .currency("XAF")
+            .active(true)
+            .build();
 
-
-        // Sauvegarder le wallet en base
         Wallet saved = walletRepository.save(wallet);
-
         return toDTO(saved);
     }
 
@@ -79,11 +81,11 @@ public class WalletServiceImpl implements WalletService{
 
 
         Wallet wallet = walletRepository.findByWalletNumber(request.getWalletNumber()).orElseThrow(
-                () -> new WalletNotFoundException(request.getWalletNumber()));
+            () -> new WalletNotFoundException(request.getWalletNumber()));
 
         log.info ("Verifying if a merchant wallet exists for wallet: {}", request.getWalletNumber());
         if (wallet.getMerchantCode() != null && wallet.getMerchantName() != null) {
-            throw new MerchantAlreadyExistsException("ALREADY MERCHANT USER");
+            throw new MerchantAlreadyExistsException("Merchant wallet already exists for this user.", "MERCHANT_ALREADY_EXISTS");
         }
 
         log.info("Creating Merchant Wallet for WalletId: {}", wallet.getId());
@@ -92,7 +94,6 @@ public class WalletServiceImpl implements WalletService{
         String merchantCode = String.format("%06d", (wallet.getId() * 1234567) % 1_000_000);
 
         log.info("WalletCode generated: {}", merchantCode);
-        // Créer le wallet avec walletNumber déjà défini
 
         wallet.setMerchantName(request.getMerchantName());
         wallet.setMerchantCode(merchantCode);
@@ -124,6 +125,16 @@ public class WalletServiceImpl implements WalletService{
         Wallet wallet = walletRepository.findByWalletIdWithLock(id)
                 .orElseThrow(() -> new WalletNotFoundException("Wallet non trouvé avec l'ID: " + id));
         return walletMapper.toDTO(wallet);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WalletDTO> getUserWallets(Long userId) {
+        log.info("Fetching all wallets for user: {}", userId);
+        List<Wallet> wallets = walletRepository.findByUserIdAndStatus(userId, WalletStatus.ACTIVE);
+        return wallets.stream()
+                .map(walletMapper::toDTO)
+                .toList();
     }
 
 
@@ -729,11 +740,16 @@ public class WalletServiceImpl implements WalletService{
     private CreateWalletResponse toDTO(Wallet wallet) {
 
         CreateWalletResponse.CreateWalletResponseBuilder builder = CreateWalletResponse.builder()
-                .id(wallet.getId())
-                .userId(wallet.getUserId())
-                .walletNumber(wallet.getWalletNumber())
-                .type(wallet.getType())
-                .status(wallet.getStatus());
+            .id(wallet.getId())
+            .userId(wallet.getUserId())
+            .walletNumber(wallet.getWalletNumber())
+            .type(wallet.getType())
+            .status(wallet.getStatus())
+            .availableBalance(wallet.getAvailableBalance())
+            .blockedBalance(wallet.getBlockedBalance())
+            .currency(wallet.getCurrency())
+            .totalBalance(wallet.getTotalBalance())
+            .active(wallet.getActive());
 
         // ajout conditionnel
         if (wallet.getMerchantCode() != null) {

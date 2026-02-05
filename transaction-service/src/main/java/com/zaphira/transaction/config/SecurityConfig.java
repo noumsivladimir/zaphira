@@ -1,9 +1,9 @@
 package com.zaphira.transaction.config;
 
-import com.zaphira.common.security.JwtAuthenticationFilter;
 import com.zaphira.common.security.SecurityConstants;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import com.zaphira.transaction.security.JwtAuthenticationFilter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -20,16 +20,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
     
-    @Value("${app.jwt.secret}")
-    private String jwtSecret;
-    
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtSecret);
-    }
+    @Autowired(required = false)
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -51,10 +46,15 @@ public class SecurityConfig {
                         
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
-                )
+                );
                 
                 // Add JWT filter before Spring Security's UsernamePasswordAuthenticationFilter
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                if (jwtAuthenticationFilter != null) {
+                    log.info("JWT Authentication Filter is enabled");
+                    http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                } else {
+                    log.warn("JWT Authentication Filter is DISABLED - only for test environments!");
+                }
         
         return http.build();
     }

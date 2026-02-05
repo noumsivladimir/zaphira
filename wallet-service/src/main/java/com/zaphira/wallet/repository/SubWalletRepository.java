@@ -1,6 +1,6 @@
 package com.zaphira.wallet.repository;
 
-import com.zaphira.wallet.models.entities.SubWallet;
+import com.zaphira.wallet.model.entities.SubWallet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

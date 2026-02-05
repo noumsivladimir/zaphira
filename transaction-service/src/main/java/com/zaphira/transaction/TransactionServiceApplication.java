@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EntityScan(basePackages = {"com.zaphira.transaction", "com.zaphira.common.model.entities"})
+@EntityScan(basePackages = {"com.zaphira.transaction.model.entities", "com.zaphira.transaction.model", "com.zaphira.common.model.entities"})
 @EnableScheduling
 @EnableAsync
 @EnableDiscoveryClient

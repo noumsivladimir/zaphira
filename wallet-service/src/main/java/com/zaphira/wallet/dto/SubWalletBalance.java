@@ -1,7 +1,7 @@
 package com.zaphira.wallet.dto;
 
 import com.zaphira.common.model.enums.Currency;
-import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.model.enums.WalletStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

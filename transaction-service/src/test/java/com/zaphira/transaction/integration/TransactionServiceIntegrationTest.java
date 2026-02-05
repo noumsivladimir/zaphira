@@ -1,6 +1,7 @@
 package com.zaphira.transaction.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaphira.transaction.config.TestSecurityConfig;
 import com.zaphira.transaction.dto.requests.TransferRequest;
 import com.zaphira.transaction.dto.requests.DepositRequest;
 import com.zaphira.transaction.dto.requests.WithdrawalRequest;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,6 +32,7 @@ import static org.hamcrest.Matchers.*;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestSecurityConfig.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Transaction Service Integration Tests - LOT 1")
 class TransactionServiceIntegrationTest {

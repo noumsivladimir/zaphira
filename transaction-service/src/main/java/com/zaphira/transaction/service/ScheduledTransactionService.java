@@ -87,6 +87,85 @@ public class ScheduledTransactionService {
         repository.save(scheduled);
     }
 
+    /**
+     * LOT 3: Execute a specific scheduled transaction manually
+     * Can be called by owner or ADMIN to execute before scheduled time
+     */
+    @Transactional
+    public ScheduledTransactionResponse executeSingle(Long id) {
+        ScheduledTransaction scheduled = repository.findById(id)
+                .orElseThrow(() -> new ScheduledTransactionNotFoundException(id));
+        
+        if (scheduled.getStatus() != ScheduledTransactionStatus.PENDING) {
+            throw new IllegalStateException(
+                "Cannot execute scheduled transaction in status: " + scheduled.getStatus());
+        }
+        
+        log.info("Manually executing scheduled transaction id={}", id);
+        executeScheduledTransaction(scheduled);
+        
+        return toResponse(scheduled);
+    }
+
+    /**
+     * LOT 3: Execute multiple scheduled transactions in batch
+     * ADMIN only - processes all due transactions immediately
+     */
+    @Transactional
+    public List<ScheduledTransactionResponse> executeBatch(List<Long> ids) {
+        log.info("Batch executing {} scheduled transactions", ids.size());
+        
+        List<ScheduledTransaction> transactions = repository.findAllById(ids);
+        
+        if (transactions.size() != ids.size()) {
+            throw new IllegalArgumentException(
+                "Some scheduled transaction IDs not found. Expected: " + ids.size() + ", Found: " + transactions.size());
+        }
+        
+        for (ScheduledTransaction scheduled : transactions) {
+            if (scheduled.getStatus() != ScheduledTransactionStatus.PENDING) {
+                log.warn("Skipping scheduled transaction id={} with status={}", 
+                    scheduled.getId(), scheduled.getStatus());
+                continue;
+            }
+            
+            try {
+                executeScheduledTransaction(scheduled);
+            } catch (Exception ex) {
+                log.error("Failed to execute scheduled transaction id={}", scheduled.getId(), ex);
+            }
+        }
+        
+        return transactions.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * LOT 3: Pause a scheduled transaction
+     * Prevents automatic execution until resumed
+     * Note: Current model doesn't have PAUSED status, so we set CANCELLED temporarily
+     * TODO: Add PAUSED status to ScheduledTransactionStatus enum
+     */
+    @Transactional
+    public ScheduledTransactionResponse pause(Long id) {
+        ScheduledTransaction scheduled = repository.findById(id)
+                .orElseThrow(() -> new ScheduledTransactionNotFoundException(id));
+        
+        if (scheduled.getStatus() != ScheduledTransactionStatus.PENDING) {
+            throw new IllegalStateException(
+                "Cannot pause scheduled transaction in status: " + scheduled.getStatus());
+        }
+        
+        // TODO: Once PAUSED status is added to enum, use it instead of CANCELLED
+        scheduled.setStatus(ScheduledTransactionStatus.CANCELLED);
+        scheduled.setLastError("Paused by user");
+        repository.save(scheduled);
+        
+        log.info("Paused scheduled transaction id={}", id);
+        return toResponse(scheduled);
+    }
+
     @Scheduled(fixedDelayString = "60000")
     @Transactional
     public void processDueSchedules() {

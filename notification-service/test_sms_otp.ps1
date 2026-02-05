@@ -1,7 +1,7 @@
 # Test de l'envoi d'OTP par SMS avec payload
 # Utilisez ce script pour tester l'envoi d'OTP via le nouvel endpoint
 
-$baseUrl = "http://localhost:8089/api/notifications"
+$baseUrl = "http://localhost:8080/api/notifications"
 
 Write-Host "=== Test d'envoi d'OTP par SMS avec payload ===" -ForegroundColor Cyan
 Write-Host "Base URL: $baseUrl" -ForegroundColor Yellow

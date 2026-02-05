@@ -2,7 +2,7 @@ package com.zaphira.wallet.service;
 
 
 import com.zaphira.wallet.exception.WalletNotFoundException;
-import com.zaphira.wallet.models.entities.Wallet;
+import com.zaphira.wallet.model.entities.Wallet;
 import com.zaphira.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

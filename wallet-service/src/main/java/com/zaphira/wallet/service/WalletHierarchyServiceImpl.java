@@ -6,10 +6,10 @@ import com.zaphira.wallet.dto.WalletSummaryDTO;
 import com.zaphira.wallet.dto.request.CreateSubWalletRequest;
 import com.zaphira.wallet.dto.response.SubWalletResponse;
 import com.zaphira.wallet.mapper.SubWalletMapper;
-import com.zaphira.wallet.models.entities.SubWallet;
-import com.zaphira.wallet.models.entities.Wallet;
-import com.zaphira.wallet.models.entities.WalletSubWallet;
-import com.zaphira.wallet.models.enums.WalletStatus;
+import com.zaphira.wallet.model.entities.SubWallet;
+import com.zaphira.wallet.model.entities.Wallet;
+import com.zaphira.wallet.model.entities.WalletSubWallet;
+import com.zaphira.wallet.model.enums.WalletStatus;
 import com.zaphira.wallet.repository.SubWalletRepository;
 import com.zaphira.wallet.repository.WalletSubWalletRepository;
 import lombok.AllArgsConstructor;
@@ -140,6 +140,41 @@ public class WalletHierarchyServiceImpl implements WalletHierarchyService{
     @Override
     public void detachSubWallet(String subWalletNumber) {
 
+    }
+    
+    @Override
+    public SubWalletResponse getSubWalletById(Long id) {
+        log.info("[SUBWALLET_GET] Fetching sub-wallet with ID: {}", id);
+        
+        SubWallet subWallet = subWalletRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("SubWallet with ID " + id + " not found"));
+        
+        SubWalletResponse response = subWalletMapper.toResponse(subWallet, managingWallet(id));
+        
+        log.info("[SUBWALLET_GET_SUCCESS] Retrieved sub-wallet: {}", subWallet.getSubWalletName());
+        return response;
+    }
+    
+    @Override
+    public void deleteSubWallet(Long id) {
+        log.info("[SUBWALLET_DELETE] Deleting sub-wallet with ID: {}", id);
+        
+        SubWallet subWallet = subWalletRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("SubWallet with ID " + id + " not found"));
+        
+        // Check if sub-wallet can be deleted (e.g., balance should be zero)
+        if (subWallet.getTotalBalance().compareTo(BigDecimal.ZERO) > 0) {
+            throw new IllegalStateException("Cannot delete sub-wallet with non-zero balance");
+        }
+        
+        // Delete all wallet-subwallet relationships first
+        List<WalletSubWallet> relationships = walletSubWalletRepository.findBySubwalletId(id);
+        walletSubWalletRepository.deleteAll(relationships);
+        
+        // Delete the sub-wallet
+        subWalletRepository.delete(subWallet);
+        
+        log.info("[SUBWALLET_DELETE_SUCCESS] Deleted sub-wallet: {}", subWallet.getSubWalletName());
     }
 
     @Override

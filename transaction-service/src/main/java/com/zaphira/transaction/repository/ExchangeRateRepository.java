@@ -74,4 +74,19 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long
     @Query("SELECT e FROM ExchangeRate e " +
            "WHERE e.expiresAt BETWEEN CURRENT_TIMESTAMP AND :expiresAfter")
     List<ExchangeRate> findSoonToExpireRates(@Param("expiresAfter") LocalDateTime expiresAfter);
+    
+    /**
+     * Find historical exchange rates for a currency pair.
+     * 
+     * Used for rate history charts and analysis.
+     * Ordered by newest first.
+     * 
+     * @param source Source currency
+     * @param target Target currency
+     * @return List of rates ordered by creation date descending
+     */
+    List<ExchangeRate> findBySourceCurrencyAndTargetCurrencyOrderByCreatedAtDesc(
+        CurrencyCode source,
+        CurrencyCode target
+    );
 }

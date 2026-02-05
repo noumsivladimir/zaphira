@@ -74,9 +74,9 @@ public class WalletRoutingStrategy implements RoutingStrategy {
     }
 
     private boolean isBothWalletsActive(Transaction transaction) {
+        // In production: call wallet-service to check if wallets are ACTIVE
+        // For now, assume wallets are active if both IDs exist
         return transaction.getSenderWalletId() != null &&
-               transaction.getReceiverWalletId() != null &&
-               Boolean.TRUE.equals(transaction.getSenderWalletId()) &&
-               Boolean.TRUE.equals(transaction.getReceiverWalletId());
+               transaction.getReceiverWalletId() != null;
     }
 }

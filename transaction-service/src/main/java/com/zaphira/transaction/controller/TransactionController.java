@@ -24,6 +24,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
+/**
+ * @deprecated This controller is deprecated. All endpoints have been migrated to TransactionCoreController (/api/v1/transactions).
+ * Please use TransactionCoreController for all new integrations.
+ * This controller will be removed in a future version.
+ */
+@Deprecated(since = "2026-02-04", forRemoval = true)
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {

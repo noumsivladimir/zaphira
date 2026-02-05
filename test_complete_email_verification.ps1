@@ -6,7 +6,7 @@ Write-Host "========================================" -ForegroundColor Green
 
 # Étape 1: Inscription d'un utilisateur
 Write-Host "`n1. Inscription d'un utilisateur..." -ForegroundColor Yellow
-$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8082/api/users/register" -Method POST -ContentType "application/json" -Body '{
+$registrationResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/users/register" -Method POST -ContentType "application/json" -Body '{
     "phoneNumber": "+237690000001",
     "email": "test@example.com",
     "pin": "1234",

@@ -1,7 +1,7 @@
 # Test des Notifications Email
 # Utilisez ce script pour tester facilement les notifications par email
 
-$baseUrl = "http://localhost:8085/api/notifications"
+$baseUrl = "http://localhost:8080/api/notifications"
 
 Write-Host "=== Test des Notifications Email ===" -ForegroundColor Cyan
 Write-Host "Base URL: $baseUrl" -ForegroundColor Yellow

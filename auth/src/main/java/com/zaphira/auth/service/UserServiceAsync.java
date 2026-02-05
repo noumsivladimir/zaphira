@@ -58,6 +58,13 @@ public class UserServiceAsync {
     }
 
     /**
+     * Récupère un utilisateur via userId.
+     */
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+
+    /**
      * Crée un nouvel utilisateur concret et publie un événement Kafka pour création asynchrone du wallet.
      */
     private User createNewUserWithAsyncWallet(RegisterRequest request) {
