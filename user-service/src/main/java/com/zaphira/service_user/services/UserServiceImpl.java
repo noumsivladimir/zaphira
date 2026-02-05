@@ -60,6 +60,8 @@ public class UserServiceImpl implements UserService {
 //        return userMapper.toResponse(savedUser);
 
 
+
+
     @Override
     public UserResponse registerAdmin(UserRegistrationRequest request) {
         log.info("Registering new admin user with email: {}");
